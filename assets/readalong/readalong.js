@@ -19,7 +19,143 @@
  *   has scrolled ahead is not dragged back on every cue.
  * - Sentences are focusable and activate on Enter or Space as well as click,
  *   so seeking by sentence is reachable without a mouse.
+ * - The designed controls are a `<button>` and an `<input type="range">`,
+ *   not divs with drag handlers. Arrow keys, Home/End, touch, and the
+ *   screen-reader's own slider gestures then work because the browser
+ *   implements them, not because this file remembered to.
+ * - The bar is unhidden here and the native `<audio controls>` hidden in the
+ *   same breath. Shipping it visible would mean a reader with no JavaScript
+ *   sees a play button that does nothing; shipping the native element hidden
+ *   would mean they see no player at all.
+ * - Every word the controls speak is written into the markup by the
+ *   generator, which has the language table. Nothing here builds a string a
+ *   reader hears.
  */
+
+const CLOCK = (seconds) => {
+  const total = Math.max(0, Math.floor(seconds || 0));
+  const h = Math.floor(total / 3600);
+  const m = Math.floor((total % 3600) / 60);
+  const s = total % 60;
+  const pad = (n) => String(n).padStart(2, '0');
+  return h ? `${h}:${pad(m)}:${pad(s)}` : `${m}:${pad(s)}`;
+};
+
+/* The controls. Returns without enhancing if the markup is not there, so an
+ * older page that still has the plain player keeps working. */
+function wireControls(root, audio) {
+  const ui = root.querySelector('[data-ra-ui]');
+  const play = root.querySelector('[data-ra-play]');
+  const scrub = root.querySelector('[data-ra-scrub]');
+  const elapsed = root.querySelector('[data-ra-elapsed]');
+  const totalOut = root.querySelector('[data-ra-total]');
+  if (!ui || !play || !scrub || !elapsed) return;
+
+  // Declared duration first: `preload="none"` means the browser knows
+  // nothing about the file until play, and `0:00` beside a sixty-four-minute
+  // recording is wrong exactly when a reader is deciding to commit to it.
+  let duration = Number.parseFloat(root.dataset.raDuration) || 0;
+  const skip = Number.parseFloat(root.dataset.raSkip) || 15;
+  const rates = (root.dataset.raRates || '1')
+    .split(',')
+    .map(Number.parseFloat)
+    .filter((r) => r > 0);
+
+  ui.hidden = false;
+  root.setAttribute('data-ra-enhanced', '');
+
+  let scrubbing = false;
+
+  function paint() {
+    const at = audio.currentTime || 0;
+    const span = duration || audio.duration || 0;
+    elapsed.textContent = CLOCK(at);
+    if (totalOut && span) totalOut.textContent = CLOCK(span);
+    if (scrubbing || !span) return;
+    const ratio = Math.min(1, at / span);
+    scrub.value = String(Math.round(ratio * 1000));
+    root.style.setProperty('--ra-progress', String(ratio));
+    // The slider's value is a thousandth of a recording, which is not a
+    // thing anyone can picture. What a screen-reader user needs announced is
+    // the time, so that is what is announced.
+    scrub.setAttribute('aria-valuetext', CLOCK(at));
+  }
+
+  // The measured duration wins once the file says what it is: the declared
+  // one comes from the cues, and a recording trimmed after the fact would
+  // leave the two disagreeing.
+  audio.addEventListener('loadedmetadata', () => {
+    if (Number.isFinite(audio.duration) && audio.duration > 0) {
+      duration = audio.duration;
+    }
+    paint();
+  });
+  audio.addEventListener('timeupdate', paint);
+
+  play.addEventListener('click', () => {
+    if (audio.paused) audio.play();
+    else audio.pause();
+  });
+
+  const showState = () => {
+    const playing = !audio.paused && !audio.ended;
+    if (playing) play.setAttribute('data-ra-playing', '');
+    else play.removeAttribute('data-ra-playing');
+    // The label and the glyph move together. A button that looks like pause
+    // and announces "Play" is worse than either alone.
+    const label = playing ? play.dataset.raLabelPause : play.dataset.raLabelPlay;
+    if (label) play.setAttribute('aria-label', label);
+  };
+  ['play', 'pause', 'ended'].forEach((event) =>
+    audio.addEventListener(event, showState),
+  );
+  showState();
+
+  const seekTo = (seconds) => {
+    const span = duration || audio.duration || 0;
+    audio.currentTime = Math.max(0, Math.min(span || seconds, seconds));
+    paint();
+  };
+
+  // `input` and not `change`: the fill and the clock follow the thumb while
+  // it is dragged, which is the feedback that makes a sixty-minute scrubber
+  // usable at all.
+  scrub.addEventListener('input', () => {
+    scrubbing = true;
+    const span = duration || audio.duration || 0;
+    const at = (Number.parseFloat(scrub.value) / 1000) * span;
+    root.style.setProperty('--ra-progress', String(Number(scrub.value) / 1000));
+    elapsed.textContent = CLOCK(at);
+    scrub.setAttribute('aria-valuetext', CLOCK(at));
+  });
+  scrub.addEventListener('change', () => {
+    const span = duration || audio.duration || 0;
+    scrubbing = false;
+    seekTo((Number.parseFloat(scrub.value) / 1000) * span);
+  });
+
+  const back = root.querySelector('[data-ra-back]');
+  const forward = root.querySelector('[data-ra-forward]');
+  if (back) back.addEventListener('click', () => seekTo(audio.currentTime - skip));
+  if (forward) {
+    forward.addEventListener('click', () => seekTo(audio.currentTime + skip));
+  }
+
+  const rate = root.querySelector('[data-ra-rate]');
+  if (rate && rates.length) {
+    let index = 0;
+    rate.addEventListener('click', () => {
+      index = (index + 1) % rates.length;
+      audio.playbackRate = rates[index];
+      // `×` as the multiplication sign, not the letter x: a screen reader
+      // reads the letter aloud. The button's accessible name is the
+      // generator's "Playback speed" either way, so this text is for eyes.
+      rate.textContent = `${rates[index]}\u00d7`;
+    });
+  }
+
+  paint();
+}
 
 const REDUCED_MOTION = window.matchMedia('(prefers-reduced-motion: reduce)');
 
@@ -45,6 +181,8 @@ function wire(root) {
   // a caption overlay. A `metadata` track shown over an audio element would
   // be noise, but it still has to be non-`disabled` for `cuechange` to fire.
   track.mode = 'hidden';
+
+  wireControls(root, audio);
 
   const sentences = document.querySelectorAll('.ra-s');
   let current = [];

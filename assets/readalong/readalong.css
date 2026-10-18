@@ -3,32 +3,336 @@
  * Every rule here is an accessibility decision, so each one says why.
  */
 
+/* The player.
+ *
+ * Shaped after the audio bar the big newsrooms converged on — a round play
+ * button, the title beside it, a hairline scrubber under both, the clock at
+ * the ends. They converged on it because it survives being small: at a
+ * phone's width the controls stay thumb-sized and the title wraps, which is
+ * the test a two-row layout fails.
+ *
+ * Built on `currentColor` throughout rather than on a palette. This
+ * component is injected into pages it has never seen — light, dark, a
+ * design tool's export — and has no way to learn their colours. Inheriting
+ * the text colour is the one thing that is always right.
+ */
+
 .ra-player {
-  margin: 1.5rem 0;
-  padding: 0.75rem 1rem;
-  border: 1px solid currentColor;
-  border-radius: 0.5rem;
-  /* `currentColor` at low opacity rather than a fixed grey: the host page
-     may be light or dark and this component has no way to know which. */
-  background: color-mix(in srgb, currentColor 4%, transparent);
+  --ra-face: color-mix(in srgb, currentColor 4%, transparent);
+  --ra-line: color-mix(in srgb, currentColor 14%, transparent);
+  --ra-dim: color-mix(in srgb, currentColor 60%, transparent);
+  /* How far the scrubber has filled, 0-1, written by the module. Kept as a
+     custom property so the fill is one `background-image` and not a second
+     element tracking the first. */
+  --ra-progress: 0;
+
+  /* Block, not flex: in this state there are two children -- a title and
+     the native controls -- and they stack. The enhanced state below
+     switches to a grid. A flex row with `wrap` happened to produce the same
+     picture, and did it by accident. */
+  display: block;
+  /* Three ways of saying "take the width you are given", because the
+     component does not get to choose its parent. A page built as a centred
+     flex column -- which a design tool's export usually is -- shrinks an
+     unsized child to its contents and parks it in the middle, floating free
+     of the text it belongs to. `align-self` answers that, `justify-self`
+     the grid version, and `width` the ordinary block case. */
+  width: 100%;
+  align-self: stretch;
+  justify-self: stretch;
+  /* Capped, and capped on the left. An audio bar stretched across a wide
+     column reads as a rule rather than as a control: the play button ends
+     up a long way from the clock it governs. Below the cap it simply fills,
+     which is what a phone needs. */
+  max-width: 34rem;
+  margin: 1.5rem auto 1.5rem 0;
+  padding: 0.9375rem 1.125rem 1rem;
+  border: 1px solid var(--ra-line);
+  border-radius: 0.75rem;
+  background: var(--ra-face);
 }
 
-.ra-player p {
-  margin: 0 0 0.5rem;
-  font-size: 0.9rem;
+/* The title. Visible in both states: with the module it sits beside the
+   scrubber, without it it names the native controls underneath. */
+.ra-title {
+  margin: 0;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  line-height: 1.3;
+  letter-spacing: -0.005em;
 }
 
 .ra-player audio {
   width: 100%;
-  /* Native controls, deliberately. A custom player is a keyboard trap
-     waiting to happen and would have to reimplement seeking, volume, speed
-     and their labels in every language the page speaks. */
+  margin-top: 0.625rem;
+  /* Native controls as the floor. A custom player is a keyboard trap
+     waiting to happen; this one is built on a `<button>` and an
+     `<input type="range">` precisely so it is not, and the native element
+     stays as what a reader gets when the module does not run. */
+}
+
+/* Enhanced: the module unhides `.ra-ui` and hides this in the same breath,
+   so a reader never sees two players, and never sees none. */
+.ra-player[data-ra-enhanced] audio {
+  display: none;
+}
+
+.ra-player[data-ra-enhanced] {
+  display: grid;
+  /* button | everything that grows | the controls that do not */
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  column-gap: 0.875rem;
+  row-gap: 0.375rem;
+}
+
+.ra-player[data-ra-enhanced] .ra-title {
+  grid-column: 2;
+  grid-row: 1;
+}
+
+.ra-ui {
+  display: contents;
+}
+
+/* The play button: a filled disc with the glyph cut out of it.
+ *
+ * The cut-out is the part that matters. Painting a pale triangle on top of
+ * a dark disc requires knowing what pale *is*, and this component is
+ * injected into pages whose background it has never seen -- a light page, a
+ * dark one, a design tool's export that sets its own. Every way of naming
+ * that colour is a guess: `Canvas` is the *browser's* idea of the page
+ * background and not necessarily the page's, and `white` is simply wrong
+ * half the time. Guess wrong and the result is a solid disc with no symbol
+ * in it -- the one failure a play button cannot afford.
+ *
+ * So the disc is `currentColor` shown through a mask, and the glyph is the
+ * hole. Whatever is actually behind the button shows through it, which is
+ * right on every page by construction rather than by luck.
+ *
+ * 44px is the touch-target floor, and the one number here that is not a
+ * matter of taste.
+ */
+.ra-play {
+  grid-column: 1;
+  grid-row: 1 / span 2;
+  align-self: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  padding: 0;
+  border: 0;
+  background: currentColor;
+  cursor: pointer;
+  flex: none;
+  -webkit-mask: var(--ra-glyph) center / contain no-repeat;
+  mask: var(--ra-glyph) center / contain no-repeat;
+  --ra-glyph: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill-rule='evenodd' d='M12 0A12 12 0 1 0 12 24 12 12 0 0 0 12 0ZM9.6 7.2 17 12 9.6 16.8Z'/%3E%3C/svg%3E");
+}
+
+.ra-play[data-ra-playing] {
+  --ra-glyph: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill-rule='evenodd' d='M12 0A12 12 0 1 0 12 24 12 12 0 0 0 12 0ZM9 7.6h2.2v8.8H9ZM12.8 7.6H15v8.8h-2.2Z'/%3E%3C/svg%3E");
+}
+
+/* A browser with no mask support gets an outlined disc rather than a
+   featureless filled one: the glyph is lost, the button is not. */
+@supports not ((-webkit-mask: url("#x")) or (mask: url("#x"))) {
+  .ra-play {
+    border: 2px solid currentColor;
+    border-radius: 50%;
+    background: transparent;
+  }
+}
+
+
+.ra-main {
+  grid-column: 2 / -1;
+  grid-row: 2;
+  min-width: 0;
+}
+
+.ra-tools {
+  grid-column: 3;
+  grid-row: 1;
+  justify-self: end;
+}
+
+/* Lined up with the title and the scrubber rather than with the button:
+   it is a caption for what they say, and starting it under the button put
+   a third left edge in a card that only needs two. */
+.ra-player[data-ra-enhanced] .ra-meta {
+  grid-column: 2 / -1;
+  grid-row: 3;
+  margin: 0.125rem 0 0;
+}
+
+/* The scrubber.
+ *
+ * A range input, styled, rather than a div with a drag handler: arrow keys,
+ * Home/End, touch and the screen-reader's own slider gestures all arrive
+ * correct and for free. The cost is three vendor track pseudo-elements,
+ * which is a smaller price than reimplementing any one of those.
+ */
+.ra-scrub {
+  -webkit-appearance: none;
+  appearance: none;
+  display: block;
+  width: 100%;
+  margin: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+.ra-scrub::-webkit-slider-runnable-track {
+  height: 4px;
+  border-radius: 2px;
+  background:
+    linear-gradient(currentColor, currentColor) 0 / calc(var(--ra-progress) * 100%)
+      100% no-repeat,
+    var(--ra-line);
+}
+
+.ra-scrub::-moz-range-track {
+  height: 4px;
+  border-radius: 2px;
+  background: var(--ra-line);
+}
+
+.ra-scrub::-moz-range-progress {
+  height: 4px;
+  border-radius: 2px;
+  background: currentColor;
+}
+
+.ra-scrub::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 12px;
+  height: 12px;
+  margin-top: -4px;
+  border: 0;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.ra-scrub::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+  border: 0;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.ra-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-top: 0.25rem;
+}
+
+.ra-time {
+  font-size: 0.75rem;
+  /* Tabular figures, so the clock does not jitter the controls sideways
+     once a second for sixty-four minutes. */
+  font-variant-numeric: tabular-nums;
+  color: var(--ra-dim);
+  flex: none;
+}
+
+.ra-tools {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.125rem;
+}
+
+.ra-skip,
+.ra-rate {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2rem;
+  height: 2rem;
+  padding: 0 0.375rem;
+  border: 0;
+  border-radius: 0.375rem;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 0.75rem;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+}
+
+.ra-skip {
+  position: relative;
+}
+
+.ra-skip svg {
+  width: 1.375rem;
+  height: 1.375rem;
+}
+
+/* The forward glyph is the back glyph mirrored. One path, two buttons --
+   and the number inside is *not* mirrored, which is the whole reason this
+   is a transform on the icon rather than on the button. */
+.ra-skip-fwd svg {
+  transform: scaleX(-1);
+}
+
+/* The number sits in the ring's empty middle. Slightly below centre
+   because the ring's gap is at the top, so the optical centre is not the
+   geometric one. */
+.ra-skip-n {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -35%);
+  font-size: 0.5625rem;
+  font-weight: 700;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.ra-rate {
+  font-weight: 600;
+  color: var(--ra-dim);
+}
+
+.ra-play:hover,
+.ra-skip:hover,
+.ra-rate:hover {
+  /* Hover is a hint, not a state. Kept to an opacity shift so it cannot
+     fight whatever the host page does with its own interactive colours. */
+  opacity: 0.8;
+}
+
+.ra-play:focus-visible,
+.ra-skip:focus-visible,
+.ra-rate:focus-visible,
+.ra-scrub:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
 }
 
 .ra-meta {
-  margin: 0 0 1rem;
-  font-size: 0.9rem;
-  opacity: 0.75;
+  /* Inside the card, as the player's caption. As a sibling it was an orphan:
+     the host page puts its own gap between flex children, so the line landed
+     halfway between the player and the headline, attached to neither. */
+  margin: 0.5rem 0 0;
+  font-size: 0.8125rem;
+  color: var(--ra-dim);
+}
+
+/* Narrow screens: the title moves above the button rather than squeezing
+   the scrubber into nothing. */
+@media (max-width: 24rem) {
+  .ra-player[data-ra-enhanced] {
+    grid-template-columns: auto 1fr;
+  }
+
+  .ra-tools {
+    gap: 0;
+  }
 }
 
 /* The highlight.
@@ -71,6 +375,12 @@
   .ra-s {
     transition: none;
   }
+
+  .ra-play,
+  .ra-skip,
+  .ra-rate {
+    transition: none;
+  }
 }
 
 @media (forced-colors: active) {
@@ -92,6 +402,34 @@
   .ra-s[tabindex]:focus-visible {
     outline-color: Highlight;
   }
+
+  /* The player in forced colours. `currentColor` collapses to the forced
+     text colour, which would leave the filled play button and its glyph the
+     same colour -- a solid disc with no symbol in it. The system button
+     keywords are the pair that is guaranteed to contrast. */
+  /* Forced colours drop background images, and the mask goes with them, so
+     the disc would arrive as a plain square of forced colour. Draw the
+     circle with a border instead: no symbol, but a control that still reads
+     as one and keeps its accessible name. */
+  .ra-play {
+    background: ButtonFace;
+    border: 2px solid ButtonText;
+    border-radius: 50%;
+  }
+
+  .ra-player {
+    border-color: CanvasText;
+    background: Canvas;
+  }
+
+  .ra-scrub::-webkit-slider-runnable-track {
+    background: CanvasText;
+  }
+
+  .ra-scrub::-webkit-slider-thumb,
+  .ra-scrub::-moz-range-thumb {
+    background: Highlight;
+  }
 }
 
 @media (prefers-contrast: more) {
@@ -109,5 +447,7 @@
 
   .ra-player {
     background: rgba(128, 128, 128, 0.06);
+    --ra-line: rgba(128, 128, 128, 0.35);
+    --ra-dim: rgba(128, 128, 128, 1);
   }
 }

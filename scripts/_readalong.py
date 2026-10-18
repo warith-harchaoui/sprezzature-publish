@@ -897,10 +897,65 @@ def inject_into_page(html: str, cues: list[VttCue], *, split, opening: str, clos
 #: Wording for the player's label, which is the accessible name of the audio
 #: element. No default: a language this project has not been taught is worth
 #: seeing, not worth serving in English.
-PLAYER_LABELS: dict[str, str] = {
-    "en": "Listen to this page",
-    "fr": "Écouter cette page",
+PLAYER_LABELS: dict[str, dict[str, str]] = {
+    "en": {
+        "title": "Listen to this page",
+        "play": "Play",
+        "pause": "Pause",
+        "back": "Back 15 seconds",
+        "forward": "Forward 15 seconds",
+        "speed": "Playback speed",
+        "seek": "Seek",
+    },
+    "fr": {
+        "title": "Écouter cette page",
+        "play": "Lecture",
+        "pause": "Pause",
+        "back": "Reculer de 15 secondes",
+        "forward": "Avancer de 15 secondes",
+        "speed": "Vitesse de lecture",
+        "seek": "Se déplacer dans la narration",
+    },
 }
+
+#: Every control a language must name before a page in it can be narrated.
+#: Checked rather than assumed: a missing key would reach the page as the
+#: string "None" inside an `aria-label`, which is worse than English —
+#: English at least tells a screen-reader user something.
+PLAYER_STRING_KEYS: frozenset[str] = frozenset(
+    {"title", "play", "pause", "back", "forward", "speed", "seek"}
+)
+
+#: The skip buttons' icon: an open ring with a gap at the top, an arrowhead
+#: at one end of it, and nothing in the middle — because the middle is where
+#: the number goes.
+#:
+#: The first version was a filled disc with "15" laid over it, and at the
+#: size these buttons are actually drawn the two collided into a smudge. An
+#: icon that has to share its centre with a label needs that centre empty.
+#:
+#: The forward button is this same glyph mirrored in CSS, which is why the
+#: number is an HTML element beside the SVG rather than a `<text>` inside
+#: it: mirroring the ring is right, mirroring "15" is not.
+_SKIP_GLYPH: str = (
+    '        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false" '
+    'fill="none" stroke="currentColor" stroke-width="1.7" '
+    'stroke-linecap="round">'
+    '<path d="M7.5 6.64A7 7 0 1 0 16.5 6.64"/>'
+    '<path d="M7.6 3.9 4.6 6.64 7.6 9.4Z" fill="currentColor" stroke="none"/>'
+    "</svg>"
+)
+
+#: How far the skip buttons jump. Fifteen seconds is what the podcast players
+#: settled on, and the reason is worth keeping: it is long enough to undo a
+#: lapse in attention and short enough that two taps are still a thought
+#: rather than a navigation.
+SKIP_SECONDS: int = 15
+
+#: The speeds the rate button cycles through, starting at 1. No 2.5 or 3:
+#: past about double, synthesised speech stops being faster reading and
+#: becomes a different task.
+PLAYBACK_RATES: tuple[float, ...] = (1.0, 1.25, 1.5, 1.75, 2.0, 0.75)
 
 #: Files that drive the highlight, copied next to the page. Linked rather
 #: than inlined so a reader's browser caches them once for a whole site.
@@ -912,15 +967,33 @@ def assets_dir() -> Path:
     return Path(__file__).resolve().parent.parent / "assets" / "readalong"
 
 
-def player_label(lang: str) -> str:
-    """The player's accessible name in `lang`, or a refusal naming the gap."""
-    label = PLAYER_LABELS.get(lang)
-    if label is None:
+def player_strings(lang: str) -> dict[str, str]:
+    """Every word the player shows or announces, in `lang`.
+
+    Refuses rather than falling back. A player whose buttons are labelled in
+    a language the page is not written in is worse than an unlabelled one:
+    the screen-reader user hears confident, wrong words.
+    """
+    strings = PLAYER_LABELS.get(lang)
+    if strings is None:
         raise ReadAlongMismatch(
             f"no read-along player wording for language {lang!r}; add it to "
             "PLAYER_LABELS rather than labelling a French page in English"
         )
-    return label
+    missing = PLAYER_STRING_KEYS - set(strings)
+    if missing:
+        raise ReadAlongMismatch(
+            f"the {lang!r} player wording is missing {sorted(missing)}; a "
+            f"missing key reaches the page as the string \"None\" inside an "
+            f"aria-label, which tells a screen-reader user less than English "
+            f"would"
+        )
+    return strings
+
+
+def player_label(lang: str) -> str:
+    """The player's accessible name in `lang`, or a refusal naming the gap."""
+    return player_strings(lang)["title"]
 
 
 def narration_sources(narration_dir: Path, stem: str) -> tuple[Path, Path] | None:
@@ -1007,7 +1080,29 @@ def spoken_seconds(vtt_text: str) -> float:
     return cues[-1].end_seconds if cues else 0.0
 
 
-def player_html(*, audio_src: str, vtt_src: str, label: str, lang: str) -> str:
+def _clock(seconds: float) -> str:
+    """``64:03``, or ``1:04:03`` once there is an hour to show.
+
+    No leading zero on the first field, which is what every player does and
+    what makes ``0:09`` read as nine seconds rather than as a timestamp.
+    """
+    total = max(0, int(seconds))
+    hours, rest = divmod(total, 3600)
+    minutes, secs = divmod(rest, 60)
+    if hours:
+        return f"{hours}:{minutes:02d}:{secs:02d}"
+    return f"{minutes}:{secs:02d}"
+
+
+def player_html(
+    *,
+    audio_src: str,
+    vtt_src: str,
+    label: str,
+    lang: str,
+    duration_seconds: float = 0.0,
+    meta_html: str = "",
+) -> str:
     """The audio player, with its cue track.
 
     ``kind="metadata"`` rather than ``"captions"``: these cues drive a
@@ -1015,12 +1110,45 @@ def player_html(*, audio_src: str, vtt_src: str, label: str, lang: str) -> str:
     subtitles over an audio element would be noise. The same file *is* served
     as captions elsewhere; what changes is the role it is given here.
 
+    Shape
+    -----
+    Two players in one element, and only ever one of them visible.
+
+    The ``<audio controls>`` is the page as delivered: it works with no
+    JavaScript, no stylesheet, and no assumptions, and it is what a reader
+    gets if either file fails to load. The ``ra-ui`` block beside it is the
+    designed bar — a round play button, a scrubber, the clock, and the
+    controls a long narration actually needs — and it ships ``hidden``. The
+    module unhides it and hides the native controls in the same breath, so
+    there is no moment where a reader sees two players, and no moment where
+    they see none.
+
+    Everything the bar says is rendered here rather than in the module. A
+    string built in JavaScript is a string outside the language table, and
+    this component already refuses to label a French page in English; it
+    would be a strange thing to then do from a script.
+
+``meta_html`` — the reading-and-listening line from
+    :func:`reading_meta_html` — belongs *inside* the card. Emitted as a
+    sibling it became an orphan: the host page puts its own spacing between
+    flex children, so the line ended up floating halfway between the player
+    and the headline, attached to neither. A child cannot shrink its
+    parent's gap, and it should not try; the fix is to stop being a second
+    child.
+
+    The total duration is written in as well, from the narration's own
+    measured length. ``preload="none"`` means the browser knows nothing about
+    the file until the reader presses play, so a player that waited for
+    metadata would show ``0:00`` next to a sixty-four-minute recording —
+    exactly when a reader is deciding whether to commit to it.
+
     Raises
     ------
     ReadAlongMismatch
         If the audio file's extension is not one of :data:`AUDIO_TYPES`.
         Declaring the wrong type is a file the browser declines to play, and
         guessing is how that happens quietly.
+        If `lang` has no wording — see :func:`player_strings`.
     """
     suffix = Path(audio_src).suffix.lower()
     audio_type = AUDIO_TYPES.get(suffix)
@@ -1030,15 +1158,64 @@ def player_html(*, audio_src: str, vtt_src: str, label: str, lang: str) -> str:
             f"rather than letting the page declare the wrong one. "
             f"Known: {', '.join(sorted(AUDIO_TYPES))}."
         )
+    words = player_strings(lang)
+    total = _clock(duration_seconds)
+    skip = SKIP_SECONDS
+
+    def tag(text: str) -> str:
+        return html.escape(text, quote=True)
+
     return (
-        '<div class="ra-player" data-readalong>\n'
-        f"  <p id=\"ra-label\">{html.escape(label)}</p>\n"
+        f'<div class="ra-player" data-readalong data-ra-skip="{skip}" '
+        f'data-ra-rates="{",".join(str(r) for r in PLAYBACK_RATES)}" '
+        f'data-ra-duration="{duration_seconds:.3f}">\n'
+        f'  <p class="ra-title" id="ra-label">{html.escape(label)}</p>\n'
         '  <audio controls preload="none" aria-labelledby="ra-label" '
         'data-ra-audio>\n'
         f'    <source src="{html.escape(audio_src)}" type="{audio_type}">\n'
         f'    <track kind="metadata" src="{html.escape(vtt_src)}" '
         f'srclang="{html.escape(lang)}" label="Sentences" default>\n'
         "  </audio>\n"
+        # `hidden` until the module is running. A designed bar with nothing
+        # behind it is a worse failure than plain controls: it looks
+        # operable and is not.
+        '  <div class="ra-ui" data-ra-ui hidden>\n'
+        '    <button class="ra-play" type="button" data-ra-play '
+        f'aria-label="{tag(words["play"])}" '
+        f'data-ra-label-play="{tag(words["play"])}" '
+        f'data-ra-label-pause="{tag(words["pause"])}"></button>\n'
+        # No glyph element inside. The disc is drawn by CSS as a mask, so the
+        # triangle is a *hole* in it rather than a shape painted on top —
+        # which is the only version that survives being dropped into a page
+        # whose background this component has never seen. See readalong.css.
+        '    <div class="ra-main">\n'
+        # A range input rather than a div with a drag handler: keyboard
+        # seeking, touch, and the arrow keys all arrive for free and
+        # correctly, which no hand-rolled scrubber manages.
+        f'      <input class="ra-scrub" type="range" min="0" max="1000" '
+        f'value="0" step="1" data-ra-scrub aria-label="{tag(words["seek"])}" '
+        f'aria-valuetext="0:00">\n'
+        '      <div class="ra-row">\n'
+        '        <span class="ra-time" data-ra-elapsed>0:00</span>\n'
+        f'        <span class="ra-time" data-ra-total>{html.escape(total)}</span>\n'
+        "      </div>\n"
+        "    </div>\n"
+        '    <span class="ra-tools">\n'
+        '      <button class="ra-skip" type="button" data-ra-back '
+        f'aria-label="{tag(words["back"])}">\n'
+        f"{_SKIP_GLYPH}\n"
+        f'        <span class="ra-skip-n">{skip}</span>\n'
+        "      </button>\n"
+        '      <button class="ra-skip ra-skip-fwd" type="button" '
+        f'data-ra-forward aria-label="{tag(words["forward"])}">\n'
+        f"{_SKIP_GLYPH}\n"
+        f'        <span class="ra-skip-n">{skip}</span>\n'
+        "      </button>\n"
+        '      <button class="ra-rate" type="button" data-ra-rate '
+        f'aria-label="{tag(words["speed"])}">1&#215;</button>\n'
+        "    </span>\n"
+        "  </div>\n"
+        f"{meta_html}"
         "</div>"
     )
 
