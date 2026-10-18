@@ -32,6 +32,21 @@ versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   reader presses play, and `0:00` beside a sixty-four-minute recording is
   wrong at exactly the moment someone is deciding whether to commit to it.
 
+- **The player has a colour.** `--ra-accent` is the one colour a host page
+  is invited to set; everything else is still derived from the page's own
+  text colour, which is the only thing a component injected into an unknown
+  page can know. Its default is a teal, and the choice is a contrast
+  calculation rather than a preference: the accent has to clear 3:1 — the
+  threshold for a non-text interface element — against a light page *and* a
+  dark one, and the obvious alternatives fail one side. It tints the play
+  button, the progress fill, the card, and the read-along highlight itself,
+  which is the surface a reader looks at for an hour.
+- **The ±15 s buttons are legible.** Two earlier versions were not, and
+  neither was visible in the markup — only at the size they are actually
+  drawn. The first laid "15" over a filled disc and the two collided; the
+  second opened the ring but drew it tight enough that the digits touched
+  it, with the arrowhead sitting on the ring's own end.
+
 ### Fixed
 
 - **`narrate_post` and `readalong` did not connect.** The first writes

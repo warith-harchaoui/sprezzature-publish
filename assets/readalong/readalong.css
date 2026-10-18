@@ -17,10 +17,33 @@
  * the text colour is the one thing that is always right.
  */
 
+/* `--ra-accent` is the one colour a host page is invited to set, and it is
+   deliberately *not* declared on this element. A custom property declared
+   here would shadow whatever an ancestor set, so a site styling its own
+   page would find the player ignoring it — the hook would exist and do
+   nothing. It is read once, below, with a default.
+
+   That default is a teal, and the choice is a contrast calculation rather
+   than a preference. This component is injected into pages whose
+   background it has never seen, so the accent has to clear 3:1 — the
+   threshold for a non-text interface element — against a light page *and*
+   a dark one. Teal #0D9488 manages 3.74 and 5.12. The obvious
+   alternatives do not: indigo clears dark by 3.05, and a violet deep
+   enough to look good on white falls to 2.13 on black.
+
+   A site with its own accent sets `--ra-accent` anywhere up the tree; a
+   site that wants the restrained version sets it to `currentColor`. */
 .ra-player {
-  --ra-face: color-mix(in srgb, currentColor 4%, transparent);
-  --ra-line: color-mix(in srgb, currentColor 14%, transparent);
-  --ra-dim: color-mix(in srgb, currentColor 60%, transparent);
+  --ra-ink: var(--ra-accent, #0D9488);
+  /* The card's surface and rule are tinted with the accent rather than
+     with the text colour. Grey over grey is what a control looks like when
+     nobody chose anything; six per cent of the accent is barely a colour
+     and still reads as a decision. */
+  --ra-face: color-mix(in srgb, var(--ra-ink) 7%, transparent);
+  --ra-line: color-mix(in srgb, var(--ra-ink) 22%, transparent);
+  /* The muted *text* stays neutral. Tinting type costs legibility for a
+     tint nobody reads as colour at this size. */
+  --ra-dim: color-mix(in srgb, currentColor 58%, transparent);
   /* How far the scrubber has filled, 0-1, written by the module. Kept as a
      custom property so the fill is one `background-image` and not a second
      element tracking the first. */
@@ -121,7 +144,7 @@
   height: 2.75rem;
   padding: 0;
   border: 0;
-  background: currentColor;
+  background: var(--ra-ink);
   cursor: pointer;
   flex: none;
   -webkit-mask: var(--ra-glyph) center / contain no-repeat;
@@ -186,8 +209,8 @@
   height: 4px;
   border-radius: 2px;
   background:
-    linear-gradient(currentColor, currentColor) 0 / calc(var(--ra-progress) * 100%)
-      100% no-repeat,
+    linear-gradient(var(--ra-ink), var(--ra-ink)) 0 /
+      calc(var(--ra-progress) * 100%) 100% no-repeat,
     var(--ra-line);
 }
 
@@ -200,7 +223,7 @@
 .ra-scrub::-moz-range-progress {
   height: 4px;
   border-radius: 2px;
-  background: currentColor;
+  background: var(--ra-ink);
 }
 
 .ra-scrub::-webkit-slider-thumb {
@@ -211,7 +234,7 @@
   margin-top: -4px;
   border: 0;
   border-radius: 50%;
-  background: currentColor;
+  background: var(--ra-ink);
 }
 
 .ra-scrub::-moz-range-thumb {
@@ -219,7 +242,7 @@
   height: 12px;
   border: 0;
   border-radius: 50%;
-  background: currentColor;
+  background: var(--ra-ink);
 }
 
 .ra-row {
@@ -250,8 +273,8 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 2rem;
-  height: 2rem;
+  min-width: 2.25rem;
+  height: 2.25rem;
   padding: 0 0.375rem;
   border: 0;
   border-radius: 0.375rem;
@@ -268,8 +291,11 @@
 }
 
 .ra-skip svg {
-  width: 1.375rem;
-  height: 1.375rem;
+  width: 1.75rem;
+  height: 1.75rem;
+  /* Dimmer than the number it surrounds: the ring says "jump", the digits
+     say how far, and only one of those is read. */
+  color: var(--ra-dim);
 }
 
 /* The forward glyph is the back glyph mirrored. One path, two buttons --
@@ -286,15 +312,17 @@
   position: absolute;
   top: 50%;
   left: 50%;
-  transform: translate(-50%, -35%);
-  font-size: 0.5625rem;
+  transform: translate(-50%, -42%);
+  font-size: 0.6875rem;
   font-weight: 700;
   line-height: 1;
   font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
 }
 
 .ra-rate {
   font-weight: 600;
+  font-size: 0.8125rem;
   color: var(--ra-dim);
 }
 
@@ -349,9 +377,15 @@
   transition: background-color 180ms ease, border-color 180ms ease;
 }
 
+/* The highlight takes the accent too. This is the one surface a reader
+   looks at for an hour, and the grey version read as a selection left
+   behind rather than as a place in a recording. The left border stays
+   because WCAG 1.4.1 forbids colour as the only carrier of information —
+   it is the part that survives a reader who cannot separate the tint from
+   the page. */
 .ra-s.is-reading {
-  background: color-mix(in srgb, currentColor 12%, transparent);
-  border-left-color: currentColor;
+  background: color-mix(in srgb, var(--ra-accent, #0D9488) 14%, transparent);
+  border-left-color: var(--ra-accent, #0D9488);
 }
 
 /* Clickable to seek. `cursor: pointer` alone would be a lie to a keyboard
@@ -434,7 +468,7 @@
 
 @media (prefers-contrast: more) {
   .ra-s.is-reading {
-    background: color-mix(in srgb, currentColor 22%, transparent);
+    background: color-mix(in srgb, var(--ra-accent, #0D9488) 26%, transparent);
   }
 }
 
@@ -442,12 +476,12 @@
    than a transparent background and an invisible cursor. */
 @supports not (background: color-mix(in srgb, currentColor 12%, transparent)) {
   .ra-s.is-reading {
-    background: rgba(128, 128, 128, 0.22);
+    background: rgba(13, 148, 136, 0.18);
   }
 
   .ra-player {
-    background: rgba(128, 128, 128, 0.06);
-    --ra-line: rgba(128, 128, 128, 0.35);
+    background: rgba(13, 148, 136, 0.07);
+    --ra-line: rgba(13, 148, 136, 0.28);
     --ra-dim: rgba(128, 128, 128, 1);
   }
 }

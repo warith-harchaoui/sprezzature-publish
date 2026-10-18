@@ -930,19 +930,25 @@ PLAYER_STRING_KEYS: frozenset[str] = frozenset(
 #: at one end of it, and nothing in the middle — because the middle is where
 #: the number goes.
 #:
-#: The first version was a filled disc with "15" laid over it, and at the
-#: size these buttons are actually drawn the two collided into a smudge. An
-#: icon that has to share its centre with a label needs that centre empty.
+#: Two versions of this were wrong before this one, and both only at real
+#: size. The first was a filled disc with "15" laid over it: the number and
+#: the glyph collided into a smudge. The second opened the ring but drew it
+#: at radius 7 in a 24-unit box, which leaves about a pixel and a half of
+#: clear space either side of the digits at the size these buttons are
+#: actually drawn — the ring touched the number, and the arrowhead sat on
+#: the ring's own end and made a blob of the join.
 #:
-#: The forward button is this same glyph mirrored in CSS, which is why the
+#: So: radius 9.5, a seventy-degree gap at the top, a thin stroke, and the
+#: arrowhead set at the end of the arc rather than on top of it. The
+#: forward button is this same glyph mirrored in CSS, which is why the
 #: number is an HTML element beside the SVG rather than a `<text>` inside
 #: it: mirroring the ring is right, mirroring "15" is not.
 _SKIP_GLYPH: str = (
     '        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false" '
-    'fill="none" stroke="currentColor" stroke-width="1.7" '
+    'fill="none" stroke="currentColor" stroke-width="1.5" '
     'stroke-linecap="round">'
-    '<path d="M7.5 6.64A7 7 0 1 0 16.5 6.64"/>'
-    '<path d="M7.6 3.9 4.6 6.64 7.6 9.4Z" fill="currentColor" stroke="none"/>'
+    '<path d="M6.55 4.22A9.5 9.5 0 1 0 17.45 4.22"/>'
+    '<path d="M7.4 0.9 2.3 4.3 7.4 7.7Z" fill="currentColor" stroke="none"/>'
     "</svg>"
 )
 

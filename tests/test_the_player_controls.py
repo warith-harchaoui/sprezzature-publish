@@ -28,6 +28,9 @@ import _readalong
 import pytest
 
 ROOT = Path(__file__).resolve().parent.parent
+
+#: The player's default accent. One literal, and the stylesheet says why.
+ACCENT = "#0D9488"
 CSS = (ROOT / "assets" / "readalong" / "readalong.css").read_text(encoding="utf-8")
 JS = (ROOT / "assets" / "readalong" / "readalong.js").read_text(encoding="utf-8")
 
@@ -260,11 +263,83 @@ def test_forced_colours_do_not_erase_the_button() -> None:
     assert re.search(r"\.ra-play\s*\{[^}]*border:\s*2px solid ButtonText", forced)
 
 
-def test_the_player_borrows_the_pages_colour_rather_than_choosing_one() -> None:
+def test_there_is_exactly_one_colour_literal_and_it_is_the_accent() -> None:
     """
-    No hex values in the player's rules: it inherits the text colour, which
-    is the one thing that is right on a light page, a dark page, and a
-    design tool's export alike.
+    The rule this file started with was "no hex values in the player": the
+    component is injected into pages it has never seen, so it inherits the
+    text colour rather than choosing one. That rule was right about
+    everything except the accent, which is the one colour a player is
+    allowed to have — and leaving it as `currentColor` produced a grey
+    control that looked like nobody had decided anything.
+
+    So the rule becomes: one literal, used as the *default* of the public
+    `--ra-accent` hook, and nothing else hard-coded. More than one means a
+    second colour crept in somewhere a host page cannot reach.
     """
     player_css = CSS[CSS.index("/* The player."):CSS.index("/* The highlight.")]
-    assert not re.search(r"#[0-9a-fA-F]{3,8}\b", player_css)
+    literals = set(re.findall(r"#[0-9a-fA-F]{3,8}\b", player_css))
+    assert literals == {ACCENT}, f"colour literals in the player: {sorted(literals)}"
+
+
+def test_the_accent_is_a_hook_a_host_page_can_actually_reach() -> None:
+    """
+    The defect this is written for, and it was invisible in the markup.
+
+    `--ra-accent` was first *declared* on `.ra-player` with a default. A
+    custom property declared on an element shadows whatever an ancestor
+    set, so a site that styled `:root { --ra-accent: … }` would find the
+    player ignoring it — a hook that exists and does nothing, which is
+    worse than no hook because it is documented. Caught by rendering six
+    colour variants and finding all six identical.
+
+    It is read with a default at the use site instead, and the element
+    declares only the internal variable derived from it.
+    """
+    assert "--ra-accent:" not in CSS, (
+        "--ra-accent is declared in the stylesheet, which shadows whatever "
+        "a host page sets on an ancestor"
+    )
+    assert f"var(--ra-accent, {ACCENT})" in CSS
+
+
+def test_the_accent_clears_contrast_on_a_light_and_a_dark_page() -> None:
+    """
+    Why this particular colour, and the reason it is not a preference.
+
+    The player is injected into pages whose background it does not know, so
+    the accent has to clear 3:1 — the threshold for a non-text interface
+    element — against a light page *and* a dark one. The obvious
+    alternatives fail one side: a violet deep enough to look right on white
+    falls to about 2:1 on black, and a brighter teal fails on white.
+    """
+
+    def _channel(value: float) -> float:
+        value /= 255
+        return value / 12.92 if value <= 0.04045 else ((value + 0.055) / 1.055) ** 2.4
+
+    def _luminance(colour: str) -> float:
+        colour = colour.lstrip("#")
+        red, green, blue = (int(colour[i:i + 2], 16) for i in (0, 2, 4))
+        return 0.2126 * _channel(red) + 0.7152 * _channel(green) + 0.0722 * _channel(blue)
+
+    def _ratio(one: str, other: str) -> float:
+        a, b = _luminance(one), _luminance(other)
+        return (max(a, b) + 0.05) / (min(a, b) + 0.05)
+
+    assert _ratio(ACCENT, "#ffffff") >= 3.0, "the accent fails on a light page"
+    assert _ratio(ACCENT, "#0f0f10") >= 3.0, "the accent fails on a dark page"
+
+
+def test_the_skip_glyph_leaves_its_middle_empty() -> None:
+    """
+    Two versions of this icon were wrong, and only at real size: a filled
+    disc with "15" over it, then an open ring drawn tight enough that the
+    digits touched it. The ring is the thing that must not be filled, and
+    it must be wide enough to hold a number.
+    """
+    glyph = _readalong._SKIP_GLYPH
+    assert 'fill="none"' in glyph, "the ring is filled; the number has nowhere to go"
+    radius = re.search(r"A([\d.]+) ", glyph)
+    assert radius and float(radius.group(1)) >= 9.0, (
+        "the ring is drawn too tight for the digits it has to contain"
+    )
