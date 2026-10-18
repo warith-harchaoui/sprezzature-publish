@@ -752,3 +752,35 @@ class TestTheVoicesLiveNextDoor:
         source = inspect.getsource(narrate_post)
         assert "sprezzature-audio[narrate]" in source
         assert "sprezzature-audio-install-voice" in source
+
+    def test_a_machine_without_the_voices_gets_an_answer_not_a_crash(
+        self, monkeypatch
+    ) -> None:
+        """
+        The case this function exists for, and the one that crashed.
+
+        ``importlib.util.find_spec`` imports the *parent* package in order to
+        ask it about a submodule, so a missing ``sprezzature-audio`` raised
+        ``ModuleNotFoundError`` here rather than answering ``None``. The one
+        situation `_engine_command` was written to handle — the voices are
+        not installed — was therefore the one it could not survive.
+
+        Invisible on a machine that has the package, which is every machine a
+        developer of this repository uses. Only CI saw it, and only because
+        CI is the one place that installs nothing extra.
+        """
+        import importlib.util
+
+        import narrate_post
+
+        real = importlib.util.find_spec
+
+        def absent(name, *args, **kwargs):
+            if name.startswith("sprezzature_audio"):
+                raise ModuleNotFoundError(f"No module named {name.split('.')[0]!r}")
+            return real(name, *args, **kwargs)
+
+        monkeypatch.setattr(importlib.util, "find_spec", absent)
+        monkeypatch.setattr(Path, "is_file", lambda self: False)
+
+        assert narrate_post._engine_command("openvoice") is None

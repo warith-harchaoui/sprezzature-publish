@@ -242,7 +242,17 @@ def _engine_command(engine: str, python: str = sys.executable) -> list[str] | No
     a post.
     """
     module = f"sprezzature_audio_scripts.narrate_{engine}"
-    if importlib.util.find_spec(module) is not None:
+    try:
+        found = importlib.util.find_spec(module) is not None
+    except ModuleNotFoundError:
+        # `find_spec` imports the *parent* package to ask it, so a missing
+        # sprezzature-audio raises here rather than answering None. Without
+        # this, the one case this function exists to handle — the voices are
+        # not installed — crashed instead of returning the sentence that
+        # names the install command. Invisible on a machine that has the
+        # package; the only place it showed was CI.
+        found = False
+    if found:
         return [python, "-m", module]
     sibling = (
         Path(__file__).resolve().parents[3]
