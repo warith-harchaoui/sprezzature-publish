@@ -83,9 +83,13 @@ def test_the_swap_is_one_decision_in_each_direction() -> None:
     """
     assert "ui.hidden = false" in JS
     assert "setAttribute('data-ra-enhanced'" in JS
-    assert re.search(
-        r"\.ra-player\[data-ra-enhanced\]\s+audio\s*\{[^}]*display:\s*none", CSS
+    # The rule is written as a group -- the title, the native controls and
+    # the caption all go together -- so the check is "the native element is
+    # among the things that disappear", not a rule of its own.
+    hidden = re.search(
+        r"((?:\.ra-player\[data-ra-enhanced\][^{,]*,?\s*)+)\{[^}]*display:\s*none", CSS
     )
+    assert hidden and "audio" in hidden.group(1)
 
 
 # ── Controls that keep their keyboard ──────────────────────────────────────
@@ -209,21 +213,35 @@ def test_the_total_is_shown_before_any_audio_is_fetched() -> None:
     """
     html = player(seconds=3817.361)
     assert 'data-ra-duration="3817.361"' in html
-    assert "&#8722;1:03:37</span>" in html
+    assert ">1:03:37</span>" in html
     assert 'preload="none"' in html
 
 
-def test_the_clock_counts_down_rather_than_repeating_the_caption() -> None:
+def test_the_bar_remembers_where_the_reader_got_to() -> None:
     """
-    The caption under the bar already says how long the recording is. A
-    right-hand clock showing the same total put the same number twice in a
-    card the width of a paragraph. What changes while a recording plays is
-    how much is left, so that is what the live readout says.
+    A sixty-minute article is not finished in one sitting, and starting
+    over at the top is how nobody comes back. Keyed by path rather than by
+    the whole URL, so a campaign link's query string does not turn the same
+    article into a different recording.
     """
-    html = player(seconds=3817.361)
-    assert "data-ra-remaining" in html
-    assert "data-ra-total" not in html
-    assert "\\u2212" in JS or "data-ra-remaining" in JS
+    assert "localStorage" in JS
+    assert "location.pathname" in JS
+    assert "localStorage.removeItem" in JS, (
+        "a finished recording must forget its position, or 'continue' lands "
+        "on the closing word"
+    )
+
+
+def test_the_bar_publishes_its_own_height() -> None:
+    """
+    The page has to keep its last paragraph out from under a fixed bar, and
+    the bar is the only thing that knows how tall it is — the height
+    depends on the host page's font. A guess that is a few pixels short
+    hides the end of the article, which is the one place a reader will not
+    think to look for a bar.
+    """
+    assert "--ra-bar" in JS and "offsetHeight" in JS
+    assert "--ra-bar" in CSS and "padding-bottom" in CSS
 
 
 def test_the_slider_announces_a_time_not_a_thousandth() -> None:
@@ -276,7 +294,7 @@ def test_there_is_exactly_one_colour_literal_and_it_is_the_accent() -> None:
     `--ra-accent` hook, and nothing else hard-coded. More than one means a
     second colour crept in somewhere a host page cannot reach.
     """
-    player_css = CSS[CSS.index("/* The player."):CSS.index("/* The highlight.")]
+    player_css = CSS[CSS.index("/* The player"):CSS.index("/* The highlight.")]
     literals = set(re.findall(r"#[0-9a-fA-F]{3,8}\b", player_css))
     assert literals == {ACCENT}, f"colour literals in the player: {sorted(literals)}"
 

@@ -43,7 +43,7 @@ import json
 import re
 from dataclasses import asdict, dataclass
 from pathlib import Path
-from typing import Any, TypedDict
+from typing import Any, NotRequired, TypedDict
 
 # ── Module-level configuration ──────────────────────────────────────────────
 
@@ -109,6 +109,12 @@ class Segment(TypedDict):
     intensity: float
     pace: str            # "slow" | "normal" | "fast"
     emphasis_word: str   # empty string when none
+    #: What the engine should *say*, when that differs from what the page
+    #: *shows* -- a formula read as a sentence, a footnote marker dropped.
+    #: Absent when the two are the same, which is almost every sentence.
+    #: The cue keeps ``text``, so a read-along still highlights the page's
+    #: own words.
+    say: NotRequired[str]
 
 
 def make_segment(

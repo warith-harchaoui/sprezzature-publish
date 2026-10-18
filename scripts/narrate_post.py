@@ -118,6 +118,7 @@ def _llm_chat(*args: Any, **kwargs: Any) -> Any:
 # Local helpers — pure-Python, no heavy ML deps.
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import _readalong  # noqa: E402
+from _lang import detect_text_language  # noqa: E402
 from _narrate import (  # noqa: E402
     LLM_SYSTEM_PROMPT,
     NarrationManifestEntry,
@@ -133,6 +134,8 @@ from _narrate import (  # noqa: E402
     source_sha256,
     write_manifest,
 )
+from _prompts import render as render_prompt  # noqa: E402
+from _speech_text import speakable  # noqa: E402
 
 # ── Module-level configuration ──────────────────────────────────────────────
 
@@ -265,6 +268,32 @@ def enrich_with_llm(
 
 
 # ── Engine dispatch ────────────────────────────────────────────────────────
+
+def _math_narrator(model: str):
+    """A reader for formulas too tangled to spell out, or ``None``.
+
+    Reuses the ``latex_caption`` prompt this package already ships for the
+    lint's screen-reader captions, because it asks for exactly the thing a
+    narration needs: one plain-language sentence, in the document's
+    language, that does not read the formula symbol by symbol. Two callers,
+    one prompt — a second one would drift from it.
+
+    Returned as a closure rather than wired in directly so
+    :func:`_speech_text.speakable` stays free of the model, the network and
+    the optional extra: the deterministic reading is the baseline, and this
+    is the enrichment on top.
+    """
+    prompts = Path(__file__).resolve().parent / "prompts"
+
+    def narrate(latex: str, lang: str) -> str | None:
+        prompt = render_prompt(
+            "latex_caption", prompts_dir=prompts, latex_src=latex, lang=lang
+        )
+        answer = str(_llm_chat(prompt, model=model)).strip().strip('"').strip()
+        return answer or None
+
+    return narrate
+
 
 def _engine_command(engine: str, python: str = sys.executable) -> list[str] | None:
     """Resolve how to invoke the chosen engine, or ``None`` if it is absent.
@@ -505,13 +534,20 @@ def main() -> int:
         # it can receive without being rewritten. The structural hints come
         # from the page's own elements — an <h2> earns the same pause as a
         # '##' because it is the same thing.
-        blocks = [
-            (block.tag, block.visible, block.in_quote)
-            for block in _readalong.page_blocks(source, scope=args.scope)
-        ]
+        page = _readalong.page_blocks(source, scope=args.scope)
+        blocks = [(block.tag, block.visible, block.in_quote) for block in page]
         segments: list[Segment] = segments_from_blocks(blocks)
+        # The same blocks, minus what is written for the eye alone. Built as
+        # a parallel list rather than threaded through `Segment`, because
+        # the two differ only in their text and every other decision — the
+        # pauses, the emotion, the kind — is identical by construction.
+        spoken_blocks = [
+            (block.tag, block.spoken, block.in_quote) for block in page
+        ]
+        spoken_segments: list[Segment] | None = segments_from_blocks(spoken_blocks)
     else:
         segments = extract_segments(source)
+        spoken_segments = None
     if not segments:
         print(f"FAIL post is empty (no narrate-able segments): {args.post}",
               file=sys.stderr)
@@ -541,6 +577,38 @@ def main() -> int:
     # HTML must be built from this same call, or cue 12 and span 12 stop
     # being the same words.
     segments = explode_to_sentences(segments)
+
+    # What the voice says, where it differs from what the page shows.
+    #
+    # Two things make it differ, and both would otherwise be read aloud as
+    # the typography they are: a footnote marker ("the Ralph technique one,
+    # after Ralph Wiggum") and a formula ("backslash, open parenthesis, R
+    # equals T underscore..."). The cue keeps the page's words, so the
+    # read-along still highlights what a reader sees; only the string handed
+    # to the engine changes.
+    lang = detect_text_language(" ".join(seg["text"] for seg in segments))
+    # A formula above a handful of operators is not helped by being spelled
+    # out: "the sum over i of x i, all over n" is a transliteration, and
+    # only a sentence survives being heard once with no page in front of
+    # you. Behind --ai-hints, like every other thing here that asks a model.
+    narrator = _math_narrator(DEFAULT_LLM_MODEL) if args.ai_hints else None
+    spoken = explode_to_sentences(spoken_segments) if spoken_segments else None
+    if spoken is not None and len(spoken) != len(segments):
+        # Dropping a marker split a sentence differently somewhere. Rather
+        # than pair the two lists by guesswork, fall back to the text-only
+        # pass: the maths still gets read properly and the footnote markers
+        # stay, which is the lesser of the two wrongs.
+        print(
+            f"note: {len(spoken)} spoken sentences against {len(segments)} on "
+            f"the page; keeping the page's wording and reading the maths only",
+            file=sys.stderr,
+        )
+        spoken = None
+    for index, segment in enumerate(segments):
+        source_text = spoken[index]["text"] if spoken else segment["text"]
+        say = speakable(source_text, lang, narrator=narrator)
+        if say != segment["text"]:
+            segment["say"] = say
 
     # Cache check — skip when nothing changed.
     manifest_path: Path = args.out_dir / "manifest.json"

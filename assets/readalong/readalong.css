@@ -3,150 +3,188 @@
  * Every rule here is an accessibility decision, so each one says why.
  */
 
-/* The player.
+/* The player: a bar across the foot of the window.
  *
- * Shaped after the audio bar the big newsrooms converged on — a round play
- * button, the title beside it, a hairline scrubber under both, the clock at
- * the ends. They converged on it because it survives being small: at a
- * phone's width the controls stay thumb-sized and the title wraps, which is
- * the test a two-row layout fails.
+ * At the foot and not the top, and that is the one placement decision with
+ * a reason rather than a taste behind it. Pages that carry a narration
+ * usually also carry a sticky masthead, and a second sticky bar under the
+ * first stacks two chrome strips over the text — a hundred-odd pixels of
+ * reading gone, and no way to tell which bar owns which control. The foot
+ * is also where a thumb already is on a phone, and where every music and
+ * podcast player has put its controls for fifteen years.
  *
- * Built on `currentColor` throughout rather than on a palette. This
- * component is injected into pages it has never seen — light, dark, a
- * design tool's export — and has no way to learn their colours. Inheriting
- * the text colour is the one thing that is always right.
+ * One behaviour, not two. A bar that is inline until you scroll and fixed
+ * afterwards is two components to keep agreeing; this is one.
+ *
+ * Thin, because it is always there. The scrubber rides the bar's top edge
+ * rather than taking a row: a progress line is a line, and a row of its own
+ * would cost twenty pixels of every page for nothing.
+ *
+ * Colours come from the page where the page says what they are — see
+ * `page_palette`. `--ra-accent` fills, `--ra-tint` washes, and both fall
+ * back to a teal chosen for clearing 3:1 on a light page and a dark one.
  */
 
-/* `--ra-accent` is the one colour a host page is invited to set, and it is
-   deliberately *not* declared on this element. A custom property declared
-   here would shadow whatever an ancestor set, so a site styling its own
-   page would find the player ignoring it — the hook would exist and do
-   nothing. It is read once, below, with a default.
-
-   That default is a teal, and the choice is a contrast calculation rather
-   than a preference. This component is injected into pages whose
-   background it has never seen, so the accent has to clear 3:1 — the
-   threshold for a non-text interface element — against a light page *and*
-   a dark one. Teal #0D9488 manages 3.74 and 5.12. The obvious
-   alternatives do not: indigo clears dark by 3.05, and a violet deep
-   enough to look good on white falls to 2.13 on black.
-
-   A site with its own accent sets `--ra-accent` anywhere up the tree; a
-   site that wants the restrained version sets it to `currentColor`. */
 .ra-player {
   --ra-ink: var(--ra-accent, #0D9488);
-  /* The card's surface and rule are tinted with the accent rather than
-     with the text colour. Grey over grey is what a control looks like when
-     nobody chose anything; six per cent of the accent is barely a colour
-     and still reads as a decision. */
-  --ra-face: color-mix(in srgb, var(--ra-ink) 7%, transparent);
-  --ra-line: color-mix(in srgb, var(--ra-ink) 22%, transparent);
+  --ra-wash: var(--ra-tint, var(--ra-accent, #0D9488));
+  --ra-face: color-mix(in srgb, var(--ra-wash) 22%, transparent);
+  --ra-line: color-mix(in srgb, var(--ra-wash) 45%, transparent);
   /* The muted *text* stays neutral. Tinting type costs legibility for a
      tint nobody reads as colour at this size. */
   --ra-dim: color-mix(in srgb, currentColor 58%, transparent);
-  /* How far the scrubber has filled, 0-1, written by the module. Kept as a
-     custom property so the fill is one `background-image` and not a second
-     element tracking the first. */
   --ra-progress: 0;
+  /* The bar's own height, published so the page can keep its last
+     paragraph out from under it. */
+  --ra-bar: 3.5rem;
 
-  /* Block, not flex: in this state there are two children -- a title and
-     the native controls -- and they stack. The enhanced state below
-     switches to a grid. A flex row with `wrap` happened to produce the same
-     picture, and did it by accident. */
   display: block;
-  /* Three ways of saying "take the width you are given", because the
-     component does not get to choose its parent. A page built as a centred
-     flex column -- which a design tool's export usually is -- shrinks an
-     unsized child to its contents and parks it in the middle, floating free
-     of the text it belongs to. `align-self` answers that, `justify-self`
-     the grid version, and `width` the ordinary block case. */
-  width: 100%;
-  align-self: stretch;
-  justify-self: stretch;
-  /* Capped, and capped on the left. An audio bar stretched across a wide
-     column reads as a rule rather than as a control: the play button ends
-     up a long way from the clock it governs. Below the cap it simply fills,
-     which is what a phone needs. */
-  max-width: 34rem;
-  margin: 1.5rem auto 1.5rem 0;
-  padding: 0.9375rem 1.125rem 1rem;
+  margin: 1.5rem 0;
+  padding: 0.875rem 1rem;
   border: 1px solid var(--ra-line);
   border-radius: 0.75rem;
   background: var(--ra-face);
 }
 
-/* The title. Visible in both states: with the module it sits beside the
-   scrubber, without it it names the native controls underneath. */
 .ra-title {
   margin: 0;
   font-size: 0.9375rem;
   font-weight: 600;
   line-height: 1.3;
-  letter-spacing: -0.005em;
 }
 
 .ra-player audio {
   width: 100%;
   margin-top: 0.625rem;
-  /* Native controls as the floor. A custom player is a keyboard trap
-     waiting to happen; this one is built on a `<button>` and an
-     `<input type="range">` precisely so it is not, and the native element
-     stays as what a reader gets when the module does not run. */
+  /* Native controls as the floor. The designed bar is built on a
+     `<button>` and an `<input type="range">` precisely so it is not a
+     keyboard trap; this stays as what a reader gets when the module does
+     not run at all. */
 }
 
-/* Enhanced: the module unhides `.ra-ui` and hides this in the same breath,
-   so a reader never sees two players, and never sees none. */
-.ra-player[data-ra-enhanced] audio {
+/* ── Enhanced: the bar ──────────────────────────────────────────────── */
+
+.ra-player[data-ra-enhanced] {
+  position: fixed;
+  inset: auto 0 0 0;
+  z-index: 2147483000;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-top: 1px solid var(--ra-line);
+  border-radius: 0;
+  /* Opaque, not a wash. A translucent bar over scrolling text is text over
+     text. The page's own paper is mixed in so the bar still belongs to it. */
+  background: color-mix(in srgb, var(--ra-wash) 10%, Canvas);
+  backdrop-filter: saturate(1.4) blur(8px);
+  box-shadow: 0 -1px 12px rgb(0 0 0 / 0.07);
+}
+
+/* The page keeps its last paragraph out from under the bar. Set here
+   rather than left to the host: the component is what knows its height,
+   and a reader who cannot reach the final sentence will not know why.
+   
+   Keyed off a class the module puts on <html>, not off `:has()`. The
+   selector version reads better and silently does nothing on a browser
+   without `:has()` — which would hide the end of the article on exactly
+   the browsers least able to tell you why. The module is already running
+   by the time the bar exists, so a class costs nothing. */
+.ra-has-player body {
+  padding-bottom: calc(var(--ra-bar, 3.5rem) + env(safe-area-inset-bottom, 0px));
+}
+
+.ra-player[data-ra-enhanced] .ra-title,
+.ra-player[data-ra-enhanced] audio,
+.ra-player[data-ra-enhanced] .ra-meta {
   display: none;
 }
 
-.ra-player[data-ra-enhanced] {
-  display: grid;
-  /* button | everything that grows | the controls that do not */
-  grid-template-columns: auto minmax(0, 1fr) auto;
-  align-items: center;
-  column-gap: 0.875rem;
-  row-gap: 0.375rem;
-}
-
-.ra-player[data-ra-enhanced] .ra-title {
-  grid-column: 2;
-  grid-row: 1;
-}
-
 .ra-ui {
-  display: contents;
+  display: block;
 }
 
-/* The play button: a filled disc with the glyph cut out of it.
+.ra-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  max-width: 64rem;
+  margin: 0 auto;
+  padding: 0.5rem 1rem calc(0.5rem + env(safe-area-inset-bottom, 0px));
+  min-width: 0;
+}
+
+/* ── The scrubber, riding the top edge ──────────────────────────────── */
+
+.ra-scrub {
+  -webkit-appearance: none;
+  appearance: none;
+  display: block;
+  width: 100%;
+  height: 14px;
+  margin: -7px 0 -7px;
+  background: transparent;
+  cursor: pointer;
+  position: relative;
+  z-index: 1;
+}
+
+.ra-scrub::-webkit-slider-runnable-track {
+  height: 3px;
+  background:
+    linear-gradient(var(--ra-ink), var(--ra-ink)) 0 /
+      calc(var(--ra-progress) * 100%) 100% no-repeat,
+    var(--ra-line);
+}
+
+.ra-scrub::-moz-range-track { height: 3px; background: var(--ra-line); }
+.ra-scrub::-moz-range-progress { height: 3px; background: var(--ra-ink); }
+
+/* The thumb is invisible until the scrubber is touched or focused: a dot
+   parked on a hairline at the top of every page is a speck of dirt. It is
+   still a full-size hit target, which is the part that matters. */
+.ra-scrub::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 12px;
+  height: 12px;
+  margin-top: -4.5px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--ra-ink);
+  opacity: 0;
+  transition: opacity 120ms ease;
+}
+
+.ra-scrub::-moz-range-thumb {
+  width: 12px; height: 12px; border: 0; border-radius: 50%;
+  background: var(--ra-ink); opacity: 0;
+}
+
+.ra-player:hover .ra-scrub::-webkit-slider-thumb,
+.ra-scrub:focus-visible::-webkit-slider-thumb { opacity: 1; }
+.ra-player:hover .ra-scrub::-moz-range-thumb,
+.ra-scrub:focus-visible::-moz-range-thumb { opacity: 1; }
+
+/* ── The play button ────────────────────────────────────────────────── */
+/*
+ * A filled disc with the glyph cut out of it. The cut-out is the part that
+ * matters: painting a pale triangle on a dark disc requires knowing what
+ * pale *is*, and this component is injected into pages whose background it
+ * has never seen. `Canvas` is the browser's idea of the page background and
+ * not necessarily the page's; `white` is wrong half the time. Guess wrong
+ * and the result is a solid disc with no symbol in it.
  *
- * The cut-out is the part that matters. Painting a pale triangle on top of
- * a dark disc requires knowing what pale *is*, and this component is
- * injected into pages whose background it has never seen -- a light page, a
- * dark one, a design tool's export that sets its own. Every way of naming
- * that colour is a guess: `Canvas` is the *browser's* idea of the page
- * background and not necessarily the page's, and `white` is simply wrong
- * half the time. Guess wrong and the result is a solid disc with no symbol
- * in it -- the one failure a play button cannot afford.
- *
- * So the disc is `currentColor` shown through a mask, and the glyph is the
- * hole. Whatever is actually behind the button shows through it, which is
- * right on every page by construction rather than by luck.
- *
- * 44px is the touch-target floor, and the one number here that is not a
- * matter of taste.
+ * So the disc is painted and the glyph is a hole. Whatever is behind shows
+ * through, which is right on every page by construction.
  */
 .ra-play {
-  grid-column: 1;
-  grid-row: 1 / span 2;
-  align-self: center;
-  width: 2.75rem;
-  height: 2.75rem;
+  width: 2.25rem;
+  height: 2.25rem;
+  flex: none;
   padding: 0;
   border: 0;
   background: var(--ra-ink);
   cursor: pointer;
-  flex: none;
   -webkit-mask: var(--ra-glyph) center / contain no-repeat;
   mask: var(--ra-glyph) center / contain no-repeat;
   --ra-glyph: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill-rule='evenodd' d='M12 0A12 12 0 1 0 12 24 12 12 0 0 0 12 0ZM9.6 7.2 17 12 9.6 16.8Z'/%3E%3C/svg%3E");
@@ -156,116 +194,45 @@
   --ra-glyph: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill-rule='evenodd' d='M12 0A12 12 0 1 0 12 24 12 12 0 0 0 12 0ZM9 7.6h2.2v8.8H9ZM12.8 7.6H15v8.8h-2.2Z'/%3E%3C/svg%3E");
 }
 
-/* A browser with no mask support gets an outlined disc rather than a
-   featureless filled one: the glyph is lost, the button is not. */
 @supports not ((-webkit-mask: url("#x")) or (mask: url("#x"))) {
-  .ra-play {
-    border: 2px solid currentColor;
-    border-radius: 50%;
-    background: transparent;
-  }
+  .ra-play { border: 2px solid currentColor; border-radius: 50%; background: transparent; }
 }
 
+/* ── What the bar says ──────────────────────────────────────────────── */
 
-.ra-main {
-  grid-column: 2 / -1;
-  grid-row: 2;
-  min-width: 0;
-}
-
-.ra-tools {
-  grid-column: 3;
-  grid-row: 1;
-  justify-self: end;
-}
-
-/* Lined up with the title and the scrubber rather than with the button:
-   it is a caption for what they say, and starting it under the button put
-   a third left edge in a card that only needs two. */
-.ra-player[data-ra-enhanced] .ra-meta {
-  grid-column: 2 / -1;
-  grid-row: 3;
-  margin: 0.125rem 0 0;
-}
-
-/* The scrubber.
- *
- * A range input, styled, rather than a div with a drag handler: arrow keys,
- * Home/End, touch and the screen-reader's own slider gestures all arrive
- * correct and for free. The cost is three vendor track pseudo-elements,
- * which is a smaller price than reimplementing any one of those.
- */
-.ra-scrub {
-  -webkit-appearance: none;
-  appearance: none;
-  display: block;
-  width: 100%;
-  margin: 0;
-  background: transparent;
-  cursor: pointer;
-}
-
-.ra-scrub::-webkit-slider-runnable-track {
-  height: 4px;
-  border-radius: 2px;
-  background:
-    linear-gradient(var(--ra-ink), var(--ra-ink)) 0 /
-      calc(var(--ra-progress) * 100%) 100% no-repeat,
-    var(--ra-line);
-}
-
-.ra-scrub::-moz-range-track {
-  height: 4px;
-  border-radius: 2px;
-  background: var(--ra-line);
-}
-
-.ra-scrub::-moz-range-progress {
-  height: 4px;
-  border-radius: 2px;
-  background: var(--ra-ink);
-}
-
-.ra-scrub::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  appearance: none;
-  width: 12px;
-  height: 12px;
-  margin-top: -4px;
-  border: 0;
-  border-radius: 50%;
-  background: var(--ra-ink);
-}
-
-.ra-scrub::-moz-range-thumb {
-  width: 12px;
-  height: 12px;
-  border: 0;
-  border-radius: 50%;
-  background: var(--ra-ink);
-}
-
-.ra-row {
+.ra-said {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.75rem;
-  margin-top: 0.25rem;
+  align-items: baseline;
+  gap: 0.5rem;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.ra-said-title {
+  font-size: 0.875rem;
+  font-weight: 600;
+  /* One line, truncated. A title that wraps makes the bar grow, and a bar
+     that grows pushes the page it is supposed to sit quietly under. */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
 }
 
 .ra-time {
   font-size: 0.75rem;
-  /* Tabular figures, so the clock does not jitter the controls sideways
-     once a second for sixty-four minutes. */
   font-variant-numeric: tabular-nums;
   color: var(--ra-dim);
   flex: none;
 }
 
+.ra-time-total::before { content: "/ "; }
+
 .ra-tools {
   display: inline-flex;
   align-items: center;
   gap: 0.125rem;
+  flex: none;
 }
 
 .ra-skip,
@@ -286,9 +253,7 @@
   cursor: pointer;
 }
 
-.ra-skip {
-  position: relative;
-}
+.ra-skip { position: relative; }
 
 .ra-skip svg {
   width: 1.75rem;
@@ -301,12 +266,10 @@
 /* The forward glyph is the back glyph mirrored. One path, two buttons --
    and the number inside is *not* mirrored, which is the whole reason this
    is a transform on the icon rather than on the button. */
-.ra-skip-fwd svg {
-  transform: scaleX(-1);
-}
+.ra-skip-fwd svg { transform: scaleX(-1); }
 
-/* The number sits in the ring's empty middle. Slightly below centre
-   because the ring's gap is at the top, so the optical centre is not the
+/* The number sits in the ring's empty middle, slightly below centre
+   because the ring's gap is at the top and the optical centre is not the
    geometric one. */
 .ra-skip-n {
   position: absolute;
@@ -320,47 +283,37 @@
   letter-spacing: -0.02em;
 }
 
-.ra-rate {
-  font-weight: 600;
-  font-size: 0.8125rem;
-  color: var(--ra-dim);
-}
+.ra-rate { font-weight: 600; font-size: 0.8125rem; color: var(--ra-dim); }
 
-.ra-play:hover,
-.ra-skip:hover,
-.ra-rate:hover {
-  /* Hover is a hint, not a state. Kept to an opacity shift so it cannot
-     fight whatever the host page does with its own interactive colours. */
-  opacity: 0.8;
-}
+.ra-play:hover, .ra-skip:hover, .ra-rate:hover { opacity: 0.8; }
 
 .ra-play:focus-visible,
 .ra-skip:focus-visible,
 .ra-rate:focus-visible,
 .ra-scrub:focus-visible {
-  outline: 2px solid currentColor;
+  outline: 2px solid var(--ra-ink);
   outline-offset: 2px;
 }
 
 .ra-meta {
-  /* Inside the card, as the player's caption. As a sibling it was an orphan:
-     the host page puts its own gap between flex children, so the line landed
-     halfway between the player and the headline, attached to neither. */
   margin: 0.5rem 0 0;
   font-size: 0.8125rem;
   color: var(--ra-dim);
 }
 
-/* Narrow screens: the title moves above the button rather than squeezing
-   the scrubber into nothing. */
-@media (max-width: 24rem) {
-  .ra-player[data-ra-enhanced] {
-    grid-template-columns: auto 1fr;
-  }
+/* ── Narrow ─────────────────────────────────────────────────────────── */
 
-  .ra-tools {
-    gap: 0;
-  }
+@media (max-width: 34rem) {
+  /* The title is the first thing to go: on a phone the bar's job is the
+     controls, and the page itself says what is being read. */
+  .ra-said-title { display: none; }
+  .ra-row { gap: 0.5rem; padding-left: 0.625rem; padding-right: 0.625rem; }
+  .ra-skip, .ra-rate { min-width: 2.5rem; }
+}
+
+@media (max-width: 22rem) {
+  /* Below this the speed control is the one a thumb can live without. */
+  .ra-rate { display: none; }
 }
 
 /* The highlight.
@@ -384,7 +337,8 @@
    it is the part that survives a reader who cannot separate the tint from
    the page. */
 .ra-s.is-reading {
-  background: color-mix(in srgb, var(--ra-accent, #0D9488) 14%, transparent);
+  background: color-mix(
+    in srgb, var(--ra-tint, var(--ra-accent, #0D9488)) 42%, transparent);
   border-left-color: var(--ra-accent, #0D9488);
 }
 
@@ -468,7 +422,8 @@
 
 @media (prefers-contrast: more) {
   .ra-s.is-reading {
-    background: color-mix(in srgb, var(--ra-accent, #0D9488) 26%, transparent);
+    background: color-mix(
+      in srgb, var(--ra-tint, var(--ra-accent, #0D9488)) 62%, transparent);
   }
 }
 

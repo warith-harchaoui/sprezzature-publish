@@ -71,7 +71,7 @@ from _lang import detect_text_language  # noqa: E402
 
 
 def build(page: Path, narration_dir: Path, out_dir: Path, *,
-          scope: str | None, lang: str) -> Path:
+          scope: str | None, lang: str, follow: bool = True) -> Path:
     """Write `page` with its read-along into `out_dir`; return the new path.
 
     Parameters
@@ -87,7 +87,22 @@ def build(page: Path, narration_dir: Path, out_dir: Path, *,
         ``article``, ``#id`` or ``.class``: the element to read.
     lang : str
         BCP-47 language tag, for the player's accessible name and the wording
-        of the two durations.
+        of the duration.
+    follow : bool
+        Whether the page follows the reading, sentence by sentence. On by
+        default, and off is a supported shape rather than a degraded one.
+
+        The objection to a following highlight is worth recording, because
+        it is a real one: it needs a timestamp per sentence, so it is only
+        as sound as the alignment behind it, and some readers who listen
+        *and* read want to read ahead of the voice rather than be led by it.
+
+        The first half is answered here — ``align`` compares every cue to
+        its sentence and refuses to build a page rather than ship one whose
+        highlight lands on the wrong words. The second half is a preference,
+        and this is the switch for it. With ``follow=False`` the page gets
+        the player and nothing else: no spans, no module work beyond the
+        controls, and nothing to go stale if the prose is edited later.
 
     Raises
     ------
@@ -116,6 +131,13 @@ def build(page: Path, narration_dir: Path, out_dir: Path, *,
     # The meta line goes *inside* the player. Emitted beside it, the host
     # page's own spacing between blocks left it floating halfway to the
     # headline, attached to neither.
+    # The player borrows the page's colours when the page says what they
+    # are. Read from the markup and from whatever stylesheets resolve to
+    # files beside it; a page that says nothing keeps the component's own
+    # default rather than being dressed in a guess.
+    palette = _readalong.page_palette(
+        source, stylesheets=_readalong.local_stylesheets(source, page)
+    )
     player = _readalong.player_html(
         audio_src=_readalong.href_from(audio, out_dir),
         vtt_src=_readalong.href_from(cues, out_dir),
@@ -123,17 +145,23 @@ def build(page: Path, narration_dir: Path, out_dir: Path, *,
         lang=lang,
         duration_seconds=spoken,
         meta_html=meta,
+        colours=_readalong.player_colours(palette),
     )
-    built = _readalong.inject_into_page(
-        source,
-        _readalong.parse_vtt(vtt_text),
-        split=_narrate.split_sentences,
-        opening=_narrate.QUOTE_OPENING,
-        closing=_narrate.QUOTE_CLOSING,
-        scope=scope,
-        head=_readalong.head_markup(),
-        player=player,
-    )
+    if not follow:
+        built = _readalong.inject_player_only(
+            source, scope=scope, head=_readalong.head_markup(), player=player,
+        )
+    else:
+        built = _readalong.inject_into_page(
+            source,
+            _readalong.parse_vtt(vtt_text),
+            split=_narrate.split_sentences,
+            opening=_narrate.QUOTE_OPENING,
+            closing=_narrate.QUOTE_CLOSING,
+            scope=scope,
+            head=_readalong.head_markup(),
+            player=player,
+        )
 
     _readalong.copy_assets(out_dir)
     destination = out_dir / f"{page.stem}.html"
@@ -165,6 +193,13 @@ def main() -> int:
              "whole document is read, navigation and footer included.",
     )
     parser.add_argument(
+        "--no-follow",
+        action="store_true",
+        help="Add the player without the sentence-by-sentence highlight. A "
+             "supported shape, not a degraded one: some readers want to read "
+             "ahead of the voice rather than be led by it.",
+    )
+    parser.add_argument(
         "--lang", default="auto",
         help="BCP-47 language tag. Default: auto = detect from the page's text.",
     )
@@ -187,12 +222,15 @@ def main() -> int:
     try:
         destination = build(
             args.page, args.narration_dir, args.out_dir,
-            scope=args.scope, lang=lang,
+            scope=args.scope, lang=lang, follow=not args.no_follow,
         )
     except (FileNotFoundError, _readalong.ReadAlongMismatch) as failure:
         print(f"readalong: {failure}", file=sys.stderr)
         return 1
 
+    if args.no_follow:
+        print(f"{args.page} → {destination}: player only, lang={lang}")
+        return 0
     sentences = len(_readalong.page_sentences(
         args.page.read_text(encoding="utf-8"),
         split=_narrate.split_sentences, scope=args.scope,

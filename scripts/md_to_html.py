@@ -319,6 +319,10 @@ def _attach_readalong(body_html: str, *, src: Path, out_dir: Path, narration_dir
         label=label, lang=lang,
         duration_seconds=spoken,
         meta_html=meta,
+        # A rendered page has no stylesheet of its own yet -- the site's
+        # arrives at template time -- so only the body's own declarations
+        # are readable here.
+        colours=_readalong.player_colours(_readalong.page_palette(body_html)),
     )
     return f"{player}\n{wrapped}", _readalong.head_markup()
 

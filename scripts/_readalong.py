@@ -78,6 +78,8 @@ import html
 import os
 import re
 import shutil
+from collections import Counter
+from collections.abc import Sequence
 from dataclasses import dataclass, field
 from html.parser import HTMLParser
 from pathlib import Path
@@ -274,6 +276,10 @@ class _Piece:
     #: it has swallowed enough.
     depth: int = 0
     after: int = 0
+    #: Part of a footnote reference marker -- a superscript whose whole
+    #: content is a number. Shown on the page, not spoken: see
+    #: :attr:`_Block.spoken`.
+    reference: bool = False
 
 
 @dataclass
@@ -300,6 +306,31 @@ class _Block:
         the parent, once for itself -- would put every later cue out by one.
         """
         return " ".join("".join(piece.visible for piece in self.pieces).split())
+
+    @property
+    def spoken(self) -> str:
+        """The same words, without the ones that are only for the eye.
+
+        Today that means footnote reference markers. A superscript "1" is a
+        signpost to the bottom of the page; read aloud it lands glued to
+        whatever word it follows, and "the Ralph technique one, after Ralph
+        Wiggum" is a sentence about a version number. The reader loses
+        nothing, because the thing it points at is read in its own place.
+
+        The page keeps the marker. Only the narration drops it, which is
+        why this is a second string rather than an edit to
+        :attr:`visible` -- the read-along still has to highlight exactly
+        what the page shows.
+        """
+        return " ".join(
+            "".join("" if piece.reference else piece.visible for piece in self.pieces).split()
+        )
+
+
+#: What a footnote marker looks like once the markup is stripped: a number,
+#: optionally in brackets or parentheses. Anything else in a ``<sup>`` is
+#: content and gets read.
+_REFERENCE_MARKER = re.compile(r"[\[(]?\s*\d{1,3}\s*[\])]?")
 
 
 class _PageWalker(HTMLParser):
@@ -345,6 +376,10 @@ class _PageWalker(HTMLParser):
         #: wrapper hides everything under it, not just its own text.
         self._hidden_at: int | None = None
         self._stack = 0
+        #: Index of the first piece of the open ``<sup>``, if any. A
+        #: superscript is only a footnote marker if its *whole* content is a
+        #: number, and that is not known until it closes.
+        self._sup_from: int | None = None
 
     def _emit(self, piece: _Piece) -> None:
         (self._open[-1].pieces if self._open else self.out).append(piece)
@@ -386,6 +421,11 @@ class _PageWalker(HTMLParser):
             return
         if self._skip:
             self._raw(raw, atomic=True)
+            return
+        if tag == "sup" and self._sup_from is None:
+            target = self._open[-1].pieces if self._open else self.out
+            self._raw(raw, atomic=True)
+            self._sup_from = len(target) - 1
             return
         if tag == "img":
             alt = next((value or "" for name, value in attrs if name == "alt"), "")
@@ -441,6 +481,10 @@ class _PageWalker(HTMLParser):
         if self._skip:
             self._raw(raw, atomic=True)
             return
+        if tag == "sup" and self._sup_from is not None:
+            self._raw(raw, atomic=True)
+            self._close_sup()
+            return
         if tag in NARRATED_BLOCKS and self._open and self._open[-1].tag == tag:
             self._open.pop().close_raw = raw
             self._depth = 0
@@ -450,6 +494,31 @@ class _PageWalker(HTMLParser):
             return
         self._raw(raw, atomic=True, after=max(0, self._depth - 1))
         self._depth = max(0, self._depth - 1)
+
+    def _close_sup(self) -> None:
+        """Decide whether the superscript that just closed was a reference.
+
+        The test is what it contains, not what it is called. A ``<sup>``
+        whose whole visible content is a number -- bare, bracketed, or
+        parenthesised -- is a footnote marker in every convention that
+        writes one: Markdown's ``<sup><a href="#fn1">1</a></sup>``,
+        Wikipedia's ``[1]``, and a hand-written page's plain ``1``. A
+        ``<sup>`` holding ``2`` as an exponent is the same shape, and that
+        is a real limit of this test: ``x`` followed by a superscript 2 is
+        indistinguishable from a reference without reading the href or the
+        surrounding prose. Erring toward "reference" costs a spoken
+        exponent; erring the other way puts a number in the middle of every
+        citation. Pages with exponents in prose are rarer than pages with
+        footnotes.
+        """
+        assert self._sup_from is not None
+        target = self._open[-1].pieces if self._open else self.out
+        inside = target[self._sup_from + 1:-1]
+        text = "".join(piece.visible for piece in inside).strip()
+        if _REFERENCE_MARKER.fullmatch(text):
+            for piece in inside:
+                piece.reference = True
+        self._sup_from = None
 
     def handle_data(self, data: str) -> None:
         if self._skip or self._hidden_at is not None:
@@ -820,6 +889,34 @@ def wrap_sentences(body_html: str, cues: list[VttCue], *, split,
 _HEAD_CLOSE = re.compile(r"</head\s*>", re.I)
 
 
+def inject_player_only(
+    html_text: str, *, scope: str | None, head: str, player: str,
+) -> str:
+    """The page with the player added and nothing else touched.
+
+    What ``--no-follow`` builds. Not a degraded mode: the article keeps its
+    own markup exactly, so nothing in it can go stale when the prose is
+    edited later — which is the honest half of the objection to a highlight
+    that follows the voice. The player still works; what it does not do is
+    light the page up.
+    """
+    walker = _walk(html_text, scope)
+    anchor = walker.scope_piece or walker.body_piece
+    if anchor is None:
+        raise ReadAlongMismatch(
+            "nowhere to put the player: the page has no <body> and no element "
+            f"matching {scope!r}. Pass a scope that the page actually contains."
+        )
+    anchor.raw += "\n" + player
+    out = _render(walker.out, {})
+    if head:
+        if _HEAD_CLOSE.search(out):
+            out = _HEAD_CLOSE.sub(lambda m: head + "\n" + m.group(0), out, count=1)
+        else:
+            out = head + "\n" + out
+    return out
+
+
 def inject_into_page(html: str, cues: list[VttCue], *, split, opening: str, closing: str,
                      scope: str | None = None, head: str = "", player: str = "") -> str:
     """Add a read-along to a page that already exists.
@@ -897,6 +994,218 @@ def inject_into_page(html: str, cues: list[VttCue], *, split, opening: str, clos
 #: Wording for the player's label, which is the accessible name of the audio
 #: element. No default: a language this project has not been taught is worth
 #: seeing, not worth serving in English.
+# ── The page's own colours ─────────────────────────────────────────────────
+#
+# The player used to pick its accent from a constant. That is the safe
+# choice and the wrong one: a control dropped into somebody's article should
+# look like it belongs to that article, and the article has already decided
+# what its colours are.
+#
+# What can be read, and what cannot. A build tool has the page's markup and
+# whatever stylesheets resolve to files beside it; it does not have a
+# browser, so it cannot ask for a computed style. Everything here works from
+# declarations as written.
+
+#: Colour literals, in the three spellings a stylesheet uses.
+_COLOUR = re.compile(
+    r"#(?P<hex>[0-9a-fA-F]{8}|[0-9a-fA-F]{6}|[0-9a-fA-F]{3})\b"
+    r"|rgba?\((?P<rgb>[^)]*)\)"
+)
+
+#: One `property: value` pair, from an inline style or a rule body.
+_DECLARATION = re.compile(r"(?P<prop>[-a-zA-Z]+)\s*:\s*(?P<value>[^;}]*)")
+
+#: Below this chroma a colour is a grey, a near-white or a near-black, and
+#: taking it as "the page's accent" would reproduce exactly the problem this
+#: is here to solve.
+_MIN_CHROMA: int = 24
+
+#: Contrast a fill must reach against the page behind it. 3:1 is the WCAG
+#: threshold for a non-text interface element — a play button is not text,
+#: but it is the thing a reader has to find.
+_MIN_FILL_CONTRAST: float = 3.0
+
+
+def _parse_colour(text: str) -> tuple[int, int, int] | None:
+    """One CSS colour to RGB, or ``None`` if it is not one we read."""
+    match = _COLOUR.match(text.strip())
+    if match is None:
+        return None
+    if match.group("hex"):
+        digits = match.group("hex")
+        if len(digits) == 3:
+            digits = "".join(c * 2 for c in digits)
+        return tuple(int(digits[i:i + 2], 16) for i in (0, 2, 4))  # type: ignore[return-value]
+    parts = [p.strip() for p in re.split(r"[,/\s]+", match.group("rgb")) if p.strip()]
+    if len(parts) < 3:
+        return None
+    try:
+        channels = [int(round(float(p.rstrip("%")) * (2.55 if "%" in p else 1)))
+                    for p in parts[:3]]
+    except ValueError:
+        return None
+    # A fully transparent colour is not a colour anybody sees.
+    if len(parts) > 3:
+        try:
+            if float(parts[3].rstrip("%")) <= (5 if "%" in parts[3] else 0.05):
+                return None
+        except ValueError:
+            pass
+    return tuple(max(0, min(255, c)) for c in channels)  # type: ignore[return-value]
+
+
+def _hex(rgb: tuple[int, int, int]) -> str:
+    return "#{:02X}{:02X}{:02X}".format(*rgb)
+
+
+def _chroma(rgb: tuple[int, int, int]) -> int:
+    """How far from grey. Max channel minus min, which is enough here."""
+    return max(rgb) - min(rgb)
+
+
+def _relative_luminance(rgb: tuple[int, int, int]) -> float:
+    def channel(value: int) -> float:
+        v = value / 255
+        return v / 12.92 if v <= 0.04045 else ((v + 0.055) / 1.055) ** 2.4
+    red, green, blue = rgb
+    return 0.2126 * channel(red) + 0.7152 * channel(green) + 0.0722 * channel(blue)
+
+
+def contrast(one: tuple[int, int, int], other: tuple[int, int, int]) -> float:
+    """WCAG contrast ratio between two colours."""
+    first, second = _relative_luminance(one), _relative_luminance(other)
+    return (max(first, second) + 0.05) / (min(first, second) + 0.05)
+
+
+def _declared_colours(css: str) -> list[tuple[int, int, int]]:
+    """Every colour a stylesheet actually paints with.
+
+    The distinction that makes this work: a colour on the right of a
+    **custom property definition** is skipped, a colour inside a real
+    declaration is kept. `--framer-link-text-color: rgb(0, 153, 255)` is a
+    framework default sitting on every rich-text block of the page, and the
+    site overrides it — the rendered links are near-black. Counting
+    occurrences without that rule picks the blue thirty-one times over and
+    dresses the player in a colour that appears nowhere on the page.
+
+    A `var(--token, #F7FABE)` fallback *inside* a real property is kept, and
+    deliberately: that is how a design tool writes a token, and a named
+    token is about as close to "the author chose this" as a stylesheet gets.
+    """
+    found: list[tuple[int, int, int]] = []
+    for declaration in _DECLARATION.finditer(css):
+        if declaration.group("prop").startswith("--"):
+            continue
+        value = declaration.group("value")
+        for piece in _COLOUR.finditer(value):
+            colour = _parse_colour(piece.group(0))
+            if colour is not None:
+                found.append(colour)
+    return found
+
+
+def local_stylesheets(html_text: str, page: Path, root: Path | None = None) -> list[str]:
+    """The text of every stylesheet the page links that is a file on disk.
+
+    A page's colours mostly live in its stylesheet, not in its markup, so
+    reading only the HTML sees a fraction of the palette — on a page built
+    by a design tool, often just the inline tokens. This reads the rest
+    where it can.
+
+    Where it can is the limit worth stating. A build tool has files, not a
+    browser: a stylesheet on a CDN, or one served from a host that is not
+    this build, is simply not available, and nothing here goes to the
+    network to get it. Root-relative hrefs are resolved against ``root``
+    when given — that is the site directory in a normal build — and against
+    the page's own directory otherwise.
+    """
+    found: list[str] = []
+    for href in re.findall(r'<link[^>]+rel="stylesheet"[^>]*>', html_text, re.I):
+        match = re.search(r'href="([^"]+)"', href)
+        if match is None:
+            continue
+        target = match.group(1).split("?")[0].split("#")[0]
+        if "//" in target or target.startswith("data:"):
+            continue
+        bases = [page.parent] if not target.startswith("/") else []
+        if root is not None:
+            bases.append(root)
+        for base in bases:
+            candidate = (base / target.lstrip("/")).resolve()
+            if candidate.is_file():
+                try:
+                    found.append(candidate.read_text(encoding="utf-8", errors="replace"))
+                except OSError:  # pragma: no cover - unreadable file
+                    pass
+                break
+    return found
+
+
+def page_palette(html_text: str, *, stylesheets: Sequence[str] = ()) -> dict[str, str]:
+    """The page's accent, ink and paper, as far as its own source tells.
+
+    Returns a dict with whichever of ``accent``, ``ink`` and ``paper`` could
+    be read, as ``#RRGGBB``. A page that says nothing useful returns an
+    empty dict and the player keeps its own default rather than guessing.
+    """
+    sources = [
+        *re.findall(r"<style[^>]*>(.*?)</style>", html_text, re.S),
+        *(f"x{{{attr}}}" for attr in re.findall(r'style="([^"]*)"', html_text)),
+        *stylesheets,
+    ]
+    counted: Counter[tuple[int, int, int]] = Counter()
+    for source in sources:
+        counted.update(_declared_colours(source))
+
+    palette: dict[str, str] = {}
+    coloured = [(n, c) for c, n in counted.items() if _chroma(c) >= _MIN_CHROMA]
+    if coloured:
+        # Frequency first, chroma to break ties: a page usually paints its
+        # accent more than once, and when two are equally common the more
+        # saturated one is the one being used *as* an accent.
+        palette["accent"] = _hex(max(coloured, key=lambda pair: (pair[0], _chroma(pair[1])))[1])
+
+    greys = [(n, c) for c, n in counted.items() if _chroma(c) < _MIN_CHROMA]
+    darks = [c for _, c in greys if _relative_luminance(c) < 0.2]
+    lights = [c for _, c in greys if _relative_luminance(c) > 0.8]
+    if darks:
+        palette["ink"] = _hex(min(darks, key=_relative_luminance))
+    if lights:
+        palette["paper"] = _hex(max(lights, key=_relative_luminance))
+    return palette
+
+
+def player_colours(palette: dict[str, str]) -> dict[str, str]:
+    """Turn a page's palette into the two custom properties the player reads.
+
+    Two, because an accent has two jobs and a page's accent is usually only
+    good at one of them. ``--ra-accent`` fills the play button and the
+    progress bar, so it has to carry contrast against the page. ``--ra-tint``
+    washes the card and the read-along highlight, where a pale colour is
+    exactly right.
+
+    The live case: this site's accent is a pale chartreuse used as a chip
+    background. As a wash it is the page's own voice; as a filled button it
+    is 1.09:1 against white — invisible. So when the accent cannot carry a
+    fill, the fill falls back to the page's ink and the accent stays where
+    it works. That is not a compromise but the page's own arrangement: a
+    pale chip with dark type on it.
+    """
+    accent = _parse_colour(palette.get("accent", ""))
+    paper = _parse_colour(palette.get("paper", "")) or (255, 255, 255)
+    ink = _parse_colour(palette.get("ink", ""))
+
+    colours: dict[str, str] = {}
+    if accent is None:
+        return colours
+    colours["--ra-tint"] = _hex(accent)
+    if contrast(accent, paper) >= _MIN_FILL_CONTRAST:
+        colours["--ra-accent"] = _hex(accent)
+    elif ink is not None:
+        colours["--ra-accent"] = _hex(ink)
+    return colours
+
+
 PLAYER_LABELS: dict[str, dict[str, str]] = {
     "en": {
         "title": "Listen to this page",
@@ -1108,6 +1417,7 @@ def player_html(
     lang: str,
     duration_seconds: float = 0.0,
     meta_html: str = "",
+    colours: dict[str, str] | None = None,
 ) -> str:
     """The audio player, with its cue track.
 
@@ -1167,12 +1477,18 @@ def player_html(
     words = player_strings(lang)
     total = _clock(duration_seconds)
     skip = SKIP_SECONDS
+    # The page's own colours, when they could be read, as an inline
+    # declaration on the player. Inline because this is a fact about *this*
+    # page and belongs with it, not in a stylesheet shared by every page a
+    # site has.
+    style = "".join(f"{name}:{value};" for name, value in sorted((colours or {}).items()))
+    style_attr = f' style="{html.escape(style, quote=True)}"' if style else ""
 
     def tag(text: str) -> str:
         return html.escape(text, quote=True)
 
     return (
-        f'<div class="ra-player" data-readalong data-ra-skip="{skip}" '
+        f'<div class="ra-player"{style_attr} data-readalong data-ra-skip="{skip}" '
         f'data-ra-rates="{",".join(str(r) for r in PLAYBACK_RATES)}" '
         f'data-ra-duration="{duration_seconds:.3f}">\n'
         f'  <p class="ra-title" id="ra-label">{html.escape(label)}</p>\n'
@@ -1186,7 +1502,14 @@ def player_html(
         # behind it is a worse failure than plain controls: it looks
         # operable and is not.
         '  <div class="ra-ui" data-ra-ui hidden>\n'
-        '    <button class="ra-play" type="button" data-ra-play '
+        # The scrubber rides the bar's top edge, which is what makes the bar
+        # thin: a progress line is a line, and giving it a row of its own
+        # costs twenty pixels of a page for nothing.
+        f'    <input class="ra-scrub" type="range" min="0" max="1000" '
+        f'value="0" step="1" data-ra-scrub aria-label="{tag(words["seek"])}" '
+        f'aria-valuetext="0:00">\n'
+        '    <div class="ra-row">\n'
+        '      <button class="ra-play" type="button" data-ra-play '
         f'aria-label="{tag(words["play"])}" '
         f'data-ra-label-play="{tag(words["play"])}" '
         f'data-ra-label-pause="{tag(words["pause"])}"></button>\n'
@@ -1194,24 +1517,12 @@ def player_html(
         # triangle is a *hole* in it rather than a shape painted on top —
         # which is the only version that survives being dropped into a page
         # whose background this component has never seen. See readalong.css.
-        '    <div class="ra-main">\n'
-        # A range input rather than a div with a drag handler: keyboard
-        # seeking, touch, and the arrow keys all arrive for free and
-        # correctly, which no hand-rolled scrubber manages.
-        f'      <input class="ra-scrub" type="range" min="0" max="1000" '
-        f'value="0" step="1" data-ra-scrub aria-label="{tag(words["seek"])}" '
-        f'aria-valuetext="0:00">\n'
-        '      <div class="ra-row">\n'
+        '      <span class="ra-said">\n'
+        f'        <span class="ra-said-title">{html.escape(label)}</span>\n'
         '        <span class="ra-time" data-ra-elapsed>0:00</span>\n'
-        # What is *left*, not what there is in total. The caption below
-        # already says the length, and two identical numbers twenty pixels
-        # apart is one number too many — this is the one that changes while
-        # the recording plays, so it is the one worth a live readout.
-        f'        <span class="ra-time" data-ra-remaining>&#8722;{html.escape(total)}'
-        "</span>\n"
-        "      </div>\n"
-        "    </div>\n"
-        '    <span class="ra-tools">\n'
+        f'        <span class="ra-time ra-time-total">{html.escape(total)}</span>\n'
+        "      </span>\n"
+        '      <span class="ra-tools">\n'
         '      <button class="ra-skip" type="button" data-ra-back '
         f'aria-label="{tag(words["back"])}">\n'
         f"{_SKIP_GLYPH}\n"
@@ -1224,31 +1535,26 @@ def player_html(
         "      </button>\n"
         '      <button class="ra-rate" type="button" data-ra-rate '
         f'aria-label="{tag(words["speed"])}">1&#215;</button>\n'
-        "    </span>\n"
+        "      </span>\n"
+        "    </div>\n"
         "  </div>\n"
         f"{meta_html}"
         "</div>"
     )
 
 
-#: Wording, per language. Not a translation table with a default: a missing
-#: language should be visible, not silently served English.
-#:
-#: One number, not two. This used to read "45 min read · 64 min listen",
-#: which put an *estimate* next to a *measurement* and invited the reader to
-#: compare them — and they never agree, because speech is slower than
-#: reading. The reading figure was also the weaker of the two: it came from
-#: a word count and an assumed speed, while the listening figure is the
-#: narration's own length down to the sample.
+def _minutes(seconds: float) -> int:
+    """Whole minutes, never zero -- "0 min read" tells a reader nothing."""
+    return max(1, round(seconds / 60.0))
+
+
+#: Whole minutes, per language. One number, not two: this line read
+#: "45 min read · 64 min listen" and put an estimate beside a measurement,
+#: inviting a comparison that can only come out one way.
 _DURATION_PHRASES: dict[str, str] = {
     "en": "{minutes} min",
     "fr": "{minutes} min",
 }
-
-
-def _minutes(seconds: float) -> int:
-    """Whole minutes, never zero -- "0 min read" tells a reader nothing."""
-    return max(1, round(seconds / 60.0))
 
 
 def listening_meta_html(*, spoken_seconds: float, lang: str) -> str:

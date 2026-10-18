@@ -48,7 +48,7 @@ function wireControls(root, audio) {
   const play = root.querySelector('[data-ra-play]');
   const scrub = root.querySelector('[data-ra-scrub]');
   const elapsed = root.querySelector('[data-ra-elapsed]');
-  const remaining = root.querySelector('[data-ra-remaining]');
+  const totalOut = root.querySelector('.ra-time-total');
   if (!ui || !play || !scrub || !elapsed) return;
 
   // Declared duration first: `preload="none"` means the browser knows
@@ -63,6 +63,60 @@ function wireControls(root, audio) {
 
   ui.hidden = false;
   root.setAttribute('data-ra-enhanced', '');
+  document.documentElement.classList.add('ra-has-player');
+
+  // The bar's real height, published so the page can keep its last
+  // paragraph out from under it. Measured rather than assumed: the height
+  // depends on the font the host page is set in, and a guess that is a few
+  // pixels short hides the end of the article -- which is the one place a
+  // reader will not think to look for a bar.
+  const publishHeight = () => {
+    document.documentElement.style.setProperty(
+      '--ra-bar', `${root.offsetHeight}px`,
+    );
+  };
+  publishHeight();
+  if (window.ResizeObserver) new ResizeObserver(publishHeight).observe(root);
+  else window.addEventListener('resize', publishHeight);
+
+  // Where this reader got to last time. Three lines, and the difference
+  // between a toy and a tool: a sixty-minute article is not finished in one
+  // sitting, and starting over at the top is how nobody comes back.
+  //
+  // Keyed by path, not by the whole URL: a query string from a campaign
+  // link would otherwise make the same article a different recording.
+  const MEMORY = `readalong:${location.pathname}`;
+  const remember = () => {
+    try {
+      if (audio.currentTime > 5 && audio.currentTime < (duration || Infinity) - 5) {
+        localStorage.setItem(MEMORY, String(Math.floor(audio.currentTime)));
+      } else {
+        localStorage.removeItem(MEMORY);
+      }
+    } catch (ignored) { /* private mode, or storage full */ }
+  };
+  const resume = () => {
+    try {
+      const saved = Number.parseFloat(localStorage.getItem(MEMORY));
+      // Never resume into the last five seconds: "continue" that lands on
+      // the closing word is worse than starting over.
+      if (Number.isFinite(saved) && saved > 5) audio.currentTime = saved;
+    } catch (ignored) { /* nothing stored, or no storage */ }
+  };
+  audio.addEventListener('loadedmetadata', resume, { once: true });
+  audio.addEventListener('pause', remember);
+  window.addEventListener('pagehide', remember);
+  audio.addEventListener('ended', () => {
+    try { localStorage.removeItem(MEMORY); } catch (ignored) { /* no storage */ }
+  });
+  let lastSaved = 0;
+  audio.addEventListener('timeupdate', () => {
+    // Once every five seconds, not sixty times a minute: this writes to
+    // disk, and a read-along is not a telemetry pipeline.
+    if (Math.abs(audio.currentTime - lastSaved) < 5) return;
+    lastSaved = audio.currentTime;
+    remember();
+  });
 
   let scrubbing = false;
 
@@ -70,9 +124,7 @@ function wireControls(root, audio) {
     const at = audio.currentTime || 0;
     const span = duration || audio.duration || 0;
     elapsed.textContent = CLOCK(at);
-    // U+2212, the minus sign, not a hyphen: at this size a hyphen reads as
-    // a dash between two things rather than as a negative quantity.
-    if (remaining && span) remaining.textContent = `\u2212${CLOCK(span - at)}`;
+    if (totalOut && span) totalOut.textContent = CLOCK(span);
     if (scrubbing || !span) return;
     const ratio = Math.min(1, at / span);
     scrub.value = String(Math.round(ratio * 1000));

@@ -4,6 +4,80 @@ All notable changes to `sprezzature-publish` are documented here.
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/);
 versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.0] — 2026-10-18
+
+### Added
+
+- **What the voice says, where it differs from what the page shows.** A page
+  is read with the eyes and a narration with the ears, and some of what is
+  on a page is written for the eye alone. The cue keeps the page's words —
+  so a read-along still highlights exactly what a reader sees — and only the
+  string handed to the engine changes, carried in a new `say` field.
+  - **Footnote markers are not spoken.** A superscript "1" is a signpost to
+    the bottom of the page; read aloud it lands glued to the word before it,
+    and "the Ralph technique one, after Ralph Wiggum" is a sentence about a
+    version number. Judged by content rather than by class name — a `<sup>`
+    whose whole content is a number, bare or bracketed, which is the
+    convention Markdown, Wikipedia and hand-written HTML all share.
+  - **Mathematics is read, not spelled.** `\(R = T_{BA} \circ T_{AB}\)`
+    was spoken as "backslash, open parenthesis, R equals T underscore". It is
+    now "R equals T B A composed with T A B" — in the language the page is
+    written in, detected with `langdetect` through the shared `_lang`
+    helper, because a French page read with English operator names is worse
+    than silence. A language with no vocabulary is refused, not served
+    English.
+  - **A formula too tangled to spell out is narrated instead.** Above a
+    complexity threshold, and only with `--ai-hints`, the local model is
+    asked for a one-sentence reading through the `latex_caption` prompt this
+    package already ships for screen-reader captions. The deterministic
+    reading is the baseline, not a degraded mode: a model that fails, or
+    that answers with LaTeX, costs nothing.
+- **`--no-follow`** builds the player without the sentence highlight. A
+  supported shape, not a degraded one: some readers who listen *and* read
+  want to read ahead of the voice rather than be led by it.
+
+### Changed
+
+- **The player is a bar across the foot of the window.** At the foot and not
+  the top, and that is the one placement decision with a reason rather than
+  a taste behind it: pages that carry a narration usually also carry a
+  sticky masthead, and a second sticky bar under the first stacks two chrome
+  strips over the text. The foot is also where a thumb already is on a
+  phone. One behaviour at every width, not an inline card that becomes a bar
+  on scroll — that is two components to keep agreeing.
+- **It is thin.** 53 px: the scrubber rides the bar's top edge instead of
+  taking a row of its own, because a progress line is a line. The title
+  truncates below 34rem and the speed control leaves below 22rem; the
+  controls never shrink below their touch target.
+- **The page keeps its last paragraph out from under the bar.** The bar
+  measures itself and publishes `--ra-bar`; the stylesheet spends it as
+  `padding-bottom`. Measured rather than assumed, because the height depends
+  on the host page's font, and a guess a few pixels short hides the end of
+  the article — the one place a reader will not think to look for a bar.
+- **It remembers where the reader got to**, in `localStorage`, keyed by path
+  so a campaign link's query string does not turn the same article into a
+  different recording. A finished recording forgets its position, because
+  "continue" that lands on the closing word is worse than starting over.
+- **The colours come from the page.** `page_palette` reads the colours a
+  page actually paints with — from its markup and from whatever stylesheets
+  resolve to files beside it — and the player wears them. Two properties,
+  because an accent usually has only one of its two jobs: `--ra-accent`
+  fills the button and the progress, `--ra-tint` washes the bar and the
+  highlight. When a page's accent is too pale to carry a fill, the fill
+  takes the page's ink and the accent stays where it works — which is the
+  page's own arrangement, a pale chip with dark type on it.
+
+  The rule that makes this work: a colour on the right of a **custom
+  property definition** is skipped, a colour inside a real declaration is
+  kept. A framework default sitting on every rich-text block of a page gets
+  counted thirty-one times otherwise, and the player ends up wearing a
+  colour that appears nowhere on the page.
+
+### Fixed
+
+- `reading_meta_html` is `listening_meta_html`, and a formula's join no
+  longer glues a digit to the word before it ("plus1").
+
 ## [1.1.0] — 2026-10-18
 
 ### Changed
