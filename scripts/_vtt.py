@@ -247,3 +247,126 @@ def write_srt(cues: list[Cue]) -> str:
         out.append("")
         number += 1
     return "\n".join(out)
+
+
+# ── Speech: the other direction ────────────────────────────────────────────
+#
+# Captions turn sound into timed text; narration turns text into timed sound.
+# The second needs one thing the first does not: something that counts
+# samples while an engine concatenates audio, so the result can say *where*
+# each sentence landed. Without it a page can play a narration and cannot
+# follow it.
+
+
+@dataclass(frozen=True)
+class SpeechCue:
+    """One narrated unit, with the slice of audio that speaks it.
+
+    Named apart from :class:`Cue` because it is a different thing: ``Cue`` is
+    the caption format's unit, this is a position in a synthesised recording.
+    They meet when a narration is written out as WebVTT, and the adapter is
+    one comprehension.
+
+    ``index`` is the position in the **original** segment list, not in the
+    audio. The two differ: segments whose text is empty after cleaning are
+    skipped rather than synthesised, so counting emitted pieces drifts from
+    counting segments. Carrying the original index is what lets a page map a
+    cue back to the block it came from.
+    """
+
+    index: int
+    text: str
+    start_seconds: float
+    end_seconds: float
+
+
+class Timeline:
+    """Accumulates durations while an engine accumulates audio.
+
+    Two problems, one object.
+
+    The first is that ``pause_before_ms`` was computed by everything and
+    applied by nothing: it was set from the structural baselines, asked of
+    the model by name, clamped on the way back — and then both engine
+    wrappers appended silence for ``pause_after_ms`` only. The silence that
+    sets a heading apart from what precedes it was computed, stored, and
+    dropped. Both wrappers had their own copy of the same loop, which is how
+    one omission became two. This object is why there is now one loop.
+
+    The second is that nothing recorded *where* each segment ended up, so a
+    page could play the narration but not follow it. The offsets are exact
+    and already known at concatenation time; this just keeps them.
+
+    Deliberately numpy-free: it counts samples and the caller holds the
+    arrays, so this module stays importable with nothing but the standard
+    library.
+
+    Examples
+    --------
+    >>> timeline = Timeline(1000)
+    >>> timeline.silence(500)
+    500
+    >>> timeline.speech(2000, index=0, text="Hello.")
+    >>> timeline.silence(250)
+    250
+    >>> [(c.start_seconds, c.end_seconds) for c in timeline.cues]
+    [(0.5, 2.5)]
+    >>> timeline.total_seconds
+    2.75
+    """
+
+    def __init__(self, sample_rate_hz: int) -> None:
+        self.sample_rate_hz = int(sample_rate_hz)
+        self._samples = 0
+        self._cues: list[SpeechCue] = []
+
+    def silence(self, milliseconds: float) -> int:
+        """Advance the clock by `milliseconds`; return the samples to append.
+
+        Returning the count rather than an array is what keeps this module
+        numpy-free. A caller that ignores the return value desynchronises the
+        timeline from its own audio, which is why both engines append exactly
+        what this hands back.
+        """
+        count = int(self.sample_rate_hz * max(0.0, float(milliseconds)) / 1000.0)
+        self._samples += count
+        return count
+
+    def speech(self, sample_count: int, *, index: int, text: str) -> None:
+        """Record that `sample_count` samples of audio speak `text`."""
+        start = self._samples / float(self.sample_rate_hz)
+        self._samples += int(sample_count)
+        end = self._samples / float(self.sample_rate_hz)
+        self._cues.append(
+            SpeechCue(index=index, text=text, start_seconds=start, end_seconds=end)
+        )
+
+    @property
+    def cues(self) -> list[SpeechCue]:
+        """Every recorded cue, in playback order."""
+        return list(self._cues)
+
+    @property
+    def total_seconds(self) -> float:
+        """Length of the audio described so far, silences included."""
+        return self._samples / float(self.sample_rate_hz)
+
+
+def speech_to_vtt(cues: list[SpeechCue]) -> str:
+    """Render narration cues as WebVTT.
+
+    The bridge between the two halves of this module. Each cue carries its
+    segment index as the WebVTT *identifier* — the line before the timings —
+    which is what lets a page highlight the right block without matching on
+    text, and the text is collapsed onto one line because a blank line ends a
+    cue and a hard-wrapped payload would split one cue into two.
+    """
+    return write_vtt([
+        Cue(
+            start=cue.start_seconds,
+            end=cue.end_seconds,
+            text=cue.text,
+            identifier=str(cue.index),
+        ).collapsed()
+        for cue in cues
+    ])

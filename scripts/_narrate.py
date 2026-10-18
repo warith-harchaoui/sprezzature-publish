@@ -723,92 +723,13 @@ def write_manifest(
 # ── Timeline: where each segment actually landed in the audio ──────────────
 
 
-@dataclass(frozen=True)
-class Cue:
-    """One narrated unit, with the slice of audio that speaks it.
-
-    ``index`` is the position in the **original** segment list, not in the
-    audio. The two differ: segments whose text is empty after cleaning are
-    skipped rather than synthesised, so counting emitted pieces drifts from
-    counting segments. Carrying the original index is what lets a page map a
-    cue back to the block it came from.
-    """
-
-    index: int
-    text: str
-    start_seconds: float
-    end_seconds: float
-
-
-class Timeline:
-    """Accumulates durations while an engine accumulates audio.
-
-    Two problems, one object.
-
-    The first is that ``pause_before_ms`` was computed by everything and
-    applied by nothing. ``extract_segments`` sets it from the structural
-    baselines, the Ollama pass is asked for it by name in
-    ``prompts/narration_emotion.yaml`` and clamps the answer in
-    :func:`merge_llm_hint` -- and then both engine wrappers appended silence
-    for ``pause_after_ms`` only. The silence that sets a heading apart from
-    what precedes it was computed, stored, and dropped. Both wrappers had
-    their own copy of the same loop, which is how one omission became two.
-
-    The second is that nothing recorded *where* each segment ended up, so a
-    page could play the narration but not follow it. The offsets are exact
-    and already known at concatenation time -- this just keeps them.
-
-    Deliberately numpy-free: it counts samples and the caller holds the
-    arrays, so ``_narrate`` stays importable with nothing but the standard
-    library (see the module docstring).
-
-    Examples
-    --------
-    >>> timeline = Timeline(1000)
-    >>> timeline.silence(500)
-    500
-    >>> timeline.speech(2000, index=0, text="Hello.")
-    >>> timeline.silence(250)
-    250
-    >>> [(c.start_seconds, c.end_seconds) for c in timeline.cues]
-    [(0.5, 2.5)]
-    >>> timeline.total_seconds
-    2.75
-    """
-
-    def __init__(self, sample_rate_hz: int) -> None:
-        self.sample_rate_hz = int(sample_rate_hz)
-        self._samples = 0
-        self._cues: list[Cue] = []
-
-    def silence(self, milliseconds: float) -> int:
-        """Advance the clock by `milliseconds`; return the sample count to append.
-
-        Returning the count rather than an array is what keeps this module
-        numpy-free. A caller that ignores the return value desynchronises the
-        timeline from its own audio, which is why both engines append exactly
-        what this hands back.
-        """
-        count = int(self.sample_rate_hz * max(0.0, float(milliseconds)) / 1000.0)
-        self._samples += count
-        return count
-
-    def speech(self, sample_count: int, *, index: int, text: str) -> None:
-        """Record that `sample_count` samples of audio speak `text`."""
-        start = self._samples / float(self.sample_rate_hz)
-        self._samples += int(sample_count)
-        end = self._samples / float(self.sample_rate_hz)
-        self._cues.append(Cue(index=index, text=text, start_seconds=start, end_seconds=end))
-
-    @property
-    def cues(self) -> list[Cue]:
-        """Every recorded cue, in playback order."""
-        return list(self._cues)
-
-    @property
-    def total_seconds(self) -> float:
-        """Length of the audio described so far, silences included."""
-        return self._samples / float(self.sample_rate_hz)
+#: The narration cue and the clock that produces it live in ``_vtt`` with the
+#: engine wrappers that use them: a page follows a narration by reading the
+#: WebVTT those two write, so the type, the clock and the format belong
+#: together. Re-exported here because everything in this package that touches
+#: a cue reaches for ``_narrate.Cue``.
+Cue = _vtt.SpeechCue
+Timeline = _vtt.Timeline
 
 
 def format_timestamp(seconds: float) -> str:
