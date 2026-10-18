@@ -594,10 +594,12 @@ def main() -> int:
     narrator = _math_narrator(DEFAULT_LLM_MODEL) if args.ai_hints else None
     spoken = explode_to_sentences(spoken_segments) if spoken_segments else None
     if spoken is not None and len(spoken) != len(segments):
-        # Dropping a marker split a sentence differently somewhere. Rather
-        # than pair the two lists by guesswork, fall back to the text-only
-        # pass: the maths still gets read properly and the footnote markers
-        # stay, which is the lesser of the two wrongs.
+        # Should not happen any more: the spoken text keeps the page's shape
+        # to the character while it is split, markers and all, and they are
+        # taken out per sentence afterwards. Kept as a guard rather than an
+        # assertion because a narration is not worth losing over a sentence
+        # count -- the fallback reads the maths and leaves the markers,
+        # which is the lesser of the two wrongs.
         print(
             f"note: {len(spoken)} spoken sentences against {len(segments)} on "
             f"the page; keeping the page's wording and reading the maths only",
@@ -605,7 +607,10 @@ def main() -> int:
         )
         spoken = None
     for index, segment in enumerate(segments):
-        source_text = spoken[index]["text"] if spoken else segment["text"]
+        source_text = (
+            _readalong.without_markers(spoken[index]["text"])
+            if spoken else segment["text"]
+        )
         say = speakable(source_text, lang, narrator=narrator)
         if say != segment["text"]:
             segment["say"] = say

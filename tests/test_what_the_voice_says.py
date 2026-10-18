@@ -47,7 +47,10 @@ def _both(html: str) -> list[tuple[str, str]]:
         segments_from_blocks([(b.tag, b.spoken, b.in_quote) for b in blocks])
     )
     assert len(page) == len(said)
-    return [(p["text"], speakable(s["text"], "en")) for p, s in zip(page, said)]
+    return [
+        (p["text"], speakable(_readalong.without_markers(s["text"]), "en"))
+        for p, s in zip(page, said)
+    ]
 
 
 # ── The invariant ──────────────────────────────────────────────────────────
@@ -102,7 +105,9 @@ def test_a_superscript_is_judged_by_what_it_holds(inner: str, spoken: bool) -> N
     """
     html = f"<article><p>Before<sup>{inner}</sup> after.</p></article>"
     block = _readalong.page_blocks(html, scope="article")[0]
-    assert (inner in block.spoken) is spoken
+    # `spoken` keeps the marker wrapped so the splitter sees the page's
+    # shape; what the voice gets is what survives `without_markers`.
+    assert (inner in _readalong.without_markers(block.spoken)) is spoken
 
 
 def test_an_exponent_in_prose_is_the_known_limit() -> None:
@@ -117,7 +122,7 @@ def test_an_exponent_in_prose_is_the_known_limit() -> None:
         "<article><p>Take x<sup>2</sup> here.</p></article>", scope="article"
     )[0]
     assert block.visible == "Take x2 here."
-    assert block.spoken == "Take x here."
+    assert _readalong.without_markers(block.spoken) == "Take x here."
 
 
 # ── Mathematics ────────────────────────────────────────────────────────────
@@ -248,7 +253,7 @@ def test_a_narrator_that_answers_with_latex_is_ignored() -> None:
     out = speakable(r"Hard \(\frac{\sum_{i=1}^{n} x_i}{n}\).", "en",
                     narrator=lambda latex, lang: r"\frac{a}{b}")
     assert "\\" not in out
-    assert "over" in out
+    assert "the ratio of" in out
 
 
 def test_a_narrator_that_fails_costs_nothing() -> None:
@@ -257,4 +262,171 @@ def test_a_narrator_that_fails_costs_nothing() -> None:
         raise RuntimeError("no model here")
 
     out = speakable(r"Hard \(\frac{\sum_{i=1}^{n} x_i}{n}\).", "en", narrator=broken)
-    assert "over" in out
+    assert "the ratio of" in out
+
+
+# ── Telling a formula rather than spelling it ──────────────────────────────
+
+
+def test_an_expectation_reads_as_a_phrase() -> None:
+    """
+    The shape every statistics paper writes, and the one that showed the
+    difference between the two jobs. Spelled, it is "E, open bracket, theta,
+    mid, m, close bracket"; told, it is a sentence.
+    """
+    assert speak_math(r"\mathbb{E}[\theta \mid m]", "en") == (
+        "the expected value of theta given m"
+    )
+    assert speak_math(r"\mathbb{E}[\theta \mid m]", "fr") == (
+        "l'espérance de theta sachant m"
+    )
+
+
+def test_a_compound_fraction_is_bound_by_its_phrasing() -> None:
+    """
+    "a over b" is how a simple fraction is said, and it stops working the
+    moment either half is a sum: "tau squared over tau squared plus sigma
+    squared" can be heard three ways and a listener has no parentheses to
+    fall back on. "The ratio of A to B" binds, because "to" closes the
+    first half.
+    """
+    assert speak_math(r"\frac{a}{b}", "en") == "a over b"
+    assert speak_math(r"\frac{a+1}{b}", "en") == "the ratio of a plus 1 to b"
+
+
+def test_an_implicit_product_gets_the_word_and_the_comma() -> None:
+    """
+    A page writes no sign between a fraction and the symbol it multiplies.
+    Said aloud the symbol sounds like a stray letter, and the comma is what
+    closes the ratio before the product opens.
+    """
+    said = speak_math(
+        r"\frac{\tau^2}{\tau^2 + \sigma^2}\; m", "en"
+    )
+    assert said.endswith(", times m")
+    assert " ," not in said
+
+
+def test_grouping_brackets_are_not_read_out() -> None:
+    """
+    Brackets are punctuation for the eye. "Open bracket" is the spelling
+    this module exists to remove; the phrasing carries the grouping.
+    """
+    said = speak_math(r"\mathbb{P}[X > t]", "en")
+    assert "bracket" not in said
+    assert said == "the probability of X is greater than t"
+
+
+def test_the_whole_formula_from_the_page_reads_as_one_sentence() -> None:
+    """The live case, end to end."""
+    assert speak_math(
+        r"\mathbb{E}[\theta \mid m] \;=\; \frac{\tau^2}{\tau^2 + \sigma^2}\; m",
+        "en",
+    ) == (
+        "the expected value of theta given m equals the ratio of tau squared "
+        "to tau squared plus sigma squared, times m"
+    )
+
+
+# ── A formula on its own line is a sentence too ────────────────────────────
+
+MATH_PAGE = (
+    "<article>"
+    "<p>the more so as the measurement is noisy:</p>"
+    r'<div class="drz-math">$$\mathbb{E}[\theta \mid m] = '
+    r'\frac{\tau^2}{\tau^2 + \sigma^2} m$$</div>'
+    "<p>This is the shrinkage formula.</p>"
+    "</article>"
+)
+
+
+def test_a_display_formula_is_narrated_at_all() -> None:
+    """
+    The defect this is written for, and it was silent.
+
+    Display maths lives in a block element — `<div>`, `<figure>`, whatever
+    the renderer wanted — and a `<div>` is not a narrated block, so the
+    formula was skipped entirely. The sentence introducing it ended on a
+    colon and pointed at nothing, which is worse than spelling the formula
+    out: a listener hears the setup and never the thing.
+    """
+    blocks = _readalong.page_blocks(MATH_PAGE, scope="article")
+    assert len(blocks) == 3, [b.tag for b in blocks]
+    assert blocks[1].tag == "div"
+    assert "mathbb" in blocks[1].visible
+
+
+def test_a_layout_div_is_still_not_narrated() -> None:
+    """
+    The cost of the fix, kept at zero. A `<div>` is layout almost always
+    and content just often enough to matter; narrating all of them would
+    change what is read on every page ever built with this, for the sake of
+    the few that put a formula in one. So one is opened on approval and
+    taken apart again unless it holds a formula and nothing else.
+    """
+    blocks = _readalong.page_blocks(
+        "<article><div class='wrap'><p>Inside a layout div.</p></div>"
+        "<div>Loose text that was never narrated before.</div></article>",
+        scope="article",
+    )
+    assert [b.tag for b in blocks] == ["p"]
+
+
+def test_a_display_formula_is_told_not_spelled() -> None:
+    """End to end: the page's own formula, as the voice says it."""
+    blocks = _readalong.page_blocks(MATH_PAGE, scope="article")
+    said = speakable(_readalong.without_markers(blocks[1].spoken), "en")
+    assert "$" not in said and "\\" not in said
+    assert said.startswith("the expected value of theta given m equals")
+    assert said.endswith(", times m")
+
+
+# ── Where the sentences end is the page's decision ─────────────────────────
+
+
+def test_dropping_a_marker_does_not_move_a_sentence_boundary() -> None:
+    """
+    The subtlest defect of the lot, and it took twelve pages to surface.
+
+    One page ends a sentence on ``ranking the top N<sup>9</sup>.`` The
+    visible text is ``top N9.``, which every sentence splitter ends a
+    sentence on. Take the marker out *before* splitting and it becomes
+    ``top N.`` — which every sentence splitter reads as an initial, the way
+    it reads the N in a name, and runs straight into the next sentence. The
+    page and the narration then disagree by one sentence, from there to the
+    end of the article.
+
+    So the spoken text keeps the page's shape to the character while it is
+    split — markers and all, wrapped in a word joiner — and the markers come
+    out per sentence afterwards.
+    """
+    html = (
+        "<article><p>Ranking the top N<sup>9</sup>. That order of magnitude "
+        "holds for a schema of this size.</p></article>"
+    )
+    block = _readalong.page_blocks(html, scope="article")[0]
+
+    page = explode_to_sentences(
+        segments_from_blocks([(block.tag, block.visible, block.in_quote)])
+    )
+    said = explode_to_sentences(
+        segments_from_blocks([(block.tag, block.spoken, block.in_quote)])
+    )
+    assert len(page) == 2, "the page itself does not have two sentences here"
+    assert len(said) == len(page), (
+        "the marker moved a sentence boundary: page "
+        f"{[s['text'] for s in page]} against {[s['text'] for s in said]}"
+    )
+    assert _readalong.without_markers(said[0]["text"]) == "Ranking the top N."
+
+
+def test_the_marker_is_invisible_but_findable() -> None:
+    """
+    It has to survive the splitter untouched and then be removable without
+    guessing which digits were a marker and which were prose.
+    """
+    html = "<article><p>Top N<sup>9</sup>. In 2025 there were 9 of them.</p></article>"
+    block = _readalong.page_blocks(html, scope="article")[0]
+    assert _readalong.MARKER in block.spoken
+    cleaned = _readalong.without_markers(block.spoken)
+    assert cleaned == "Top N. In 2025 there were 9 of them.", cleaned

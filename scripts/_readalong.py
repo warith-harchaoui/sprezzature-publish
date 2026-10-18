@@ -296,6 +296,11 @@ class _Block:
     #: element itself -- so the quotation is not visible from the block's own
     #: tag.
     in_quote: bool = False
+    #: Whether this block belongs in the narration. Notes do not: see
+    #: :func:`_mark_notes`. The page still shows them -- only the reading
+    #: skips them -- so this is carried on the block rather than removed
+    #: from the tree.
+    narrated: bool = True
 
     @property
     def visible(self) -> str:
@@ -309,7 +314,7 @@ class _Block:
 
     @property
     def spoken(self) -> str:
-        """The same words, without the ones that are only for the eye.
+        """The same words, with the ones meant for the eye alone marked.
 
         Today that means footnote reference markers. A superscript "1" is a
         signpost to the bottom of the page; read aloud it lands glued to
@@ -321,16 +326,128 @@ class _Block:
         why this is a second string rather than an edit to
         :attr:`visible` -- the read-along still has to highlight exactly
         what the page shows.
+
+        The marker is *wrapped*, not removed, and that is the whole
+        subtlety. Removing it here changes where sentences end: a page
+        reading ``ranking the top N<sup>9</sup>.`` gives ``top N9.``, which
+        every sentence splitter ends a sentence on, and ``top N.`` without
+        the marker, which every sentence splitter reads as an initial and
+        runs into the next sentence. One page in twelve hit exactly that,
+        and the two texts came out a sentence apart.
+
+        So the text handed to the splitter keeps the page's shape to the
+        character, and the markers are taken out of each sentence
+        afterwards -- see :func:`without_markers`. The wrapper is a word
+        joiner: invisible, non-breaking, and not something prose contains.
         """
-        return " ".join(
-            "".join("" if piece.reference else piece.visible for piece in self.pieces).split()
-        )
+        out: list[str] = []
+        inside = False
+        for piece in self.pieces:
+            # One wrapper per *run*, not per piece. A marker is usually
+            # three pieces -- the <a>, its text, the </a> -- and wrapping
+            # each would bracket the empty ones too.
+            if piece.reference != inside:
+                out.append(MARKER)
+                inside = piece.reference
+            out.append(piece.visible)
+        if inside:
+            out.append(MARKER)
+        return " ".join("".join(out).split())
+
+
+#: Wraps a footnote marker in :attr:`_Block.spoken`. U+2060 WORD JOINER:
+#: invisible, non-breaking, and not a character prose contains -- so the
+#: sentence splitter sees the page's own shape and the marker can still be
+#: found and removed once the sentences are settled.
+MARKER: str = "\u2060"
+
+_MARKED = re.compile(f"{MARKER}[^{MARKER}]*{MARKER}")
+
+
+def without_markers(sentence: str) -> str:
+    """One sentence, with its footnote markers taken out.
+
+    Applied *after* splitting, never before: see :attr:`_Block.spoken`.
+    """
+    return " ".join(_MARKED.sub("", sentence).split())
 
 
 #: What a footnote marker looks like once the markup is stripped: a number,
 #: optionally in brackets or parentheses. Anything else in a ``<sup>`` is
 #: content and gets read.
 _REFERENCE_MARKER = re.compile(r"[\[(]?\s*\d{1,3}\s*[\])]?")
+
+
+#: How far back from the first note to look for the heading that opens the
+#: section holding it. Short on purpose: a bibliography's heading is within
+#: a block or two of its list -- a title, maybe a line saying what the list
+#: is -- and a longer reach would start silencing prose that happens to sit
+#: above a note.
+_NOTE_SECTION_REACH: int = 4
+
+
+def _element_id(raw: str) -> str:
+    match = re.search(r'\bid="([^"]+)"', raw)
+    return match.group(1) if match else ""
+
+
+def _mark_notes(blocks: list[_Block], targets: set[str]) -> None:
+    """Take the notes out of the narration, and the page keeps them.
+
+    A bibliography is reference apparatus. Thirty-seven citations read
+    aloud is ten minutes of author names and arXiv numbers, which is not
+    something anybody listens to and not something the recording is for.
+
+    Found structurally rather than by its name: the footnote markers in the
+    prose say what they point at, and what they point at is the notes. No
+    page says "Bibliography" in every language, and plenty say "References",
+    "Notes", "Sources" or nothing at all — but every one of them links its
+    markers to its notes, because that is what makes a footnote a footnote.
+
+    The section runs from the heading above the first note to the last note.
+    Taking only the list would leave its heading and its opening line read
+    aloud, announcing a section that then never arrives.
+    """
+    if not targets:
+        return
+    marked = [
+        index for index, block in enumerate(blocks)
+        if _element_id(block.open_raw) in targets
+    ]
+    if not marked:
+        return
+    first, last = min(marked), max(marked)
+
+    start = first
+    for index in range(first - 1, max(-1, first - 1 - _NOTE_SECTION_REACH), -1):
+        start = index
+        if blocks[index].tag in HEADING_TAGS:
+            break
+    else:
+        # No heading within reach: silence the notes themselves and leave
+        # whatever is above them alone.
+        start = first
+
+    for block in blocks[start:last + 1]:
+        block.narrated = False
+
+
+#: Elements that wrap a display formula and nothing else. They are layout
+#: everywhere else on a page, so they are opened as blocks on approval and
+#: unwrapped again at their close unless what they hold turns out to be one
+#: formula. A page that writes its mathematics this way is not unusual —
+#: KaTeX, MathJax and every hand-rolled renderer want a block element to put
+#: the formula in, and none of them agree on a class to look for.
+MATH_WRAPPERS: frozenset[str] = frozenset({"div", "figure"})
+
+#: Headings, which is where a section starts.
+HEADING_TAGS: frozenset[str] = frozenset({"h1", "h2", "h3", "h4", "h5", "h6"})
+
+#: What such a wrapper has to contain to earn being narrated: a display
+#: formula, and nothing else.
+_DISPLAY_MATH_ONLY = re.compile(
+    r"\s*(?:\$\$.+?\$\$|\\\[.+?\\\])\s*", re.S
+)
 
 
 class _PageWalker(HTMLParser):
@@ -376,6 +493,9 @@ class _PageWalker(HTMLParser):
         #: wrapper hides everything under it, not just its own text.
         self._hidden_at: int | None = None
         self._stack = 0
+        #: Ids that a footnote marker points at. Collected while walking,
+        #: which works because a marker always precedes the note it names.
+        self.reference_targets: set[str] = set()
         #: Index of the first piece of the open ``<sup>``, if any. A
         #: superscript is only a footnote marker if its *whole* content is a
         #: number, and that is not known until it closes.
@@ -431,7 +551,7 @@ class _PageWalker(HTMLParser):
             alt = next((value or "" for name, value in attrs if name == "alt"), "")
             self._raw(raw, html.unescape(alt), atomic=True)
             return
-        if tag in NARRATED_BLOCKS:
+        if tag in NARRATED_BLOCKS or tag in MATH_WRAPPERS:
             block = _Block(tag, open_raw=raw, in_quote=self._quoted > 0)
             self._emit(_Piece("", child=block, atomic=True, depth=self._depth))
             self._open.append(block)
@@ -485,15 +605,53 @@ class _PageWalker(HTMLParser):
             self._raw(raw, atomic=True)
             self._close_sup()
             return
-        if tag in NARRATED_BLOCKS and self._open and self._open[-1].tag == tag:
-            self._open.pop().close_raw = raw
+        if (
+            (tag in NARRATED_BLOCKS or tag in MATH_WRAPPERS)
+            and self._open
+            and self._open[-1].tag == tag
+        ):
+            block = self._open.pop()
+            block.close_raw = raw
             self._depth = 0
+            if tag in MATH_WRAPPERS and not _DISPLAY_MATH_ONLY.fullmatch(block.visible):
+                self._unwrap(block)
+                # Taken off the narration list as well as out of the tree:
+                # it was added when it opened, before anyone could know what
+                # it held.
+                if self.blocks and self.blocks[-1] is block:
+                    self.blocks.pop()
+                else:
+                    self.blocks = [b for b in self.blocks if b is not block]
             return
         if tag in VOID_ELEMENTS:
             self._raw(raw, atomic=True)
             return
         self._raw(raw, atomic=True, after=max(0, self._depth - 1))
         self._depth = max(0, self._depth - 1)
+
+    def _unwrap(self, block: _Block) -> None:
+        """Put a wrapper's contents back where they were.
+
+        A ``<div>`` is layout almost always and content just often enough to
+        matter, and which one it is cannot be known until it closes. So one
+        is opened as a block on approval and, if it turns out to hold
+        anything other than a single display formula, taken apart again —
+        its pieces returned to its parent exactly as they arrived, with its
+        own tags as ordinary markup around them.
+
+        The alternative was to narrate every ``<div>``, which changes what
+        is read on every page ever built with this, for the sake of the few
+        that put a formula in one.
+        """
+        target = self._open[-1].pieces if self._open else self.out
+        for index in range(len(target) - 1, -1, -1):
+            if target[index].child is block:
+                target[index:index + 1] = [
+                    _Piece(block.open_raw, atomic=True, depth=target[index].depth),
+                    *block.pieces,
+                    _Piece(block.close_raw, atomic=True, depth=target[index].depth),
+                ]
+                return
 
     def _close_sup(self) -> None:
         """Decide whether the superscript that just closed was a reference.
@@ -518,6 +676,8 @@ class _PageWalker(HTMLParser):
         if _REFERENCE_MARKER.fullmatch(text):
             for piece in inside:
                 piece.reference = True
+                for href in re.findall(r'href="#([^"]+)"', piece.raw):
+                    self.reference_targets.add(href)
         self._sup_from = None
 
     def handle_data(self, data: str) -> None:
@@ -548,16 +708,27 @@ class _PageWalker(HTMLParser):
 
 
 def _walk(body_html: str, scope: str | None = None) -> _PageWalker:
-    """Parse a rendered page into blocks and pieces."""
+    """Parse a rendered page into blocks and pieces.
+
+    The notes are marked here rather than by each caller, so the narration
+    and the page that follows it cannot disagree about what is read. A
+    block skipped by one and not the other puts every later cue out by one,
+    and `align` would refuse the build — the safe failure, but still a
+    build that does not happen.
+    """
     walker = _PageWalker(scope)
     walker.feed(body_html)
     walker.close()
+    _mark_notes(walker.blocks, walker.reference_targets)
     return walker
 
 
 def page_blocks(body_html: str, *, scope: str | None = None) -> list[_Block]:
     """The narrated blocks of a rendered page that show words, in reading order."""
-    return [block for block in _walk(body_html, scope).blocks if block.visible]
+    return [
+        block for block in _walk(body_html, scope).blocks
+        if block.visible and block.narrated
+    ]
 
 
 def page_sentences(body_html: str, *, split, scope: str | None = None) -> list[str]:
@@ -875,7 +1046,9 @@ def wrap_sentences(body_html: str, cues: list[VttCue], *, split,
         If the page's sentences are not the narration's sentences.
     """
     walker = _walk(body_html, scope)
-    blocks = [block for block in walker.blocks if block.visible]
+    blocks = [
+        block for block in walker.blocks if block.visible and block.narrated
+    ]
     assignments = align(blocks, cues, split=split, opening=opening, closing=closing)
 
     # Innermost first, so a parent's render finds its children already
@@ -961,7 +1134,9 @@ def inject_into_page(html: str, cues: list[VttCue], *, split, opening: str, clos
         The page, with the read-along in it.
     """
     walker = _walk(html, scope)
-    blocks = [block for block in walker.blocks if block.visible]
+    blocks = [
+        block for block in walker.blocks if block.visible and block.narrated
+    ]
     assignments = align(blocks, cues, split=split, opening=opening, closing=closing)
 
     wrapped: dict[int, str] = {}

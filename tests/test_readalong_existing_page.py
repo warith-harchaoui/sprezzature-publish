@@ -242,18 +242,32 @@ class TestTheRealPage:
         it worth keeping go with it and the tests above stop proving much.
         """
         blocks = _readalong.page_blocks(source, scope="article")
-        assert len(blocks) > 100
+        assert len(blocks) > 90
         assert sum(1 for block in blocks if block.tag.startswith("h")) >= 5
-        # The bibliography is the reason this page is the fixture: 37 entries
-        # whose citation ends mid-sentence and hands over to a note, which is
-        # the construct no single span can wrap.
-        assert sum(1 for block in blocks if block.tag == "li") >= 30
+        # The bibliography is still in the page -- it is simply not read
+        # aloud any more, which is why it is counted in the *source* and no
+        # longer among the narrated blocks. Thirty-seven citations read out
+        # is ten minutes of author names and arXiv numbers.
+        assert source.count('<li id="ref-') >= 30
+        assert not any(block.tag == "li" for block in blocks), (
+            "the notes are back in the narration"
+        )
         assert "<cite" in source
 
-    def test_the_page_really_does_exercise_the_split(self, built):
-        """Otherwise the hard case is untested and nobody would know."""
-        marked = set(re.findall(r'data-ra-cue="(\d+)"', built))
-        assert len(marked) >= 10
+    def test_the_page_no_longer_exercises_the_split_on_its_own(self, built):
+        """
+        Recorded rather than quietly lost.
+
+        Every split sentence on this page was in the bibliography -- a
+        citation that closes ``</cite>`` mid-sentence and hands over to a
+        note, which is the one construct no single span can wrap. Taking the
+        notes out of the narration took the hard case with them, so the
+        fixture stopped proving what it was kept for. It is proved by
+        :func:`test_a_sentence_split_by_markup_lights_up_as_one` instead,
+        which builds the construct on purpose and does not depend on a page
+        continuing to contain it.
+        """
+        assert set(re.findall(r'data-ra-cue="(\d+)"', built)) == set()
 
     def test_removing_the_spans_gives_the_page_back(self, source, built):
         """Rebuilt from a parse, not patched by offset.
@@ -823,3 +837,30 @@ def test_cues_without_audio_is_still_nothing_to_attach(tmp_path: Path) -> None:
     )
 
     assert _readalong.narration_sources(narration, "ralph-loops") is None
+
+
+def test_a_sentence_split_by_markup_lights_up_as_one() -> None:
+    """
+    The construct the real page used to provide, built on purpose.
+
+    Markup a page already had can close between two of a sentence's words --
+    a citation that ends mid-sentence and hands over to a note -- and no
+    element can close a tag it did not open. Such a sentence becomes several
+    spans, marked with the cue they share, and they must light up together
+    or half the sentence goes dark while the voice is still inside it.
+
+    Written as its own test because the page that used to exercise it no
+    longer does: its bibliography is out of the narration, and a hard case
+    that depends on a fixture still happening to contain it is a hard case
+    waiting to go untested.
+    """
+    source = (
+        "<article><p><cite>Huntley, G. (2025). Ralph Wiggum as a software "
+        "engineer</cite> is the first write-up. It names the loop.</p></article>"
+    )
+    built = inject(source, scope="article")
+    marked = re.findall(r'data-ra-cue="(\d+)"', built)
+    assert marked, "a sentence crossing </cite> produced no shared-cue spans"
+    # Both halves carry the same cue, so the module lights them together.
+    assert len(marked) >= 2 and len(set(marked)) == 1
+    assert crossings(built) == [], "the spans stepped over the element"
