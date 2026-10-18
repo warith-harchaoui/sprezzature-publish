@@ -110,9 +110,15 @@ imports never enter its graph.
 
 ```sh
 pip install "sprezzature-audio[narrate]"
-sprezzature-audio-install-voice --engine openvoice
+sprezzature-audio-install-voice --engine kokoro
 sprezzature-publish-narrate post.md --out-dir site/audio/
 ```
+
+No voice is named above and none needs to be: the default engine reads the
+text, works out what language it is in, and picks the voice that speaks it.
+That is not a convenience — the detected language is what the phonemiser
+works from, so a French page read as English is not French in an American
+accent, it is an American spelling the words out.
 
 ## See also
 

@@ -56,7 +56,12 @@ prose = [
 # Narration and the read-along. The *voices* are not here: synthesis lives in
 # sprezzature-audio, which owns the sound modality in both directions, and is
 # invoked as a subprocess so its heavy imports never enter this graph.
-narrate = ["sprezzature-audio[narrate]>=1.2.0"]
+#
+# 1.3.0 is the floor because that is where Kokoro arrives — the default
+# engine, and the one that makes `[narrate]` mean an ONNX runtime rather than
+# a torch install. On 1.2.0 this extra resolves and the default engine does
+# not exist.
+narrate = ["sprezzature-audio[narrate]>=1.3.0"]
 # Everything, for someone building a whole site rather than one piece of one.
 all = ["sprezzature-publish[html,icons,lint,prose]"]
 # HTTP surface (sprezzature_publish/api.py).

@@ -24,9 +24,10 @@ Pipeline
    the structure alone cannot see (sarcasm, build-up before a
    punchline, pacing). Defaults to off — the deterministic
    structural path stays the baseline.
-4. The chosen engine wrapper (``narrate_openvoice.py`` or
-   ``narrate_chatterbox.py``) runs as a subprocess and synthesises
-   one WAV per segment, then concatenates with the requested pauses.
+4. The chosen engine wrapper (``narrate_kokoro.py`` by default, or
+   ``narrate_openvoice.py`` / ``narrate_chatterbox.py``) runs as a
+   subprocess and synthesises one WAV per segment, then concatenates
+   with the requested pauses.
 5. A manifest entry is written to ``out/audio/manifest.json``
    recording source path, audio path, engine, voice, sha256, and
    measured duration so subsequent runs short-circuit on unchanged
@@ -36,7 +37,7 @@ Usage
 -----
 ::
 
-    # Default engine (openvoice), default base voice, no LLM enrichment
+    # Default engine (kokoro): the language of the text picks the voice
     python3 sprezzature-publish/scripts/sprezzature-publish-narrate.py posts/hello.md
 
     # ChatterboxTTS with a custom voice sample (designer's own voice)
@@ -59,9 +60,11 @@ Requirements
 ------------
 * Python 3.10+; PyYAML is optional (pronunciation override + frontmatter
   parsing degrade silently when missing).
-* One of the engine wrappers installed:
-  - ``pip install -r sprezzature-publish/scripts/requirements-narrate-openvoice.txt``
-  - ``pip install -r sprezzature-publish/scripts/requirements-narrate-chatterbox.txt``
+* One of the engine wrappers installed. They live in sprezzature-audio,
+  which owns the sound modality in both directions:
+  - ``pip install 'sprezzature-audio[narrate-kokoro]'``
+  - ``pip install 'sprezzature-audio[narrate-openvoice]'``
+  - ``pip install 'sprezzature-audio[narrate-chatterbox]'``
 * A running Ollama daemon if ``--ai-hints`` is passed (the same
   daemon ``alt_from_ollama.py`` and ``meta_from_ollama.py`` use).
 
@@ -82,18 +85,35 @@ import time
 from pathlib import Path
 from typing import Any
 
-# Every LLM/VLM call across sprezzature-* routes through this one function —
-# no script imports an Ollama/OpenAI/LangChain client directly. It resolves
-# the backend and model tag from the SPREZZATURE_LLM_* environment variables
-# (SPREZZATURE_LLM_BACKEND defaults to "ollama"); the `model` argument passed
-# at each call site below is a per-call override on top of that.
-try:
-    from best_engine_ai_helper.llm import chat as _llm_chat
-except ImportError as _exc:  # pragma: no cover - dependency guard
-    raise SystemExit(
-        "this tool asks a local model, which is the [prose] extra: "
-        "pip install 'sprezzature-publish[prose]'"
-    ) from _exc
+
+def _llm_chat(*args: Any, **kwargs: Any) -> Any:
+    """The one LLM call this tool makes, imported at the moment it is made.
+
+    Every LLM/VLM call across sprezzature-* routes through this one function
+    — no script imports an Ollama/OpenAI/LangChain client directly. It
+    resolves the backend and model tag from the SPREZZATURE_LLM_*
+    environment variables (SPREZZATURE_LLM_BACKEND defaults to "ollama");
+    the `model` argument at the call site is a per-call override on top.
+
+    Deferred rather than imported at module level, which is how it was
+    written and which made the whole command depend on an extra it uses only
+    when asked to. `--ai-hints` is off by default: the structural path is the
+    baseline and the model only ever enriches it. But the import ran
+    regardless, so `pip install 'sprezzature-publish[narrate]'` — the extra
+    whose entire purpose is this command — produced a command that exited on
+    `--help` with a message about a *different* extra. The one shape of
+    install the feature is named after was the one that could not run it.
+    """
+    try:
+        from best_engine_ai_helper.llm import chat
+    except ImportError as exc:  # pragma: no cover - dependency guard
+        raise SystemExit(
+            "--ai-hints asks a local model, which is the [prose] extra: "
+            "pip install 'sprezzature-publish[prose]'. Without it the "
+            "narration still works — the structural hints are the baseline."
+        ) from exc
+    return chat(*args, **kwargs)
+
 
 # Local helpers — pure-Python, no heavy ML deps.
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -120,10 +140,30 @@ from _narrate import (  # noqa: E402
 #: its structure in its elements, so it needs no Markdown twin to be narrated.
 HTML_SUFFIXES: frozenset[str] = frozenset({".html", ".htm", ".xhtml", ".php"})
 
-#: Engines we know how to dispatch to. Both wrappers ship in this
-#: folder and are invoked as subprocesses so their heavy ML imports
-#: never leak into the orchestrator's import graph.
-ENGINES: tuple[str, ...] = ("openvoice", "chatterbox")
+#: Engines we know how to dispatch to, best first. The wrappers ship in
+#: sprezzature-audio and are invoked as subprocesses so their heavy ML
+#: imports never leak into the orchestrator's import graph.
+#:
+#: `kokoro` leads because it is the one that answers the question this tool
+#: asks — "this article should have a voice". It is 82 M parameters,
+#: Apache-2.0 in code *and* weights, runs on ONNX Runtime with no torch at
+#: all, carries 54 voices across nine languages, and needs nothing recorded.
+#: The other two are voice-*cloning* engines: they want a reference clip and
+#: a multi-gigabyte ML stack, which is the right trade only when the point is
+#: to sound like a particular person.
+ENGINES: tuple[str, ...] = ("kokoro", "openvoice", "chatterbox")
+
+#: The default voice, per engine. Kokoro's is empty on purpose: its wrapper
+#: reads the text, detects the language, and picks the voice that speaks it.
+#: A hard-coded default would be a hard-coded language, and on a bilingual
+#: site that is not a small mistake — the language is what the phonemiser
+#: uses, so French read as English is not an accent, it is an American
+#: spelling the words out.
+DEFAULT_VOICE: dict[str, str] = {
+    "kokoro": "",
+    "openvoice": "base-en-default",
+    "chatterbox": "default",
+}
 
 #: The one authorized LLM for ``--ai-hints`` — ``qwen3-vl:8b`` (via Ollama), the
 #: same model :mod:`alt_from_ollama` uses, so the user only ever pulls one. Not
@@ -254,11 +294,18 @@ def _engine_command(engine: str, python: str = sys.executable) -> list[str] | No
         found = False
     if found:
         return [python, "-m", module]
-    sibling = (
-        Path(__file__).resolve().parents[3]
-        / "sprezzature-audio" / "scripts" / f"narrate_{engine}.py"
-    )
-    return [python, str(sibling)] if sibling.is_file() else None
+    # Walked rather than indexed. This was `parents[3]`, which was right
+    # while these scripts lived at sprezzature/sprezzature-publish/scripts/
+    # and wrong the moment the package was extracted into its own repository
+    # — one level shallower, so the path resolved to /Users/sprezzature-audio
+    # and the fallback silently never fired again. A fallback that cannot
+    # fire looks exactly like a fallback that was never needed.
+    here = Path(__file__).resolve().parent
+    for ancestor in here.parents:
+        sibling = ancestor / "sprezzature-audio" / "scripts" / f"narrate_{engine}.py"
+        if sibling.is_file():
+            return [python, str(sibling)]
+    return None
 
 
 def _engine_is_available(engine: str, python: str = sys.executable) -> bool:
@@ -402,14 +449,16 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--engine",
         choices=ENGINES,
-        default="openvoice",
-        help="TTS engine wrapper (default: openvoice).",
+        default="kokoro",
+        help="TTS engine wrapper (default: kokoro).",
     )
     parser.add_argument(
         "--voice",
-        default="base-en-default",
-        help="Engine built-in voice name (default: base-en-default). "
-             "Ignored if --voice-sample is set.",
+        default="",
+        help="Engine built-in voice name. Left empty, each engine uses its "
+             "own default — for kokoro that means detecting the language of "
+             "the text and picking the voice that speaks it. Ignored if "
+             "--voice-sample is set.",
     )
     parser.add_argument(
         "--voice-sample",
@@ -513,13 +562,24 @@ def main() -> int:
             print(f"OK cache hit: {existing.audio}")
             return 0
 
+    # An empty --voice means "whatever this engine calls default", and the
+    # engines disagree about what that is: openvoice wants a base speaker
+    # name, chatterbox the literal string "default", kokoro nothing at all
+    # because it works the language out from the text. Resolving it here
+    # keeps that difference out of every call site below.
+    if not args.voice:
+        args.voice = DEFAULT_VOICE.get(args.engine, "")
+
     if not _engine_is_available(args.engine):
+        # The paths this used to print pointed into this repository, where
+        # the voices lived before they moved to sprezzature-audio. They
+        # resolved to nothing, which is the worst shape for an install hint:
+        # the reader follows it, gets "no such file", and cannot tell whether
+        # they are in the wrong directory or reading a stale message.
         print(
             f"FAIL engine '{args.engine}' is not installed.\n"
-            f"  Install: pip install -r sprezzature-publish/scripts/"
-            f"requirements-narrate-{args.engine}.txt\n"
-            f"  Then run: python sprezzature-publish/scripts/install_narrate.py "
-            f"--engine {args.engine}",
+            f"  Install: pip install 'sprezzature-audio[narrate-{args.engine}]'\n"
+            f"  Then run: sprezzature-audio-install-voice --engine {args.engine}",
             file=sys.stderr,
         )
         return 2
