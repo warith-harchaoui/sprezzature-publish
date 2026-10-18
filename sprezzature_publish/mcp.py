@@ -130,21 +130,21 @@ else:
             ),
             formatter_class=argparse.RawDescriptionHelpFormatter,
             epilog=(
-                "Defaults come from SPREZZATURE_ACCESSIBILITY_HOST and "
-                "SPREZZATURE_ACCESSIBILITY_PORT when those are set.\n"
+                "Defaults come from SPREZZATURE_PUBLISH_HOST and "
+                "SPREZZATURE_PUBLISH_PORT when those are set.\n"
                 "The host defaults to 127.0.0.1: pass --host 0.0.0.0 to "
                 "accept connections from outside this machine."
             ),
         )
         parser.add_argument(
             "--host",
-            default=os.environ.get("SPREZZATURE_ACCESSIBILITY_HOST", "127.0.0.1"),
+            default=os.environ.get("SPREZZATURE_PUBLISH_HOST", "127.0.0.1"),
             help="Interface to bind (default: %(default)s).",
         )
         parser.add_argument(
             "--port",
             type=int,
-            default=int(os.environ.get("SPREZZATURE_ACCESSIBILITY_PORT", "8000")),
+            default=int(os.environ.get("SPREZZATURE_PUBLISH_PORT", "8000")),
             help="Port to bind (default: %(default)s).",
         )
         args = parser.parse_args(argv)
