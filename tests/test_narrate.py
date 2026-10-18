@@ -706,8 +706,27 @@ class TestTheVoicesLiveNextDoor:
     """
 
     def test_an_installed_engine_resolves_to_a_module_invocation(self):
-        """`python -m` against the installed package is the normal path."""
+        """
+        `python -m` against the installed package is the normal path.
+
+        Skipped where the voices are absent, which is CI: they live behind
+        `sprezzature-audio[narrate]` and that extra pulls torch. Installing
+        gigabytes so one assertion can run would be the wrong trade, and
+        asserting unconditionally would be worse — the first version of this
+        test did, and it asserted a fact about the *machine* rather than
+        about the code. It passed on every developer's laptop and failed on
+        the one environment that installs nothing extra.
+        """
+        import importlib.util
+
         import narrate_post
+
+        try:
+            present = importlib.util.find_spec("sprezzature_audio_scripts") is not None
+        except ModuleNotFoundError:
+            present = False
+        if not present:
+            pytest.skip("sprezzature-audio is not installed here")
 
         command = narrate_post._engine_command("openvoice")
         assert command is not None
