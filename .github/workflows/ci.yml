@@ -1,0 +1,42 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # pyproject says >=3.10. Testing only the newest hides a module that
+        # does not parse on the floor at all, for as long as it takes someone
+        # to run it there.
+        python-version: ["3.10", "3.11", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev,all,api,mcp]"
+
+      - name: Lint
+        run: ruff check sprezzature_publish scripts tests
+
+      # Nothing here needs Ollama or the network: the suite exercises the
+      # document tools and reads what the surfaces declare. The LLM-output
+      # quality suite is marked `eval` and excluded by default — in CI it
+      # would skip every test and report green for work it never did.
+      - name: Tests
+        run: python -m pytest -q

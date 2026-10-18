@@ -1,0 +1,12 @@
+# What the source distribution carries beyond the packages themselves.
+#
+# Without this file setuptools falls back to a distutils default that picks
+# up `tests/test*.py` and nothing else — no conftest, no fixtures. That is
+# worse than shipping no tests: a packager who downloads the sdist and runs
+# pytest gets a suite with its fixtures missing. So: the whole tests
+# directory, or none of it. This ships the whole thing.
+include LICENSE README.md CHANGELOG.md
+recursive-include tests *.py *.md *.html *.png *.json *.yaml *.vtt
+recursive-include scripts/prompts *.yaml
+recursive-include scripts/charters *
+include scripts/*.txt

@@ -1,0 +1,52 @@
+# `docker compose up` is the whole onboarding. The Dockerfile beside this file
+# is a recipe; this is the way in — the port, the volume, the environment and
+# the command, declared rather than reconstructed by the next reader from a
+# `docker run` line in somebody's shell history.
+#
+#   docker compose up -d
+#   curl -s localhost:8000/health
+#   docker compose run --rm api make-site lint /work/docs
+#
+# The model server is a separate profile. Linting and rendering need nothing
+# but this image; the meta tags and the plain-language rewrite ask a local
+# model, and someone who only wants pages should not be made to run one.
+
+services:
+  api:
+    build: .
+    image: sprezzature-publish:local
+    ports:
+      - "8000:8000"
+    environment:
+      # The package reads OLLAMA_URL; the ollama server reads OLLAMA_HOST.
+      # They are not interchangeable, and getting it wrong is invisible until
+      # the first call: the default http://localhost:11434 resolves to *this*
+      # container, so the API comes up healthy and 502s on the first rewrite.
+      OLLAMA_URL: http://ollama:11434
+    volumes:
+      # The documents to publish, and the site written beside them. Mounted
+      # rather than copied so the container never holds the only copy.
+      - ./work:/work
+    working_dir: /work
+    restart: unless-stopped
+
+  ollama:
+    image: ollama/ollama:latest
+    # Only started with `--profile prose`, because two of nine tools need it.
+    profiles: ["prose"]
+    ports:
+      - "11434:11434"
+    volumes:
+      # Named volume, not a bind mount: the weights survive `down` and a
+      # rebuild, and are not something anyone wants in their working tree.
+      - ollama-models:/root/.ollama
+    healthcheck:
+      test: ["CMD-SHELL", "ollama list >/dev/null 2>&1 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
+    restart: unless-stopped
+
+volumes:
+  ollama-models:
