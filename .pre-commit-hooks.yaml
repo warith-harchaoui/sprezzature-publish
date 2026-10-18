@@ -1,0 +1,28 @@
+# Pre-commit hook manifest for sprezzature-publish.
+#
+# Consumers add this repo to their own ``.pre-commit-config.yaml``:
+#
+#   repos:
+#     - repo: https://github.com/warith-harchaoui/sprezzature-publish
+#       rev: v1.0.0
+#       hooks:
+#         - id: sprezzature-publish-lint
+#
+# The lint is stdlib-only, which is the whole reason it belongs in a hook:
+# it runs in milliseconds with nothing installed behind it. Its optional
+# half — checking that external links resolve and that Mermaid blocks parse
+# — needs the [lint] extra, and a hook that reached the network on every
+# commit would not be a hook anyone keeps.
+
+- id: sprezzature-publish-lint
+  name: sprezzature-publish — Markdown lint (heading order, code-fence languages, local links, LaTeX, Mermaid)
+  description: >-
+    Lints Markdown for heading order (MD001), trailing whitespace
+    (MD009), code-fence languages (MD040), image alt text (MD045),
+    local link freshness (MD050), LaTeX balance and Mermaid block
+    syntax. Add --fix in your hook args for the safe auto-repairs.
+  entry: sprezzature-publish-lint
+  language: python
+  language_version: python3
+  files: '\.(md|mdx|mermaid|mmd)$'
+  types: [file]
