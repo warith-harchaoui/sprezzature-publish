@@ -1129,7 +1129,7 @@ def player_html(
     would be a strange thing to then do from a script.
 
 ``meta_html`` — the reading-and-listening line from
-    :func:`reading_meta_html` — belongs *inside* the card. Emitted as a
+    :func:`listening_meta_html` — belongs *inside* the card. Emitted as a
     sibling it became an orphan: the host page puts its own spacing between
     flex children, so the line ended up floating halfway between the player
     and the headline, attached to neither. A child cannot shrink its
@@ -1197,7 +1197,12 @@ def player_html(
         f'aria-valuetext="0:00">\n'
         '      <div class="ra-row">\n'
         '        <span class="ra-time" data-ra-elapsed>0:00</span>\n'
-        f'        <span class="ra-time" data-ra-total>{html.escape(total)}</span>\n'
+        # What is *left*, not what there is in total. The caption below
+        # already says the length, and two identical numbers twenty pixels
+        # apart is one number too many — this is the one that changes while
+        # the recording plays, so it is the one worth a live readout.
+        f'        <span class="ra-time" data-ra-remaining>&#8722;{html.escape(total)}'
+        "</span>\n"
         "      </div>\n"
         "    </div>\n"
         '    <span class="ra-tools">\n'
@@ -1220,25 +1225,18 @@ def player_html(
     )
 
 
-#: Silent reading speed for prose, in words per minute. 200 is the low end of
-#: the usual 200-250 range for adult readers on screen, chosen because an
-#: estimate that runs slightly long is a promise kept and one that runs short
-#: is a reader who stopped trusting the number.
-READING_WORDS_PER_MINUTE: int = 200
-
 #: Wording, per language. Not a translation table with a default: a missing
 #: language should be visible, not silently served English.
-_READING_PHRASES: dict[str, dict[str, str]] = {
-    "en": {
-        "read": "{minutes} min read",
-        "listen": "{minutes} min listen",
-        "join": " · ",
-    },
-    "fr": {
-        "read": "{minutes} min de lecture",
-        "listen": "{minutes} min d’écoute",
-        "join": " · ",
-    },
+#:
+#: One number, not two. This used to read "45 min read · 64 min listen",
+#: which put an *estimate* next to a *measurement* and invited the reader to
+#: compare them — and they never agree, because speech is slower than
+#: reading. The reading figure was also the weaker of the two: it came from
+#: a word count and an assumed speed, while the listening figure is the
+#: narration's own length down to the sample.
+_DURATION_PHRASES: dict[str, str] = {
+    "en": "{minutes} min",
+    "fr": "{minutes} min",
 }
 
 
@@ -1247,37 +1245,27 @@ def _minutes(seconds: float) -> int:
     return max(1, round(seconds / 60.0))
 
 
-def reading_meta_html(*, words: int, spoken_seconds: float, lang: str) -> str:
-    """Reading time beside listening time.
+def listening_meta_html(*, spoken_seconds: float, lang: str) -> str:
+    """How long the narration runs, as the one number worth showing.
 
-    Two numbers of different kinds, which is the interesting part. The
-    reading time is an *estimate* from a word count and an assumed speed. The
-    listening time is **measured**: the narration's own length, down to the
-    sample, because the timeline counted every sentence and every silence as
-    it laid them out. They are shown together and they will not agree --
-    speech is slower than reading -- and that is information rather than an
-    error: a reader deciding between the two deserves both figures.
+    Measured, not estimated: the timeline counted samples as it laid the
+    audio out, so the end of the final cue *is* the end of the recording.
+    That is what makes it worth printing at all — it is the figure a reader
+    uses to decide whether to commit to an hour.
 
     Marked up with ``<time datetime="PT…M">`` so the duration is machine
-    readable, and the whole line is given ``role="doc-tip"``-free plain text:
-    it is not a control, not a landmark, and announcing it as either would
-    add noise for the screen-reader user this feature is careful not to
-    disturb.
+    readable. No role and no landmark: it is not a control, and announcing
+    it as one would add noise for the screen-reader user this feature is
+    careful not to disturb.
     """
-    phrases = _READING_PHRASES.get(lang)
-    if phrases is None:
+    phrase = _DURATION_PHRASES.get(lang)
+    if phrase is None:
         raise ReadAlongMismatch(
-            f"no reading-time wording for language {lang!r}; add it to "
-            "_READING_PHRASES rather than falling back to English"
+            f"no listening-time wording for language {lang!r}; add it to "
+            "_DURATION_PHRASES rather than falling back to English"
         )
-    read_minutes = _minutes(words / float(READING_WORDS_PER_MINUTE) * 60.0)
-    listen_minutes = _minutes(spoken_seconds)
+    minutes = _minutes(spoken_seconds)
     return (
-        '<p class="ra-meta">'
-        f'<time datetime="PT{read_minutes}M">'
-        f"{html.escape(phrases['read'].format(minutes=read_minutes))}</time>"
-        f"{html.escape(phrases['join'])}"
-        f'<time datetime="PT{listen_minutes}M">'
-        f"{html.escape(phrases['listen'].format(minutes=listen_minutes))}</time>"
-        "</p>"
+        f'<p class="ra-meta"><time datetime="PT{minutes}M">'
+        f"{html.escape(phrase.format(minutes=minutes))}</time></p>"
     )

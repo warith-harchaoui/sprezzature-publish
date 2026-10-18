@@ -108,15 +108,11 @@ def build(page: Path, narration_dir: Path, out_dir: Path, *,
     out_dir.mkdir(parents=True, exist_ok=True)
 
     vtt_text = cues.read_text(encoding="utf-8")
-    # Read once and handed to both. The player shows it as a clock before any
-    # audio is fetched; the meta line shows it as minutes beside the reading
-    # estimate. Two presentations of one measurement, not two measurements.
+    # Read once and handed to both: the player shows it as a clock before any
+    # audio is fetched, the caption as whole minutes. Two presentations of
+    # one measurement.
     spoken = _readalong.spoken_seconds(vtt_text)
-    meta = _readalong.reading_meta_html(
-        words=len(_readalong.page_words(source, scope=scope)),
-        spoken_seconds=spoken,
-        lang=lang,
-    )
+    meta = _readalong.listening_meta_html(spoken_seconds=spoken, lang=lang)
     # The meta line goes *inside* the player. Emitted beside it, the host
     # page's own spacing between blocks left it floating halfway to the
     # headline, attached to neither.

@@ -48,7 +48,7 @@ function wireControls(root, audio) {
   const play = root.querySelector('[data-ra-play]');
   const scrub = root.querySelector('[data-ra-scrub]');
   const elapsed = root.querySelector('[data-ra-elapsed]');
-  const totalOut = root.querySelector('[data-ra-total]');
+  const remaining = root.querySelector('[data-ra-remaining]');
   if (!ui || !play || !scrub || !elapsed) return;
 
   // Declared duration first: `preload="none"` means the browser knows
@@ -70,7 +70,9 @@ function wireControls(root, audio) {
     const at = audio.currentTime || 0;
     const span = duration || audio.duration || 0;
     elapsed.textContent = CLOCK(at);
-    if (totalOut && span) totalOut.textContent = CLOCK(span);
+    // U+2212, the minus sign, not a hyphen: at this size a hyphen reads as
+    // a dash between two things rather than as a negative quantity.
+    if (remaining && span) remaining.textContent = `\u2212${CLOCK(span - at)}`;
     if (scrubbing || !span) return;
     const ratio = Math.min(1, at / span);
     scrub.value = String(Math.round(ratio * 1000));

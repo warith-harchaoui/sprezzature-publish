@@ -206,8 +206,21 @@ def test_the_total_is_shown_before_any_audio_is_fetched() -> None:
     """
     html = player(seconds=3817.361)
     assert 'data-ra-duration="3817.361"' in html
-    assert ">1:03:37</span>" in html
+    assert "&#8722;1:03:37</span>" in html
     assert 'preload="none"' in html
+
+
+def test_the_clock_counts_down_rather_than_repeating_the_caption() -> None:
+    """
+    The caption under the bar already says how long the recording is. A
+    right-hand clock showing the same total put the same number twice in a
+    card the width of a paragraph. What changes while a recording plays is
+    how much is left, so that is what the live readout says.
+    """
+    html = player(seconds=3817.361)
+    assert "data-ra-remaining" in html
+    assert "data-ra-total" not in html
+    assert "\\u2212" in JS or "data-ra-remaining" in JS
 
 
 def test_the_slider_announces_a_time_not_a_thousandth() -> None:

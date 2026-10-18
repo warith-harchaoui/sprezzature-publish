@@ -438,28 +438,50 @@ class TestPlayer:
             assert (_readalong.assets_dir() / name).is_file()
 
 
-class TestReadingMeta:
-    """Two durations of different kinds, shown together on purpose."""
+class TestListeningMeta:
+    """One number, and it is the measured one.
 
-    def test_reading_is_estimated_and_listening_is_measured(self):
-        out = _readalong.reading_meta_html(words=400, spoken_seconds=180.0, lang="en")
-        assert "2 min read" in out      # 400 words at 200 wpm
-        assert "3 min listen" in out    # the narration's own length
-        assert 'datetime="PT2M"' in out and 'datetime="PT3M"' in out
+    This line used to read "45 min read · 64 min listen". Two figures of
+    different kinds sitting side by side invited a comparison that can only
+    ever come out one way — speech is slower than reading — and the weaker
+    of the two was doing the talking: the reading figure came from a word
+    count and an assumed speed, the listening figure from the narration's
+    own length down to the sample.
+    """
+
+    def test_it_shows_the_narrations_measured_length(self):
+        out = _readalong.listening_meta_html(spoken_seconds=180.0, lang="en")
+        assert ">3 min<" in out
+        assert 'datetime="PT3M"' in out
+
+    def test_an_hour_is_still_shown_in_minutes(self):
+        """
+        The figure answers "do I have time for this", and sixty-four minutes
+        answers it better than one hour and four. The clock beside the
+        scrubber is where hours belong.
+        """
+        out = _readalong.listening_meta_html(spoken_seconds=3817.4, lang="en")
+        assert ">64 min<" in out
 
     def test_it_never_claims_zero_minutes(self):
-        out = _readalong.reading_meta_html(words=3, spoken_seconds=2.0, lang="en")
-        assert "1 min read" in out and "1 min listen" in out
+        out = _readalong.listening_meta_html(spoken_seconds=2.0, lang="en")
+        assert ">1 min<" in out
 
-    def test_french_is_french(self):
-        out = _readalong.reading_meta_html(words=400, spoken_seconds=180.0, lang="fr")
-        assert "2 min de lecture" in out
-        assert "3 min d" in out  # d’écoute, with a typographic apostrophe
-        assert "min read" not in out
+    def test_the_reading_estimate_is_gone_entirely(self):
+        """
+        Guards the removal rather than the replacement. Bringing the second
+        figure back as a silent default is the way this regresses.
+        """
+        for lang in ("en", "fr"):
+            out = _readalong.listening_meta_html(spoken_seconds=2700.0, lang=lang)
+            assert "read" not in out and "lecture" not in out
+            assert out.count("<time") == 1
 
     def test_an_unknown_language_is_visible_rather_than_served_english(self):
-        with pytest.raises(_readalong.ReadAlongMismatch, match="no reading-time wording"):
-            _readalong.reading_meta_html(words=100, spoken_seconds=30.0, lang="de")
+        with pytest.raises(
+            _readalong.ReadAlongMismatch, match="no listening-time wording"
+        ):
+            _readalong.listening_meta_html(spoken_seconds=30.0, lang="de")
 
     def test_the_word_count_skips_what_the_narration_skipped(self):
         source = "Four words right here.\n\n```sh\nnot counted at all\n```\n"

@@ -309,14 +309,10 @@ def _attach_readalong(body_html: str, *, src: Path, out_dir: Path, narration_dir
     _readalong.copy_assets(out_dir)
 
     # One read, one measurement, two presentations: a clock in the player and
-    # minutes in the meta line. Read twice, as this did, they could not
+    # whole minutes in the caption. Read twice, as this did, they could not
     # disagree -- but the file was opened three times to build one block.
     spoken = _readalong.spoken_seconds(cues.read_text(encoding="utf-8"))
-    meta = _readalong.reading_meta_html(
-        words=len(_readalong.page_words(body_html)),
-        spoken_seconds=spoken,
-        lang=lang,
-    )
+    meta = _readalong.listening_meta_html(spoken_seconds=spoken, lang=lang)
     player = _readalong.player_html(
         audio_src=_readalong.href_from(audio, out_dir),
         vtt_src=_readalong.href_from(cues, out_dir),
