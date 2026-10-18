@@ -929,6 +929,19 @@ def narration_sources(narration_dir: Path, stem: str) -> tuple[Path, Path] | Non
     Returns ``None`` when there is nothing to attach, which is the ordinary
     case: most pages of a site are not narrated, and a missing recording is
     not an error.
+
+    Two filenames are accepted for the audio, and the second one is the
+    repair. This looked only for ``<stem>.<ext>``, while ``narrate_post``
+    writes ``narration.wav`` — so the two commands this module's own epilog
+    documents back to back did not connect for any page not called
+    "narration". And they failed in the shape that hides best: a missing
+    recording is *not an error* here, by design, so the read-along was
+    simply never attached and both commands reported success.
+
+    ``<stem>.<ext>`` stays first so a site that already renamed its files
+    keeps working. The cue file has always been fixed-name, which is the
+    tell: a directory holding one ``narration.vtt`` holds one page's
+    narration, so the audio beside it needs no key either.
     """
     cues = narration_dir / "narration.vtt"
     if not cues.is_file():
@@ -936,8 +949,9 @@ def narration_sources(narration_dir: Path, stem: str) -> tuple[Path, Path] | Non
     audio = next(
         (
             candidate
+            for name in (stem, "narration")
             for suffix in AUDIO_TYPES
-            for candidate in [narration_dir / f"{stem}{suffix}"]
+            for candidate in [narration_dir / f"{name}{suffix}"]
             if candidate.is_file()
         ),
         None,

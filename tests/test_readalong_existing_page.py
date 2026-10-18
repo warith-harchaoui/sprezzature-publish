@@ -751,3 +751,75 @@ class TestTheCommand:
                           "--scope", "article", "--lang", "en")
         assert result.returncode == 1
         assert not (tmp_path / "built" / "ralph-loops.html").exists()
+
+
+# ── The two commands have to meet ──────────────────────────────────────────
+
+
+def test_the_narration_command_and_the_readalong_command_connect(
+    tmp_path: Path,
+) -> None:
+    """
+    The defect this is written for: they did not.
+
+    ``narrate_post`` writes ``narration.wav`` and ``narration.vtt`` into its
+    ``--out-dir``. ``narration_sources`` looked only for ``<stem>.<ext>``, so
+    for any page not called "narration" the audio was never found — and
+    because a missing recording is deliberately *not* an error here, both
+    commands exited 0 and the page simply came out without a player. The two
+    are documented back to back in ``readalong.py``'s own epilog.
+    """
+    import _readalong
+
+    narration = tmp_path / "audio"
+    narration.mkdir()
+    (narration / "narration.vtt").write_text(
+        "WEBVTT\n\n00:00:00.000 --> 00:00:01.000\nhello\n", encoding="utf-8"
+    )
+    (narration / "narration.wav").write_bytes(b"RIFF....WAVE")
+
+    found = _readalong.narration_sources(narration, "ralph-loops")
+    assert found is not None, (
+        "narrate_post's own output was not recognised as a narration"
+    )
+    audio, cues = found
+    assert audio.name == "narration.wav"
+    assert cues.name == "narration.vtt"
+
+
+def test_a_page_named_file_still_wins(tmp_path: Path) -> None:
+    """
+    A site that already renamed its recordings keeps working, and keeps
+    priority — otherwise this fix would quietly repoint existing sites at
+    whatever ``narration.wav`` happened to be in the folder.
+    """
+    import _readalong
+
+    narration = tmp_path / "audio"
+    narration.mkdir()
+    (narration / "narration.vtt").write_text(
+        "WEBVTT\n\n00:00:00.000 --> 00:00:01.000\nhello\n", encoding="utf-8"
+    )
+    (narration / "narration.wav").write_bytes(b"RIFF....WAVE")
+    (narration / "ralph-loops.mp3").write_bytes(b"ID3")
+
+    found = _readalong.narration_sources(narration, "ralph-loops")
+    assert found is not None
+    assert found[0].name == "ralph-loops.mp3"
+
+
+def test_cues_without_audio_is_still_nothing_to_attach(tmp_path: Path) -> None:
+    """
+    The widened search must not start matching on the cue file alone. A
+    narration run that died after writing its cues has no audio, and
+    attaching a player to nothing is worse than attaching none.
+    """
+    import _readalong
+
+    narration = tmp_path / "audio"
+    narration.mkdir()
+    (narration / "narration.vtt").write_text(
+        "WEBVTT\n\n00:00:00.000 --> 00:00:01.000\nhello\n", encoding="utf-8"
+    )
+
+    assert _readalong.narration_sources(narration, "ralph-loops") is None
