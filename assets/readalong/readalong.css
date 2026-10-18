@@ -73,9 +73,12 @@
   border: 0;
   border-top: 1px solid var(--ra-line);
   border-radius: 0;
-  /* Opaque, not a wash. A translucent bar over scrolling text is text over
-     text. The page's own paper is mixed in so the bar still belongs to it. */
-  background: color-mix(in srgb, var(--ra-wash) 10%, Canvas);
+  /* Opaque, not a wash: a translucent bar over scrolling text is text over
+     text. The ground is the page's own paper when the build could read it,
+     and `Canvas` otherwise — the browser's idea of a page background, which
+     is white on any page that is dark through its own stylesheet without
+     declaring `color-scheme`. */
+  background: color-mix(in srgb, var(--ra-wash) 10%, var(--ra-paper, Canvas));
   backdrop-filter: saturate(1.4) blur(8px);
   box-shadow: 0 -1px 12px rgb(0 0 0 / 0.07);
 }

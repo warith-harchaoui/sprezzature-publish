@@ -361,3 +361,116 @@ def test_the_skip_glyph_leaves_its_middle_empty() -> None:
     assert radius and float(radius.group(1)) >= 9.0, (
         "the ring is drawn too tight for the digits it has to contain"
     )
+
+
+# ── The colours come from the page ─────────────────────────────────────────
+
+LIGHT = (
+    "<html><head><style>body{background:#ffffff;color:#111111}"
+    ".muted{color:#858585}.muted2{color:#858585}.muted3{color:#858585}"
+    ".chip{background-color:#F7FABE}</style></head><body><p>x</p></body></html>"
+)
+DARK = (
+    "<html><head><style>body{background:#111113;color:#f2f2f7}"
+    ".chip{background-color:#5EEAD4}</style></head><body><p>x</p></body></html>"
+)
+
+
+def test_a_framework_default_is_not_the_pages_accent() -> None:
+    """
+    The rule the extraction rests on: a colour on the right of a **custom
+    property definition** is skipped, a colour inside a real declaration is
+    kept.
+
+    Without it, `--framer-link-text-color: rgb(0, 153, 255)` — a framework
+    default sitting on every rich-text block of a page, which the site then
+    overrides — is counted thirty-one times and wins. The player ends up
+    wearing a colour that is painted nowhere on the page.
+    """
+    html = (
+        '<p style="--framer-link-text-color:rgb(0, 153, 255)">a</p>'
+        '<p style="--framer-link-text-color:rgb(0, 153, 255)">b</p>'
+        '<p style="--framer-link-text-color:rgb(0, 153, 255)">c</p>'
+        '<a style="background-color:var(--token-x, rgb(247, 250, 190))">chip</a>'
+    )
+    assert _readalong.page_palette(html).get("accent") == "#F7FABE"
+
+
+def test_a_token_fallback_inside_a_real_property_still_counts() -> None:
+    """
+    `background-color: var(--token-…, #F7FABE)` is how a design tool writes
+    a named token, and a named token is about as close to "the author chose
+    this" as a stylesheet gets. Skipping it along with the definitions
+    would throw away the one colour worth having.
+    """
+    html = '<a style="background-color:var(--token-x, #F7FABE)">chip</a>'
+    assert _readalong.page_palette(html).get("accent") == "#F7FABE"
+
+
+@pytest.mark.parametrize(
+    ("html", "paper", "ink"),
+    [(LIGHT, "#FFFFFF", "#111111"), (DARK, "#111113", "#F2F2F7")],
+)
+def test_paper_and_ink_are_told_apart_by_property_not_by_lightness(
+    html: str, paper: str, ink: str
+) -> None:
+    """
+    Luminance alone gets a dark page exactly backwards: there the
+    background is the dark colour and the text the light one, so "dark
+    means ink" hands the player the page's own background to paint a button
+    with — an invisible control on the pages least able to spare one.
+    """
+    palette = _readalong.page_palette(html)
+    assert palette["paper"] == paper
+    assert palette["ink"] == ink
+
+
+def test_an_accent_too_pale_to_fill_is_kept_where_it_works() -> None:
+    """
+    An accent has two jobs and a page's accent is usually only good at one.
+    A pale chip colour is the page's own voice as a wash and 1.09:1 as a
+    filled button. So the wash keeps it and the fill takes the page's ink —
+    which is the page's own arrangement, a pale chip with dark type on it.
+    """
+    colours = _readalong.player_colours(_readalong.page_palette(LIGHT))
+    assert colours["--ra-tint"] == "#F7FABE"
+    assert colours["--ra-accent"] == "#111111"
+
+
+def test_an_accent_that_can_fill_does_fill() -> None:
+    colours = _readalong.player_colours(_readalong.page_palette(DARK))
+    assert colours["--ra-accent"] == "#5EEAD4"
+
+
+def test_a_page_that_says_nothing_keeps_the_components_own_default() -> None:
+    """Dressing a page in a guess is worse than the restrained version."""
+    assert _readalong.player_colours(_readalong.page_palette("<p>plain</p>")) == {}
+
+
+def test_the_bar_stands_on_the_pages_paper_not_the_browsers() -> None:
+    """
+    `Canvas` is the browser's idea of a page background, and it is white on
+    any page that is dark through its own stylesheet without declaring
+    `color-scheme`. That is not a rare page — it is every hand-built dark
+    theme — and a white bar across the foot of one is a slab of light.
+    """
+    assert "var(--ra-paper, Canvas)" in CSS
+    assert _readalong.player_colours(_readalong.page_palette(DARK))["--ra-paper"] == (
+        "#111113"
+    )
+
+
+def test_the_muted_grey_does_not_win_the_ink() -> None:
+    """
+    The trap this rule exists for, and the first two versions fell into it.
+
+    A page declares its caption grey far more often than its body colour —
+    sixteen occurrences against one, on the page this was built against —
+    so "most common neutral" hands the player a mid-grey, which is the
+    exact thing the whole colour pass was asked to stop. Darkness instead
+    of frequency gets a dark page backwards. The colour a page sets type in
+    is the one furthest from its background, and that holds either way up.
+    """
+    palette = _readalong.page_palette(LIGHT)
+    assert palette["ink"] == "#111111", "the caption grey won the ink"
+    assert _readalong.player_colours(palette)["--ra-accent"] == "#111111"

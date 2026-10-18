@@ -1077,7 +1077,7 @@ def contrast(one: tuple[int, int, int], other: tuple[int, int, int]) -> float:
     return (max(first, second) + 0.05) / (min(first, second) + 0.05)
 
 
-def _declared_colours(css: str) -> list[tuple[int, int, int]]:
+def _declared_colours(css: str) -> list[tuple[str, tuple[int, int, int]]]:
     """Every colour a stylesheet actually paints with.
 
     The distinction that makes this work: a colour on the right of a
@@ -1092,15 +1092,14 @@ def _declared_colours(css: str) -> list[tuple[int, int, int]]:
     deliberately: that is how a design tool writes a token, and a named
     token is about as close to "the author chose this" as a stylesheet gets.
     """
-    found: list[tuple[int, int, int]] = []
+    found: list[tuple[str, tuple[int, int, int]]] = []
     for declaration in _DECLARATION.finditer(css):
-        if declaration.group("prop").startswith("--"):
-            continue
+        prop = declaration.group("prop").lower()
         value = declaration.group("value")
         for piece in _COLOUR.finditer(value):
             colour = _parse_colour(piece.group(0))
             if colour is not None:
-                found.append(colour)
+                found.append((prop, colour))
     return found
 
 
@@ -1154,8 +1153,39 @@ def page_palette(html_text: str, *, stylesheets: Sequence[str] = ()) -> dict[str
         *stylesheets,
     ]
     counted: Counter[tuple[int, int, int]] = Counter()
+    # Kept apart by the property that declared them, because luminance alone
+    # gets a dark page exactly backwards: there the background is the dark
+    # colour and the text the light one, so "dark means ink" would hand the
+    # player the page's own background to paint a button with.
+    grounds: Counter[tuple[int, int, int]] = Counter()
+    inks: Counter[tuple[int, int, int]] = Counter()
+    # Second-choice neutrals, read from custom property *definitions*.
+    # Those are skipped for the accent, and for a good reason: a framework
+    # default like `--framer-link-text-color` sits on every block of a page
+    # and is then overridden, so counting it picks a colour painted
+    # nowhere. The same caution would be too strict for ink and paper: a
+    # design tool names its text colour in a token and consumes it through
+    # `var()`, so refusing definitions outright leaves a page with obvious
+    # black text looking like it never said so. Kept apart and used only
+    # when the real declarations say nothing — and only for near-neutrals,
+    # where being slightly wrong costs a shade of grey rather than a hue.
+    named_grounds: Counter[tuple[int, int, int]] = Counter()
+    named_inks: Counter[tuple[int, int, int]] = Counter()
+
     for source in sources:
-        counted.update(_declared_colours(source))
+        for prop, colour in _declared_colours(source):
+            custom = prop.startswith("--")
+            if not custom:
+                counted[colour] += 1
+            if _chroma(colour) >= _MIN_CHROMA:
+                continue
+            if "background" in prop:
+                (named_grounds if custom else grounds)[colour] += 1
+            elif "color" in prop:
+                (named_inks if custom else inks)[colour] += 1
+
+    grounds = grounds or named_grounds
+    inks = inks or named_inks
 
     palette: dict[str, str] = {}
     coloured = [(n, c) for c, n in counted.items() if _chroma(c) >= _MIN_CHROMA]
@@ -1164,14 +1194,22 @@ def page_palette(html_text: str, *, stylesheets: Sequence[str] = ()) -> dict[str
         # accent more than once, and when two are equally common the more
         # saturated one is the one being used *as* an accent.
         palette["accent"] = _hex(max(coloured, key=lambda pair: (pair[0], _chroma(pair[1])))[1])
+    # Paper by frequency: a page paints its own background more often than
+    # anything else paints a neutral one.
+    if grounds:
+        paper = grounds.most_common(1)[0][0]
+        palette["paper"] = _hex(paper)
+    else:
+        paper = (255, 255, 255)
 
-    greys = [(n, c) for c, n in counted.items() if _chroma(c) < _MIN_CHROMA]
-    darks = [c for _, c in greys if _relative_luminance(c) < 0.2]
-    lights = [c for _, c in greys if _relative_luminance(c) > 0.8]
-    if darks:
-        palette["ink"] = _hex(min(darks, key=_relative_luminance))
-    if lights:
-        palette["paper"] = _hex(max(lights, key=_relative_luminance))
+    # Ink by contrast against that paper, not by frequency and not by
+    # darkness. Frequency picks the muted grey a page uses for captions —
+    # sixteen occurrences against one for the body colour — and a grey
+    # play button is the thing this whole pass exists to stop. Darkness
+    # gets a dark page backwards. "The colour this page sets type in" is
+    # "the one furthest from its background", and that holds either way up.
+    if inks:
+        palette["ink"] = _hex(max(inks, key=lambda c: contrast(c, paper)))
     return palette
 
 
@@ -1196,6 +1234,13 @@ def player_colours(palette: dict[str, str]) -> dict[str, str]:
     ink = _parse_colour(palette.get("ink", ""))
 
     colours: dict[str, str] = {}
+    # The page's own paper, whatever else is known. The bar sits over
+    # scrolling text so it has to be opaque, and `Canvas` -- the browser's
+    # idea of a page background -- is white on a page that is dark through
+    # its own stylesheet without declaring `color-scheme`. That is not a
+    # rare page; it is every hand-built dark theme.
+    if palette.get("paper"):
+        colours["--ra-paper"] = palette["paper"]
     if accent is None:
         return colours
     colours["--ra-tint"] = _hex(accent)
