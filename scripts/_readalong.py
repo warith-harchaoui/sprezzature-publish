@@ -78,6 +78,7 @@ import html
 import os
 import re
 import shutil
+import unicodedata
 from collections import Counter
 from collections.abc import Sequence
 from dataclasses import dataclass, field
@@ -378,6 +379,81 @@ def without_markers(sentence: str) -> str:
 _REFERENCE_MARKER = re.compile(r"[\[(]?\s*\d{1,3}\s*[\])]?")
 
 
+#: What a page calls the section where its sources live. Folded to
+#: lowercase without accents before matching, so "Références" and
+#: "References" are the same key.
+#:
+#: This is the *second* signal, and it only fires when the first one finds
+#: nothing. The first is structural — the footnote markers in the prose say
+#: what they point at — and it needs no vocabulary at all, which is why it
+#: is tried first and why a page whose heading is in no language this table
+#: knows still works. But plenty of pages list their sources without
+#: linking a single marker to them, and for those the name is all there is.
+NOTE_SECTION_HEADINGS: frozenset[str] = frozenset({
+    # English
+    "references", "reference", "bibliography", "notes", "footnotes",
+    "endnotes", "sources", "further reading", "works cited", "citations",
+    "see also",
+    # French
+    "references", "bibliographie", "notes", "notes et references",
+    "sources", "pour aller plus loin", "ouvrages cites", "a lire aussi",
+    # A few more that cost nothing to know
+    "bibliografia", "referencias", "literatur", "quellen", "fonti",
+    "bibliografie", "referenties", "bibliografía",
+})
+
+#: A block that reads like a source rather than like prose: a list item, or
+#: anything carrying a citation element or a bare URL.
+_LOOKS_CITED = re.compile(r"<cite\b|https?://|\bdoi\.org/|\barxiv\.org/", re.I)
+
+#: How much of a section has to read like sources before its heading is
+#: taken at its word. Two thirds, not all: a bibliography often opens with
+#: a line of prose saying what the list is.
+_CITED_SHARE: float = 0.66
+
+
+def _fold(text: str) -> str:
+    """Lowercase, unaccented, punctuation-free — a heading as a key."""
+    stripped = unicodedata.normalize("NFKD", text)
+    stripped = "".join(c for c in stripped if not unicodedata.combining(c))
+    return " ".join(re.sub(r"[^\w\s]", " ", stripped.lower()).split())
+
+
+def _mark_named_sections(blocks: list[_Block]) -> bool:
+    """Silence a section that says what it is, when it also looks the part.
+
+    The corroboration matters. A heading called "Notes" above three
+    paragraphs of prose is a section of an essay, and silencing it because
+    of its name would be the kind of guess that makes a tool untrustworthy.
+    A heading called "Notes" above twenty list items carrying ``<cite>``
+    elements and arXiv links is an apparatus. The name proposes; the shape
+    decides.
+    """
+    found = False
+    for index, block in enumerate(blocks):
+        if block.tag not in HEADING_TAGS:
+            continue
+        if _fold(block.visible) not in NOTE_SECTION_HEADINGS:
+            continue
+        end = index + 1
+        while end < len(blocks) and blocks[end].tag not in HEADING_TAGS:
+            end += 1
+        body = blocks[index + 1:end]
+        if not body:
+            continue
+        cited = sum(
+            1 for b in body
+            if b.tag == "li" or _LOOKS_CITED.search(b.open_raw + "".join(
+                piece.raw for piece in b.pieces))
+        )
+        if cited / len(body) < _CITED_SHARE:
+            continue
+        for b in blocks[index:end]:
+            b.narrated = False
+        found = True
+    return found
+
+
 #: How far back from the first note to look for the heading that opens the
 #: section holding it. Short on purpose: a bibliography's heading is within
 #: a block or two of its list -- a title, maybe a line saying what the list
@@ -409,12 +485,14 @@ def _mark_notes(blocks: list[_Block], targets: set[str]) -> None:
     aloud, announcing a section that then never arrives.
     """
     if not targets:
+        _mark_named_sections(blocks)
         return
     marked = [
         index for index, block in enumerate(blocks)
         if _element_id(block.open_raw) in targets
     ]
     if not marked:
+        _mark_named_sections(blocks)
         return
     first, last = min(marked), max(marked)
 
@@ -430,6 +508,10 @@ def _mark_notes(blocks: list[_Block], targets: set[str]) -> None:
 
     for block in blocks[start:last + 1]:
         block.narrated = False
+
+    # A page can have both: linked footnotes in one section and an unlinked
+    # "Further reading" in another.
+    _mark_named_sections(blocks)
 
 
 #: Elements that wrap a display formula and nothing else. They are layout

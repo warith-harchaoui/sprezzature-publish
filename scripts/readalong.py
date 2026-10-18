@@ -71,7 +71,9 @@ from _lang import detect_text_language  # noqa: E402
 
 
 def build(page: Path, narration_dir: Path, out_dir: Path, *,
-          scope: str | None, lang: str, follow: bool = True) -> Path:
+          scope: str | None, lang: str, follow: bool = True,
+          stylesheets: tuple[Path, ...] = (), head: bool = True,
+          href_base: str = "") -> Path:
     """Write `page` with its read-along into `out_dir`; return the new path.
 
     Parameters
@@ -88,6 +90,19 @@ def build(page: Path, narration_dir: Path, out_dir: Path, *,
     lang : str
         BCP-47 language tag, for the player's accessible name and the wording
         of the duration.
+    stylesheets : tuple of Path
+        Extra stylesheets to read the page's colours from. A page built
+        from a fragment and a site-wide stylesheet carries none of its own
+        colours, so there is nothing to find in it; this is how the site
+        hands them over.
+    head : bool
+        Whether to write the stylesheet and module links into the page. A
+        templated site puts them in its layout once instead of in every
+        page, and a fragment has no ``<head>`` for them to go in.
+    href_base : str
+        A URL prefix for the audio and the cues, instead of a path relative
+        to the output file. A fragment is not served from where it is
+        stored, so a relative path computed from disk points nowhere.
     follow : bool
         Whether the page follows the reading, sentence by sentence. On by
         default, and off is a supported shape rather than a degraded one.
@@ -136,11 +151,18 @@ def build(page: Path, narration_dir: Path, out_dir: Path, *,
     # files beside it; a page that says nothing keeps the component's own
     # default rather than being dressed in a guess.
     palette = _readalong.page_palette(
-        source, stylesheets=_readalong.local_stylesheets(source, page)
+        source,
+        stylesheets=[
+            *_readalong.local_stylesheets(source, page),
+            *(sheet.read_text(encoding="utf-8", errors="replace")
+              for sheet in stylesheets if sheet.is_file()),
+        ],
     )
     player = _readalong.player_html(
-        audio_src=_readalong.href_from(audio, out_dir),
-        vtt_src=_readalong.href_from(cues, out_dir),
+        audio_src=(f"{href_base.rstrip('/')}/{audio.name}" if href_base
+                   else _readalong.href_from(audio, out_dir)),
+        vtt_src=(f"{href_base.rstrip('/')}/{cues.name}" if href_base
+                 else _readalong.href_from(cues, out_dir)),
         label=_readalong.player_label(lang),
         lang=lang,
         duration_seconds=spoken,
@@ -149,7 +171,8 @@ def build(page: Path, narration_dir: Path, out_dir: Path, *,
     )
     if not follow:
         built = _readalong.inject_player_only(
-            source, scope=scope, head=_readalong.head_markup(), player=player,
+            source, scope=scope,
+            head=_readalong.head_markup() if head else "", player=player,
         )
     else:
         built = _readalong.inject_into_page(
@@ -159,7 +182,7 @@ def build(page: Path, narration_dir: Path, out_dir: Path, *,
             opening=_narrate.QUOTE_OPENING,
             closing=_narrate.QUOTE_CLOSING,
             scope=scope,
-            head=_readalong.head_markup(),
+            head=_readalong.head_markup() if head else "",
             player=player,
         )
 
@@ -193,6 +216,23 @@ def main() -> int:
              "whole document is read, navigation and footer included.",
     )
     parser.add_argument(
+        "--css", type=Path, action="append", default=[], dest="stylesheets",
+        metavar="PATH",
+        help="A stylesheet to read the page's colours from. Repeatable. For "
+             "a page built from a fragment, which carries none of its own.",
+    )
+    parser.add_argument(
+        "--no-head", action="store_true",
+        help="Do not write the stylesheet and module links into the page. "
+             "For a templated site that carries them in its layout.",
+    )
+    parser.add_argument(
+        "--href-base", default="", metavar="URL",
+        help="URL prefix for the audio and the cues, instead of a path "
+             "relative to the output. For a page not served from where it "
+             "is stored.",
+    )
+    parser.add_argument(
         "--no-follow",
         action="store_true",
         help="Add the player without the sentence-by-sentence highlight. A "
@@ -223,6 +263,8 @@ def main() -> int:
         destination = build(
             args.page, args.narration_dir, args.out_dir,
             scope=args.scope, lang=lang, follow=not args.no_follow,
+            stylesheets=tuple(args.stylesheets), head=not args.no_head,
+            href_base=args.href_base,
         )
     except (FileNotFoundError, _readalong.ReadAlongMismatch) as failure:
         print(f"readalong: {failure}", file=sys.stderr)

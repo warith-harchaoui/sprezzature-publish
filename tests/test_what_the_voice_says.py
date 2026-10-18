@@ -430,3 +430,66 @@ def test_the_marker_is_invisible_but_findable() -> None:
     assert _readalong.MARKER in block.spoken
     cleaned = _readalong.without_markers(block.spoken)
     assert cleaned == "Top N. In 2025 there were 9 of them.", cleaned
+
+
+# ── A section that says what it is ─────────────────────────────────────────
+
+
+def _sources_section(heading: str, items: int = 6) -> str:
+    entries = "".join(
+        f'<li><cite>Author {i} (2024). A paper.</cite> arxiv.org/abs/{i}</li>'
+        for i in range(items)
+    )
+    return f"<article><p>Body text here.</p><h2>{heading}</h2><ol>{entries}</ol></article>"
+
+
+@pytest.mark.parametrize(
+    "heading",
+    ["References", "Bibliography", "Références", "Further reading",
+     "Sources", "Works cited", "NOTES"],
+)
+def test_a_sources_section_is_silenced_whatever_it_is_called(heading: str) -> None:
+    """
+    The structural rule — the markers say what they point at — needs no
+    vocabulary and is tried first. But plenty of pages list their sources
+    without linking a single marker to them, and for those the name is all
+    there is. Folded to lowercase without accents, so "Références" and
+    "References" are one key.
+    """
+    blocks = _readalong.page_blocks(_sources_section(heading), scope="article")
+    assert [b.visible for b in blocks] == ["Body text here."], heading
+
+
+def test_a_prose_section_called_notes_is_still_read() -> None:
+    """
+    The corroboration, and the reason the name alone is not enough.
+
+    A heading called "Notes" above three paragraphs of prose is a section
+    of an essay; silencing it because of its name is the kind of guess that
+    makes a tool untrustworthy. The same heading above twenty list items
+    carrying citations is an apparatus. The name proposes, the shape
+    decides.
+    """
+    html = (
+        "<article><p>Body.</p><h2>Notes</h2>"
+        "<p>A real aside, in prose.</p><p>And a second paragraph of it.</p>"
+        "<p>And a third, still prose.</p></article>"
+    )
+    blocks = _readalong.page_blocks(html, scope="article")
+    assert len(blocks) == 5, [b.visible[:20] for b in blocks]
+
+
+def test_a_page_can_have_both_kinds_of_section() -> None:
+    """Linked footnotes in one place, an unlinked reading list in another."""
+    html = (
+        "<article><p>Prose with a marker"
+        '<sup><a href="#ref-1">1</a></sup>.</p>'
+        "<h2>Bibliography</h2><ol>"
+        '<li id="ref-1"><cite>Linked source.</cite></li>'
+        '<li id="ref-2"><cite>Another.</cite></li></ol>'
+        "<h2>Further reading</h2><ol>"
+        "<li><cite>Unlinked book, 2024.</cite></li>"
+        "<li><cite>And another, 2025.</cite></li></ol></article>"
+    )
+    blocks = _readalong.page_blocks(html, scope="article")
+    assert len(blocks) == 1 and blocks[0].tag == "p"
