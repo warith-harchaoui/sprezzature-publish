@@ -11,6 +11,19 @@ argparse-based ones: every script registers its command through
 :func:`sprezzature_command` so all of this project's command-line tools look
 and behave the same way, whichever library built them.
 
+Why importing this can fail, and what it says
+----------------------------------------------
+``click`` is a third-party package, and in most of these repositories it is
+an *extra* rather than a base dependency — the argparse twin of every command
+needs nothing, which is the whole point of shipping both. So a bare
+``pip install`` leaves the Click commands on ``PATH`` and unable to start.
+
+Until this file guarded the import, what they printed was
+``ModuleNotFoundError: No module named 'click'``: a traceback about a package
+the reader never asked for, for a command their own install had just created.
+:func:`_missing_click_message` replaces it with the install line that works,
+read from the installed metadata so it stays right when an extra is renamed.
+
 Why a custom ``Command`` subclass
 ---------------------------------
 Click's default usage line reads ``Usage: prog [OPTIONS] ARGS``, with no
@@ -41,7 +54,77 @@ from __future__ import annotations
 from collections.abc import Callable, Sequence
 from typing import Any
 
-import click
+
+def _missing_click_message() -> str:
+    """What to say when ``click`` is not installed.
+
+    Every command in this suite comes in two: an argparse one that needs
+    nothing, and a Click twin. Click is therefore an *extra* in most of these
+    packages — and until this guard existed, running the twin after a bare
+    ``pip install`` gave ``ModuleNotFoundError: No module named 'click'``. A
+    traceback about a third-party package the reader never asked for, for a
+    command their own ``pip install`` had just put on PATH.
+
+    The message is assembled rather than written out, because this file is
+    copied byte-for-byte into nine repositories and cannot know which one it
+    is sitting in. It works it out: the installed package name comes from
+    ``__package__`` (``sprezzature_audio_scripts`` → ``sprezzature-audio``),
+    and *which extras actually declare click* is read from the installed
+    metadata — so the line it prints stays right when an extra is renamed,
+    with nothing here to keep in step.
+    """
+    import re
+    from pathlib import Path
+
+    # From the file, not from ``__package__``. These scripts are imported two
+    # ways on purpose — as ``sprezzature_<brick>_scripts._click`` from a
+    # wheel, and by bare name from a clone with ``scripts/`` on the path — and
+    # ``__package__`` is empty in the second. The directory name is right in
+    # both, and the first version of this function fell to its generic branch
+    # for exactly the commands that import it the clone way.
+    folder = Path(__file__).resolve().parent.name
+    package = folder.replace("_scripts", "") if folder.endswith("_scripts") else ""
+    distribution = package.replace("_", "-") if package else ""
+    if not distribution:
+        # A loose checkout, where there is no distribution to name.
+        # `pip install click` is then the honest whole answer.
+        return (
+            "This command's parser is built with Click, which is not "
+            "installed.\n    pip install click\n"
+            "Every command here also has an argparse twin that needs nothing."
+        )
+
+    extras: list[str] = []
+    try:
+        from importlib.metadata import requires
+
+        for requirement in requires(distribution) or []:
+            if re.match(r"^click\b", requirement) and 'extra == "' in requirement:
+                extras.append(requirement.split('extra == "')[1].split('"')[0])
+    except Exception:  # pragma: no cover - metadata absent on a bare clone
+        extras = []
+
+    if extras:
+        install = "\n".join(
+            f"    pip install '{distribution}[{extra}]'" for extra in sorted(set(extras))
+        )
+        return (
+            f"This command's parser is built with Click, which {distribution} "
+            f"installs only with an extra:\n{install}\n"
+            f"Every command here also has an argparse twin that needs nothing."
+        )
+    return (
+        f"This command's parser is built with Click, which is not installed.\n"
+        f"    pip install click\n"
+        f"Every command in {distribution} also has an argparse twin that "
+        f"needs nothing."
+    )
+
+
+try:
+    import click
+except ImportError as exc:  # pragma: no cover - exercised by a bare install
+    raise ImportError(_missing_click_message()) from exc
 
 SKILL_VERSION = "1.5.0"
 
