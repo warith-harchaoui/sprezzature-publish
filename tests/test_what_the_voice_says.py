@@ -21,9 +21,8 @@ Author
 
 from __future__ import annotations
 
-import pytest
-
 import _readalong
+import pytest
 from _narrate import explode_to_sentences, segments_from_blocks
 from _speech_text import NARRATE_ABOVE, SpeechMismatch, complexity, speak_math, speakable
 

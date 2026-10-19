@@ -11,3 +11,6 @@ build/
 # What a build writes.
 site/
 out/
+
+# Private notes and assessments: local only, never published.
+.private/

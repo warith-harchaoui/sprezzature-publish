@@ -1,0 +1,131 @@
+meta:
+  reference: sprezzature-publish
+  rotation_deg: 42.365
+  explained_variance_ratio:
+  - 0.8595
+  - 0.0753
+  cumulative_variance: 0.9347
+  n_approaches: 7
+  attributes:
+  - Setup simplicity
+  - Scale of site
+  - Built-in meta and indexes
+  - Runs fully offline
+  - Narration and read-along
+  - Ecosystem size
+  lower_is_better: []
+axes:
+  axis_1:
+    name: Vastness ↔ Ease
+    pole_left: Vastness
+    pole_right: Ease
+    loadings:
+      Setup simplicity: 0.5702
+      Scale of site: -0.534
+      Built-in meta and indexes: -0.1779
+      Runs fully offline: 0.1655
+      Narration and read-along: 0.1655
+      Ecosystem size: -0.5506
+  axis_2:
+    name: Nimble ↔ Richness
+    pole_bottom: Nimble
+    pole_top: Richness
+    loadings:
+      Setup simplicity: -0.061
+      Scale of site: -0.0254
+      Built-in meta and indexes: 0.7601
+      Runs fully offline: 0.4571
+      Narration and read-along: 0.4571
+      Ecosystem size: -0.0095
+approaches:
+- name: sprezzature-publish
+  coordinates:
+    axis_1: 2.7328
+    axis_2: 2.4367
+  role: best
+  color: '#FF3B30'
+  attributes:
+    Setup simplicity: 5.0
+    Scale of site: 2.0
+    Built-in meta and indexes: 5.0
+    Runs fully offline: 5.0
+    Narration and read-along: 5.0
+    Ecosystem size: 1.0
+- name: MkDocs Material
+  coordinates:
+    axis_1: -1.235
+    axis_2: -1.7505
+  role: competitor
+  color: '#BAD070'
+  attributes:
+    Setup simplicity: 4.0
+    Scale of site: 5.0
+    Built-in meta and indexes: 3.0
+    Runs fully offline: 4.0
+    Narration and read-along: 1.0
+    Ecosystem size: 4.0
+- name: Hugo
+  coordinates:
+    axis_1: -2.553
+    axis_2: -2.4117
+  role: worst
+  color: '#A52A2A'
+  attributes:
+    Setup simplicity: 2.0
+    Scale of site: 5.0
+    Built-in meta and indexes: 2.0
+    Runs fully offline: 4.0
+    Narration and read-along: 1.0
+    Ecosystem size: 5.0
+- name: Astro
+  coordinates:
+    axis_1: -2.7328
+    axis_2: -1.6437
+  role: competitor
+  color: '#C26383'
+  attributes:
+    Setup simplicity: 2.0
+    Scale of site: 5.0
+    Built-in meta and indexes: 3.0
+    Runs fully offline: 4.0
+    Narration and read-along: 1.0
+    Ecosystem size: 5.0
+- name: Jekyll
+  coordinates:
+    axis_1: -1.0703
+    axis_2: -2.4367
+  role: competitor
+  color: '#50AEEB'
+  attributes:
+    Setup simplicity: 3.0
+    Scale of site: 4.0
+    Built-in meta and indexes: 2.0
+    Runs fully offline: 4.0
+    Narration and read-along: 1.0
+    Ecosystem size: 4.0
+- name: Eleventy
+  coordinates:
+    axis_1: -0.6393
+    axis_2: -2.4294
+  role: right
+  color: '#007AFF'
+  attributes:
+    Setup simplicity: 3.0
+    Scale of site: 4.0
+    Built-in meta and indexes: 2.0
+    Runs fully offline: 4.0
+    Narration and read-along: 1.0
+    Ecosystem size: 3.0
+- name: Docusaurus
+  coordinates:
+    axis_1: -2.3018
+    axis_2: -1.6363
+  role: top
+  color: '#AF52DE'
+  attributes:
+    Setup simplicity: 2.0
+    Scale of site: 5.0
+    Built-in meta and indexes: 3.0
+    Runs fully offline: 4.0
+    Narration and read-along: 1.0
+    Ecosystem size: 4.0
