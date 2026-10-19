@@ -47,6 +47,8 @@ __author__ = "Warith HARCHAOUI"
 __email__ = "warithmetics@deraison.ai"
 __license__ = "BSD-3-Clause"
 
+from typing import Any  # noqa: E402
+
 #: Names resolved on first use rather than at import, mapped to the module
 #: that owns them.
 #:
@@ -91,7 +93,7 @@ _EXPORTS: dict[str, str] = {
 }
 
 
-def __getattr__(name: str):
+def __getattr__(name: str) -> Any:
     """Resolve an export on first use, per PEP 562.
 
     A caller that only lints never imports Pillow; one that only builds

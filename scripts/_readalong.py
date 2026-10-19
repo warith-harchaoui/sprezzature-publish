@@ -80,10 +80,18 @@ import re
 import shutil
 import unicodedata
 from collections import Counter
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass, field
 from html.parser import HTMLParser
 from pathlib import Path
+from typing import TypeAlias
+
+#: How a block of prose becomes sentences. Threaded through every
+#: read-along entry point rather than imported, so the page and the
+#: narration are split by the *same* function — two splitters that
+#: disagree put the highlight on the wrong sentence, which is the one
+#: bug this module exists to avoid.
+SentenceSplitter: TypeAlias = Callable[[str], "list[str]"]
 
 #: Block elements whose text is narrated. Code blocks are deliberately absent:
 #: ``extract_segments`` strips them, so the narration has nothing to say about
@@ -813,7 +821,7 @@ def page_blocks(body_html: str, *, scope: str | None = None) -> list[_Block]:
     ]
 
 
-def page_sentences(body_html: str, *, split, scope: str | None = None) -> list[str]:
+def page_sentences(body_html: str, *, split: SentenceSplitter, scope: str | None = None) -> list[str]:
     """Every sentence the page shows, in reading order.
 
     Separate from :func:`wrap_sentences` so the agreement between a page and
@@ -845,7 +853,7 @@ def _unframe(text: str, opening: str, closing: str) -> str | None:
     return stripped
 
 
-def align(blocks: list[_Block], cues: list[VttCue], *, split,
+def align(blocks: list[_Block], cues: list[VttCue], *, split: SentenceSplitter,
           opening: str, closing: str) -> list[list[list[VttCue]]]:
     """Match each block's sentences to the cues that speak them.
 
@@ -1027,7 +1035,7 @@ def _span_runs(taken: list[_Piece]) -> list[tuple[bool, list[_Piece]]] | None:
 
 
 def _wrap_block(block: _Block, per_sentence: list[list[VttCue]], wrapped: dict[int, str],
-                *, split) -> str:
+                *, split: SentenceSplitter) -> str:
     """Wrap one block's sentences, keeping the inline markup it already has."""
     queue = list(block.pieces)
     out: list[str] = []
@@ -1098,7 +1106,7 @@ def _wrap_block(block: _Block, per_sentence: list[list[VttCue]], wrapped: dict[i
     return "".join(out)
 
 
-def wrap_sentences(body_html: str, cues: list[VttCue], *, split,
+def wrap_sentences(body_html: str, cues: list[VttCue], *, split: SentenceSplitter,
                    opening: str, closing: str, scope: str | None = None) -> str:
     """Wrap each narrated sentence in a span the highlight can find.
 
@@ -1172,7 +1180,7 @@ def inject_player_only(
     return out
 
 
-def inject_into_page(html: str, cues: list[VttCue], *, split, opening: str, closing: str,
+def inject_into_page(html: str, cues: list[VttCue], *, split: SentenceSplitter, opening: str, closing: str,
                      scope: str | None = None, head: str = "", player: str = "") -> str:
     """Add a read-along to a page that already exists.
 

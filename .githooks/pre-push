@@ -1,0 +1,34 @@
+#!/usr/bin/env bash
+# Pre-push gate: block the push on a lint, type or test failure, so a red local
+# state never reaches CI. The steps mirror this repository's own workflow, in
+# the same order, so "the hook passed" and "CI will pass" mean the same thing.
+#
+# Added 2026-10-19, two and a half weeks after the other eight repositories got
+# theirs. The split that gave each brick its own repository gave six of them a
+# hook and a mypy.ini and missed this one — so it pushed without checking
+# anything, and nobody noticed, because nothing was checking. The errors found
+# on the first run were almost all the gate's own absence.
+#
+# One-time setup per clone (the repo config already does it here):
+#   git config core.hooksPath .githooks
+# Bypass, rare and deliberate only:
+#   git push --no-verify
+set -euo pipefail
+cd "$(git rev-parse --show-toplevel)"
+
+echo "[pre-push] ruff..."
+ruff check . || { echo "[pre-push] ruff failed - push aborted."; exit 1; }
+
+echo "[pre-push] mypy..."
+mypy sprezzature_publish && mypy scripts || { echo "[pre-push] mypy failed - push aborted."; exit 1; }
+
+# `-m eval` is excluded from the default run (see pytest.ini), so a syntax
+# error in one of those files is invisible until somebody asks for them by
+# name — which is to say, months later. Collecting them costs a second.
+echo "[pre-push] eval suite collects..."
+python3 -m pytest -m eval --collect-only -q || { echo "[pre-push] eval suite collects failed - push aborted."; exit 1; }
+
+echo "[pre-push] pytest..."
+python3 -m pytest -q || { echo "[pre-push] pytest failed - push aborted."; exit 1; }
+
+echo "[pre-push] all green - pushing."

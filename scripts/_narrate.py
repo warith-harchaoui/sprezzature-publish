@@ -43,7 +43,20 @@ import json
 import re
 from dataclasses import asdict, dataclass
 from pathlib import Path
-from typing import Any, NotRequired, TypedDict
+from typing import TYPE_CHECKING, Any, TypeAlias, TypedDict
+
+if TYPE_CHECKING:
+    # PEP 655 added `NotRequired` to `typing` in **3.11**, and this package
+    # declares `requires-python = ">=3.10"`. A plain `from typing import
+    # NotRequired` therefore raises ImportError on 3.10 — and `from __future__
+    # import annotations` does not help, because that line is a runtime import
+    # and not an annotation. It took `scripts/md_to_html.py` down with it,
+    # which is the `[html]` extra, not just `[narrate]`.
+    #
+    # Imported only for the type checker: PEP 563 keeps the class body's
+    # annotations as strings, so nothing resolves this name at runtime on any
+    # version. `say` is read with `.get()` and never required in practice.
+    from typing_extensions import NotRequired
 
 # ── Module-level configuration ──────────────────────────────────────────────
 
@@ -734,8 +747,13 @@ def write_manifest(
 #: WebVTT those two write, so the type, the clock and the format belong
 #: together. Re-exported here because everything in this package that touches
 #: a cue reaches for ``_narrate.Cue``.
-Cue = _vtt.SpeechCue
-Timeline = _vtt.Timeline
+#:
+#: Spelled as explicit ``TypeAlias`` assignments (PEP 613). A bare
+#: ``Cue = _vtt.SpeechCue`` is a *variable* to a type checker, not an alias,
+#: so every ``list[Cue]`` in this module read as "variable not valid as a
+#: type" and every ``cue.start_seconds`` as an attribute on nothing.
+Cue: TypeAlias = _vtt.SpeechCue
+Timeline: TypeAlias = _vtt.Timeline
 
 
 def format_timestamp(seconds: float) -> str:

@@ -31,6 +31,14 @@ Author
 from __future__ import annotations
 
 import re
+from collections.abc import Callable
+from typing import TypeAlias
+
+#: What a caller may pass as ``narrator``: given a LaTeX source and a
+#: language, either a plain-language sentence or ``None`` for "I have
+#: nothing better than the transliteration". Named once so the factory
+#: that builds one and the function that calls it cannot disagree.
+MathNarrator: TypeAlias = Callable[[str, str], "str | None"]
 
 # ── Vocabulary, per language ───────────────────────────────────────────────
 #
@@ -418,7 +426,7 @@ def speakable(
     text: str,
     lang: str = "en",
     *,
-    narrator=None,
+    narrator: MathNarrator | None = None,
 ) -> str:
     """The sentence as the voice should say it.
 

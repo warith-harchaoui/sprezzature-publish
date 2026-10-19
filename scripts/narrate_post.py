@@ -135,7 +135,7 @@ from _narrate import (  # noqa: E402
     write_manifest,
 )
 from _prompts import render as render_prompt  # noqa: E402
-from _speech_text import speakable  # noqa: E402
+from _speech_text import MathNarrator, speakable  # noqa: E402
 
 # ── Module-level configuration ──────────────────────────────────────────────
 
@@ -269,7 +269,7 @@ def enrich_with_llm(
 
 # ── Engine dispatch ────────────────────────────────────────────────────────
 
-def _math_narrator(model: str):
+def _math_narrator(model: str) -> MathNarrator:
     """A reader for formulas too tangled to spell out, or ``None``.
 
     Reuses the ``latex_caption`` prompt this package already ships for the

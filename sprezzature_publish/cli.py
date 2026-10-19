@@ -74,7 +74,7 @@ TOOLS: dict[str, tuple[str, str]] = {
 }
 
 
-def build_parser():
+def build_parser() -> argparse.ArgumentParser:
     """The parser, built separately so a test can read it without running it."""
     width = max(len(name) for name in TOOLS)
     catalogue = "\n".join(
