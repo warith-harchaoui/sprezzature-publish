@@ -61,10 +61,23 @@ sprezzature-publish-lint docs/ --fix      # repair what has one safe repair
 ### Then build
 
 ```sh
-sprezzature-publish-html README.md docs/ --out-dir site/
-sprezzature-publish-icons logo.png --out-dir site/icons/
+sprezzature-publish-html README.md docs/ --out site/
+sprezzature-publish-icons logo.png --out site/icons/
 sprezzature-publish-indexes site/ --base-url https://example.com
+sprezzature-publish-meta site/index.html     # asks a local model
 ```
+
+### And, if the page should be read aloud
+
+```sh
+sprezzature-publish-narrate post.md --out-dir site/audio/
+sprezzature-publish-readalong site/post.html --narration site/audio/
+```
+
+The voice itself lives in [`speaker-helper`](https://github.com/warith-harchaoui/speaker-helper):
+this package owns the **document** and the **page**, not the engines. Somebody
+who only wants rendered Markdown should not have to install a text-to-speech
+stack to get it.
 
 ### From Python
 

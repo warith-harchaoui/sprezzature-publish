@@ -65,8 +65,8 @@ make-site lint docs/ --fix           # répare ce qui a une réparation sûre
 ### Puis rendre, habiller, indexer
 
 ```sh
-make-site html README.md --out-dir site/
-make-site icons logo.png --out-dir site/icons/
+make-site html README.md --out site/
+make-site icons logo.png --out site/icons/
 make-site indexes site/ --base-url https://exemple.fr
 make-site meta site/index.html       # demande un modèle local
 ```
