@@ -19,8 +19,42 @@ cd "$(git rev-parse --show-toplevel)"
 echo "[pre-push] ruff..."
 ruff check . || { echo "[pre-push] ruff failed - push aborted."; exit 1; }
 
+# mypy, with one known condition tolerated and nothing else.
+#
+# numpy >= 2.3 ships stubs written with PEP 695 `type` statements, which mypy
+# accepts only from python_version 3.12; mypy.ini pins 3.10 on purpose, to
+# keep checking against the oldest Python this package supports. numpy is not
+# imported here -- it arrives through pydantic's type graph -- so on a machine
+# that happens to have it, mypy stops inside that stub having checked none of
+# our code. CI installs no numpy and is green. The long form is in mypy.ini.
+#
+# Aborting on it made this hook unpassable on any developer machine with numpy
+# installed, which is most of them. An unpassable hook teaches `--no-verify`,
+# and that skips ruff and the tests as well, so the gate was costing more than
+# it caught.
+#
+# The rule is the narrow one: tolerate a failure only when every error mypy
+# reported lies outside this repository. In-repo errors are relative paths and
+# third-party ones are absolute, so one error in our own files still stops the
+# push -- as does a failure that reports no errors at all, which is a mypy
+# that broke rather than a stub that did.
+mypy_gate() {
+  local out errs rc=0
+  out=$(mypy "$@" 2>&1) || rc=$?
+  [ "$rc" -eq 0 ] && return 0
+  errs=$(printf '%s\n' "$out" | grep ': error:' || true)
+  if [ -z "$errs" ] || printf '%s\n' "$errs" | grep -qv '^/'; then
+    printf '%s\n' "$out"
+    return 1
+  fi
+  echo "[pre-push] mypy stopped inside a third-party stub having checked none"
+  echo "           of this package, and reported nothing in our own files."
+  echo "           Known condition, see mypy.ini. Treated as a skip, not a pass."
+  return 0
+}
+
 echo "[pre-push] mypy..."
-mypy sprezzature_publish && mypy scripts || { echo "[pre-push] mypy failed - push aborted."; exit 1; }
+mypy_gate sprezzature_publish && mypy_gate scripts || { echo "[pre-push] mypy failed - push aborted."; exit 1; }
 
 # `-m eval` is excluded from the default run (see pytest.ini), so a syntax
 # error in one of those files is invisible until somebody asks for them by
