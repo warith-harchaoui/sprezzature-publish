@@ -31,8 +31,6 @@ Author
 
 from __future__ import annotations
 
-from pathlib import Path
-
 import _narrate
 import _readalong
 import pytest
