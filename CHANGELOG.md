@@ -8,6 +8,13 @@ versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- **`CODING.md`, `CONTRIBUTING.md`, `EXAMPLES.md` and `TRIGGERS.md`**, the
+  four root documents the other bricks carry and this one went out without.
+  `EXAMPLES.md` is a worked invocation per tool; `TRIGGERS.md` is the
+  routing file an agent reads to choose between the suite's nine packages.
+  A guard in the monorepo now asks the question of all nine, so the next
+  package cannot ship without them.
+
 - **The two repairs a narrated page needs.** `build` writes a voice into a
   page and refuses to write one onto prose that moved while the recording
   was running. That net covers one order of events; two others happen and
@@ -30,6 +37,19 @@ versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   - `strip` and `check` are exported from `sprezzature_publish` beside
     `build`, so a caller that builds a site in a loop can do all three
     without shelling out.
+
+### Fixed
+
+- **The documented-commands guard could only read argparse.** It parses every
+  fenced `bash` block in the docs and asks each parser whether it accepts the
+  flags on the line, by reading `add_argument` out of the source. Two of the
+  nine tools declare their flags with Click, so their real flags looked
+  unknown. The escape hatch written for exactly that case did not fire: it
+  asked whether the accepted set was empty, and the set is seeded with
+  `--help` and `--version`, so it never is. It now reads `@click.option` too,
+  and asks whether anything was found beyond that seed. Nothing in the docs
+  exercised a Click tool until `EXAMPLES.md` was written, which is why the
+  hole stayed invisible.
 
 ## [1.2.0] — 2026-10-18
 

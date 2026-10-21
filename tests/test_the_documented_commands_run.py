@@ -12,6 +12,15 @@ the right ones.
 This is the same defect as a console script nobody installs, one level down:
 the command exists, and the flag beside it does not.
 
+Two tools declare their flags with Click rather than argparse, and the first
+version of this check read only ``add_argument``. Their real flags therefore
+looked unknown, and the escape hatch written for exactly that case did not
+fire: it asked whether the accepted set was empty, and the set is seeded with
+``--help`` and ``--version``, so it never is. Both are fixed here. The hatch
+now asks whether anything was found *beyond* that seed, which is the question
+it meant to ask. Nothing in the docs exercised a Click tool until EXAMPLES.md
+was written, which is why the hole stayed invisible.
+
 The check parses the fenced bash blocks and asks each parser what it accepts.
 Nothing is executed — a README's examples write files and call models, and a
 test suite should not do either to find out whether a flag is spelled right.
@@ -34,6 +43,10 @@ _INVOCATION = re.compile(r"^(make-site|sprezzature-publish[a-z-]*)\s+(.+)$")
 _FENCE = re.compile(r"```(?:bash|sh|console)\n(.*?)```", re.S)
 _FLAG = re.compile(r"(--[a-z][a-z0-9-]*)")
 _ADD_ARGUMENT = re.compile(r'add_argument\(\s*\n?\s*"(--[a-z][a-z0-9-]*)"')
+#: Half the tools declare their flags with Click, not argparse. Same job,
+#: different spelling, and the first version of this file read only the
+#: argparse one. See ``_accepted_flags``.
+_CLICK_OPTION = re.compile(r'@click\.option\(\s*\n?\s*"(--[a-z][a-z0-9-]*)"')
 
 
 _ENTRY_POINT = re.compile(
@@ -84,7 +97,11 @@ def _accepted_flags(module_name: str) -> set[str]:
     path = REPO_ROOT / "scripts" / f"{module_name}.py"
     if not path.is_file():
         return set()
-    flags = set(_ADD_ARGUMENT.findall(path.read_text(encoding="utf-8")))
+    source = path.read_text(encoding="utf-8")
+    # Both spellings, because the package ships both parsers on purpose and
+    # a tool is free to pick either. Reading only ``add_argument`` made
+    # every Click tool look like it accepted nothing but ``--help``.
+    flags = set(_ADD_ARGUMENT.findall(source)) | set(_CLICK_OPTION.findall(source))
     return flags | _SHARED_FLAGS
 
 
@@ -148,7 +165,7 @@ def test_every_documented_flag_is_one_the_parser_accepts() -> None:
     for file, line, tool, flags in _documented():
         if tool not in accepted:
             accepted[tool] = _accepted_flags(_tools()[tool])
-        if not accepted[tool]:
+        if accepted[tool] <= _SHARED_FLAGS:
             blind.add(tool)
             continue
         unknown = sorted(flags - accepted[tool] - {"--help"})
@@ -158,8 +175,8 @@ def test_every_documented_flag_is_one_the_parser_accepts() -> None:
     # Said out loud rather than passed over. A tool that stops being
     # introspectable silently removes itself from this check.
     assert not blind, (
-        f"found no flags at all in the source of {sorted(blind)}, so their "
-        f"documented flags went unchecked"
+        f"found nothing but the shared flags in the source of {sorted(blind)}, "
+        f"so their documented flags went unchecked"
     )
 
 
