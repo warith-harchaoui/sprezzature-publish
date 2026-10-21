@@ -90,6 +90,10 @@ _EXPORTS: dict[str, str] = {
     "enrich_with_llm": "narrate_post",
     "run_engine": "narrate_post",
     "build": "readalong",
+    # The two halves of repairing a narrated page: take the player out so the
+    # prose can be edited, and check a shipped page against its shipped cues.
+    "strip": "readalong",
+    "check": "readalong",
 }
 
 

@@ -254,6 +254,93 @@ are handled by the highlight simply staying where it is — which is also
 why it no longer blinks off during the pauses the timeline puts between
 sentences.
 
+### Correcting a sentence after the page has a voice
+
+The timings live in the page, one `data-start` per sentence. Edit the
+prose and every sentence after the edit moves out from under its
+timestamp. There is no partial repair: re-record the article.
+
+`build` refuses to write markers over markers, so the order is fixed.
+
+```bash
+# 1. Take the read-along back out. The input is never modified in place.
+sprezzature-publish-readalong post.html --strip --out drafts/
+
+# 2. Edit drafts/post.html. Freeze the prose here — see below.
+
+# 3. Record and bind again.
+sprezzature-publish-narrate drafts/post.html --scope article --out-dir audio/
+sprezzature-publish-readalong drafts/post.html --narration audio/ \
+    --scope article --out built/
+```
+
+**Freeze the text before the first voice, not after the last one.** On one
+site, twelve articles produced nineteen recordings because corrections kept
+arriving once recording had started. Each late correction costs the whole
+article again: eight to twelve minutes of compute for four thousand words.
+
+`--strip` is the exact inverse of a build: stripping what `build` wrote
+returns the page byte for byte, which is what makes the loop safe to run
+more than once.
+
+### Checking a page that has already shipped
+
+`build` catches prose that moved *while* the voice was recording. It cannot
+catch the other order of events, and nothing else does either: a page edited
+*after* its player was written in. No exception is raised. The markers stay,
+their times stay, and every time now points at the wrong sentence — worse
+than no highlight, because it is confidently wrong.
+
+```bash
+sprezzature-publish-readalong built/post.html --narration audio/ --check
+```
+
+It reads only what shipped, and compares it to what shipped beside it: same
+number of markers as cues, same text, each `data-start` at the start of its
+own cue to the millisecond. Run it after any deploy that touched a narrated
+page. **File sizes say nothing about alignment**: two recordings of the same
+article differ by a few kilobytes whether they are aligned or not.
+
+Cues that legitimately carry no marker are named rather than tolerated
+loosely:
+
+```bash
+sprezzature-publish-readalong built/post.html --narration audio/ --check \
+    --tolerate "End quote."
+```
+
+A page of 430 sentences whose narration announces three block quotations has
+433 cues and 430 markers, and that is correct. Naming the three keeps the
+other 430 under strict equality.
+
+### Two paths that catch people out
+
+**`--href-base` is not optional when the output directory is not the serve
+directory.** Without it, the `<source>` path is computed from disk and comes
+out as `../../../../../../Users/you/...`. A fragment built into a site is
+exactly this case.
+
+**Delete the WAV before binding.** `narrate_post` writes a WAV; if both the
+WAV and an MP3 you encoded are present, the `<source>` points at the WAV, and
+a reader downloads thirty megabytes instead of five.
+
+```bash
+ffmpeg -i audio/narration.wav -codec:a libmp3lame -b:a 64k \
+    -ar 24000 -ac 1 audio/narration.mp3
+rm audio/narration.wav
+```
+
+64 kbit/s mono at 24 kHz is speech-shaped: a forty-minute article lands at
+about 19 MB, and nothing about a single voice reading prose benefits from
+more.
+
+**Pass every stylesheet the page's colours live in.** The player reads the
+page's own accent, paper and tint so it does not look bolted on. A page built
+from a fragment carries none of its own colours, and one site-wide sheet is
+usually not enough either — on deraison.ai, `styles.css` alone found no
+accent at all and picked the call-to-action yellow as its tint; adding the
+page's own `site.css` beside it gave the right three.
+
 ### A page that was never Markdown
 
 The case above is the easy one: both sides come from a source you still

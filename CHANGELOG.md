@@ -4,6 +4,33 @@ All notable changes to `sprezzature-publish` are documented here.
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/);
 versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- **The two repairs a narrated page needs.** `build` writes a voice into a
+  page and refuses to write one onto prose that moved while the recording
+  was running. That net covers one order of events; two others happen and
+  neither was covered.
+  - **`--strip` takes the player back out.** The timings live in the page,
+    one `data-start` per sentence, so editing the prose moves every sentence
+    after the edit out from under its timestamp. The repair is to take the
+    player out, edit, and record again, which needs a way to take the player
+    out. Every caller was writing that by hand; on one site it was written
+    from scratch three times in three days, and each rewrite walked into the
+    same two traps. A pattern that stops at the first `</div>` cuts the
+    player in half, because the player holds seven nested `<div>` of its
+    own; and unwrapping a `<span class="ra-s">` by deleting the tag *and*
+    its content silently deletes the sentence. Both are tested.
+  - **`--check` reads a page that shipped.** Nothing fires when a page is
+    edited after it has a voice. The markers stay, their times stay, and
+    every one of them now points at the wrong sentence, which is worse than
+    no highlight because it is confidently wrong. `--tolerate` names a
+    string the comparison is allowed to find changed.
+  - `strip` and `check` are exported from `sprezzature_publish` beside
+    `build`, so a caller that builds a site in a loop can do all three
+    without shelling out.
+
 ## [1.2.0] — 2026-10-18
 
 ### Added

@@ -373,6 +373,166 @@ MARKER: str = "\u2060"
 _MARKED = re.compile(f"{MARKER}[^{MARKER}]*{MARKER}")
 
 
+#: The class on the element the player is injected as. Named here because
+#: two operations need it and they must not drift: the one that writes the
+#: player, and the one that takes it back out.
+PLAYER_CLASS = "ra-player"
+
+
+def _balanced_element(html_text: str, start: int, tag: str) -> int:
+    """Where the element opening at ``start`` ends, nesting followed.
+
+    A regular expression cannot do this. ``<div class="ra-player">`` holds
+    seven nested ``<div>`` of its own, so a pattern that stops at the first
+    ``</div>`` cuts the player in half and leaves its tail in the page.
+    """
+    depth = 0
+    pattern = re.compile(rf"</?{tag}\b[^>]*>", re.I)
+    for found in pattern.finditer(html_text, start):
+        depth += -1 if found.group().startswith("</") else 1
+        if depth == 0:
+            return found.end()
+    raise ReadAlongMismatch(f"<{tag}> opened at {start} is never closed")
+
+
+def strip_player(html_text: str) -> tuple[str, int]:
+    """A page with its read-along taken back out, and how many markers went.
+
+    The inverse of :func:`inject_into_page`, and it exists because correcting
+    a sentence in a narrated page is an ordinary thing to want. The timings
+    live in the page, one ``data-start`` per sentence; edit the prose and
+    every marker after the edit points at the wrong line. Re-recording is
+    the only repair, and re-recording needs the page back the way it was
+    before the player was written into it.
+
+    Without this, every caller writes it again. It was written from scratch
+    three times in three days on one site, and each rewrite walked into the
+    same two traps: a pattern that stops at the first ``</div>`` cuts the
+    player in half, and unwrapping a ``<span class="ra-s">`` by deleting the
+    tag *and its content* silently deletes the sentence.
+
+    Three things come out: the player element, the ``<span>`` around each
+    sentence (its content kept), and the stylesheet and module links if they
+    were written into the head. Nothing else is touched, which is what makes
+    the result safe to hand to a text editor and then to narrate again.
+
+    >>> page, markers = strip_player(
+    ...     '<p><span class="ra-s" id="ra-0" data-start="0.000">Hi.</span></p>')
+    >>> page
+    '<p>Hi.</p>'
+    >>> markers
+    1
+    """
+    opening = re.search(
+        rf'<div[^>]*\b{re.escape(PLAYER_CLASS)}\b[^>]*>', html_text)
+    if opening is not None:
+        end = _balanced_element(html_text, opening.start(), "div")
+        # Swallow the blank line the injection left behind, never the
+        # character before it: gluing two words together would be a silent
+        # corruption of the prose.
+        while end < len(html_text) and html_text[end] in " \t\r\n":
+            end += 1
+        html_text = html_text[:opening.start()] + html_text[end:]
+
+    markers = 0
+    while True:
+        found = re.search(
+            rf'<span\s[^>]*\b{re.escape(SENTENCE_CLASS)}\b[^>]*>', html_text)
+        if found is None:
+            break
+        end = _balanced_element(html_text, found.start(), "span")
+        closing = html_text.rindex("</span>", found.end(), end)
+        html_text = (html_text[:found.start()]
+                     + html_text[found.end():closing]
+                     + html_text[end:])
+        markers += 1
+
+    for asset in ASSET_FILES:
+        html_text = re.sub(
+            rf'[ \t]*<(?:link|script)\b[^>]*{re.escape(asset)}[^>]*>'
+            rf'(?:</script>)?[ \t]*\r?\n?',
+            "", html_text)
+
+    return html_text, markers
+
+
+def disagreements(html_text: str, cues: Sequence[VttCue], *,
+                  tolerate: Sequence[str] = ()) -> list[str]:
+    """What a *delivered* page and a *delivered* VTT disagree about.
+
+    :func:`inject_into_page` already refuses to write markers onto prose that
+    moved while the voice was being recorded, and that net is reliable. It
+    cannot help with the other order of events: a page edited *after* the
+    player was written into it. Nothing fires then. The page keeps its
+    markers, each one still carries a time, and every time now points at the
+    wrong sentence — which is worse than no highlight at all, because it is
+    confidently wrong.
+
+    So this reads only what was shipped, and compares it to what was shipped
+    beside it. Same number of markers as cues, same text, and each
+    ``data-start`` at the beginning of its own cue to the millisecond.
+
+    ``tolerate`` holds cue texts that legitimately have no marker. A
+    narration announces the end of a block quotation out loud, "End quote.",
+    and those words are not on the page, so they cannot carry a marker. Pass
+    them rather than loosening the comparison: an equality that holds
+    everywhere is worth more than one that is approximately right.
+
+    Returns one line per disagreement, empty when the two agree.
+    """
+    wanted = [c for c in cues
+              if " ".join(c.text.split()).rstrip(".").lower()
+              not in {t.rstrip(".").lower() for t in tolerate}]
+
+    # No scope argument, deliberately. The markers only exist where they
+    # were injected, so they *are* the scope; asking the caller to name it
+    # again would be one more thing to get wrong.
+    #
+    # Template tags go first. On a PHP page the `?>` of a `<?= ASSETS ?>`
+    # closes a `[^>]*` early, so stripping HTML before the template language
+    # cuts tags in half and loses attributes.
+    body = re.sub(r"<\?.*?\?>", " ", html_text, flags=re.S)
+
+    found: list[tuple[str, float | None, str]] = []
+    for marker in re.finditer(
+            rf'<span\s[^>]*\b{re.escape(SENTENCE_CLASS)}\b[^>]*>', body):
+        attrs = marker.group()
+        # Named apart from the loop variables below: reusing `name` and
+        # `start` for both a Match and a str made the whole function
+        # untypeable, and the reader has to hold two meanings for one word.
+        has_id = re.search(r'id="([^"]*)"', attrs)
+        has_start = re.search(r'data-start="([^"]*)"', attrs)
+        end = _balanced_element(body, marker.start(), "span")
+        closing = body.rindex("</span>", marker.end(), end)
+        found.append((
+            has_id.group(1) if has_id else "?",
+            float(has_start.group(1)) if has_start else None,
+            _visible_text(body[marker.end():closing]),
+        ))
+
+    out: list[str] = []
+    if len(found) != len(wanted):
+        out.append(f"{len(found)} markers against {len(wanted)} cues")
+    for (name, start, said), cue in zip(found, wanted):
+        if start is None:
+            out.append(f"{name}: no data-start")
+            continue
+        if abs(start - cue.start_seconds) > 0.0005:
+            out.append(
+                f"{name}: data-start {start:.3f} "
+                f"against {cue.start_seconds:.3f}")
+        spoken = " ".join(cue.text.split())
+        if said != spoken:
+            # Say *where* they part, not how each begins: two sentences that
+            # differ at their thirtieth word look identical in a report that
+            # prints the first sixty characters of each.
+            at = next((i for i in range(min(len(said), len(spoken)))
+                       if said[i] != spoken[i]), min(len(said), len(spoken)))
+            window = slice(max(0, at - 30), at + 30)
+            out.append(f"{name} at {at}: {said[window]!r} against {spoken[window]!r}")
+    return out
+
+
 def without_markers(sentence: str) -> str:
     """One sentence, with its footnote markers taken out.
 

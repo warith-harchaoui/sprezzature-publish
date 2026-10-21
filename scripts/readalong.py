@@ -192,6 +192,64 @@ def build(page: Path, narration_dir: Path, out_dir: Path, *,
     return destination
 
 
+def strip(page: Path, out_dir: Path) -> Path:
+    """Write `page` without its read-along into `out_dir`; return the new path.
+
+    The inverse of :func:`build`, and the first half of correcting a sentence
+    in a page that already has a voice. The timings live in the page, one per
+    sentence, so editing the prose moves every sentence after the edit out
+    from under its timestamp. The repair is to take the player out, edit the
+    prose, and record again -- in that order, because :func:`build` refuses
+    to write markers over markers.
+
+    The input is never modified in place, for the same reason as
+    :func:`build`: a page that is live somewhere is not a draft.
+
+    Returns the path written, and prints nothing: the caller decides what to
+    say.
+    """
+    source = page.read_text(encoding="utf-8")
+    stripped, markers = _readalong.strip_player(source)
+    out_dir.mkdir(parents=True, exist_ok=True)
+    destination = out_dir / page.name
+    destination.write_text(stripped, encoding="utf-8")
+    return destination
+
+
+def check(page: Path, narration_dir: Path, *,
+          tolerate: tuple[str, ...] = ()) -> list[str]:
+    """What a shipped `page` and a shipped narration disagree about.
+
+    :func:`build` already refuses to write markers onto prose that moved
+    while the voice was recording. This is the other order of events, which
+    nothing else catches: a page edited *after* its player was written in.
+    The markers stay, their times stay, and every time now points at the
+    wrong sentence. That is worse than no highlight, because it is
+    confidently wrong, and no exception is raised anywhere to say so.
+
+    So this reads only what was shipped and compares it to what was shipped
+    beside it. Run it after every deploy that touched a narrated page; file
+    sizes say nothing about alignment.
+
+    Parameters
+    ----------
+    page : Path
+        The page as served, markers and all.
+    narration_dir : Path
+        The narration run as served, holding ``narration.vtt``.
+    tolerate : tuple of str
+        Cue texts that legitimately carry no marker. A narration says "End
+        quote." out loud after a block quotation, and those words are not on
+        the page. Naming them is better than loosening the comparison.
+
+    Returns one line per disagreement, and an empty list when the two agree.
+    """
+    cues = _readalong.parse_vtt(
+        (narration_dir / "narration.vtt").read_text(encoding="utf-8"))
+    return _readalong.disagreements(
+        page.read_text(encoding="utf-8"), cues, tolerate=tolerate)
+
+
 def main() -> int:
     """CLI entry point; returns a process exit code."""
     parser = make_parser(
@@ -203,12 +261,35 @@ def main() -> int:
     )
     parser.add_argument("page", type=Path, help="HTML page to wire up.")
     parser.add_argument(
-        "--narration", type=Path, required=True, dest="narration_dir",
-        help="Directory holding the narration run (narration.vtt + the audio).",
+        "--narration", type=Path, default=None, dest="narration_dir",
+        help="Directory holding the narration run (narration.vtt + the audio). "
+             "Required except with --strip, which reads nothing but the page.",
     )
     parser.add_argument(
-        "--out", type=Path, required=True, dest="out_dir",
-        help="Output directory. The input page is never modified in place.",
+        "--out", type=Path, default=None, dest="out_dir",
+        help="Output directory. The input page is never modified in place. "
+             "Required except with --check, which writes nothing.",
+    )
+    parser.add_argument(
+        "--strip", action="store_true",
+        help="Take the read-along back out instead of putting it in. The "
+             "first half of correcting a sentence in a page that already "
+             "has a voice: strip, edit the prose, then record again. Needs "
+             "--out and ignores --narration.",
+    )
+    parser.add_argument(
+        "--check", action="store_true",
+        help="Compare a shipped page to its shipped cues and say nothing if "
+             "they agree. Catches the one failure nothing else does: a page "
+             "edited after its player was written in, whose every timestamp "
+             "now points at the wrong sentence. Needs --narration and "
+             "writes nothing.",
+    )
+    parser.add_argument(
+        "--tolerate", action="append", default=[], metavar="TEXT",
+        help="With --check: a cue text that legitimately carries no marker. "
+             "A narration says 'End quote.' after a block quotation, and "
+             "those words are not on the page. Repeatable.",
     )
     parser.add_argument(
         "--scope", default=None,
@@ -248,6 +329,46 @@ def main() -> int:
     if not args.page.is_file():
         print(f"readalong: no such page: {args.page}", file=sys.stderr)
         return 2
+
+    if args.strip and args.check:
+        print("readalong: --strip and --check do opposite things; pick one",
+              file=sys.stderr)
+        return 2
+
+    if args.strip:
+        if args.out_dir is None:
+            print("readalong: --strip needs --out", file=sys.stderr)
+            return 2
+        before = args.page.read_text(encoding="utf-8")
+        destination = strip(args.page, args.out_dir)
+        _, markers = _readalong.strip_player(before)
+        print(f"{args.page} \u2192 {destination}: "
+              f"player out, {markers} markers unwrapped")
+        return 0
+
+    if args.check:
+        if args.narration_dir is None:
+            print("readalong: --check needs --narration", file=sys.stderr)
+            return 2
+        try:
+            found = check(args.page, args.narration_dir,
+                          tolerate=tuple(args.tolerate))
+        except FileNotFoundError as missing:
+            print(f"readalong: {missing}", file=sys.stderr)
+            return 1
+        if not found:
+            print(f"{args.page}: page and cues agree")
+            return 0
+        print(f"{args.page}: {len(found)} disagreement(s)", file=sys.stderr)
+        for line in found:
+            print(f"  {line}", file=sys.stderr)
+        return 1
+
+    for name, value in (("--narration", args.narration_dir),
+                        ("--out", args.out_dir)):
+        if value is None:
+            print(f"readalong: {name} is required", file=sys.stderr)
+            return 2
 
     lang = args.lang
     if lang in ("", "auto"):
