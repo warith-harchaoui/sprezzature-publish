@@ -387,6 +387,12 @@ class TestNarratePostCache:
         post.write_text("# Hello\n\nA paragraph.\n", encoding="utf-8")
         segs = _narrate.extract_segments(post.read_text())
         digest = _narrate.source_sha256(_narrate.segments_to_text(segs))
+        # The language is part of the key too, and it is worked out here the
+        # same way the digest is: by calling what the orchestrator calls.
+        # Hard-coding "en" would pass today and fail the day the detector
+        # changes its mind about three words.
+        from _lang import detect_text_language
+        tongue = detect_text_language(" ".join(seg["text"] for seg in segs))
         # Pre-populate the manifest with the matching entry, pointing at
         # an audio file we also create so the path-exists check passes.
         out_dir = tmp_path / "out" / "audio"
@@ -402,6 +408,7 @@ class TestNarratePostCache:
                 voice="default",
                 source_sha256=digest,
                 duration_seconds=1.0,
+                language=tongue,
             )
         })
         # Invoke the orchestrator. Since the manifest matches, it
@@ -425,6 +432,132 @@ class TestNarratePostCache:
             f"stdout:\n{proc.stdout}\nstderr:\n{proc.stderr}"
         )
         assert "cache hit" in proc.stdout
+
+    def test_a_row_without_a_language_is_read_again(self, tmp_path: Path):
+        """A manifest from before the language was recorded must miss.
+
+        Those rows were read with a voice chosen per block, so honouring them
+        would carry the mixture forward through the one change that removes
+        it. The row here matches on every other count -- same text, same
+        engine, same voice, audio present -- so only the missing language can
+        account for the miss.
+        """
+        import subprocess
+        import sys
+        post = tmp_path / "post.md"
+        post.write_text("# Hello\n\nA paragraph.\n", encoding="utf-8")
+        segs = _narrate.extract_segments(post.read_text())
+        digest = _narrate.source_sha256(_narrate.segments_to_text(segs))
+        out_dir = tmp_path / "out" / "audio"
+        out_dir.mkdir(parents=True)
+        audio_file = out_dir / "narration.wav"
+        audio_file.write_bytes(b"\x00")
+        _narrate.write_manifest(out_dir / "manifest.json", {
+            post.as_posix(): _narrate.NarrationManifestEntry(
+                source=post.as_posix(),
+                audio=str(audio_file),
+                engine="chatterbox",
+                voice="default",
+                source_sha256=digest,
+                duration_seconds=1.0,
+                # language left at its default: the shape of every row
+                # written before it existed.
+            )
+        })
+        proc = subprocess.run(
+            [
+                sys.executable,
+                str(Path(__file__).resolve().parents[1]
+                    / "scripts" / "narrate_post.py"),
+                "--engine", "chatterbox",
+                "--voice", "default",
+                "--out-dir", str(out_dir),
+                str(post),
+            ],
+            capture_output=True,
+            text=True,
+        )
+        # No engine is installed here, so "went past the cache" shows up as
+        # the install refusal rather than as audio. That is the assertion:
+        # the cache did not answer.
+        assert "cache hit" not in proc.stdout
+        assert proc.returncode == 2
+        assert "is not installed" in proc.stderr
+
+
+class TestTheRecordingTravelsUnderAVersion:
+    """The cues, the audio and the page must never be served out of step.
+
+    They are one object: cue 246 means the sentence marked ra-246, and that
+    is only true for the recording the markers were laid against. The URLs
+    used not to change when the recording did, so a cache served last week's
+    cues against this week's markers and the highlight pointed at an
+    unrelated paragraph.
+    """
+
+    def test_the_digest_follows_the_bytes(self, tmp_path: Path):
+        import importlib.util
+        spec = importlib.util.spec_from_file_location(
+            "ra_mod", Path(__file__).resolve().parents[1] / "scripts" / "readalong.py")
+        ra = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(ra)
+        audio, cues = tmp_path / "narration.mp3", tmp_path / "narration.vtt"
+        audio.write_bytes(b"\x00\x01")
+        cues.write_text("WEBVTT\n", encoding="utf-8")
+        first = ra._media_version(audio, cues)
+        assert first.startswith("?v=") and len(first) == len("?v=") + 10
+        # Same bytes, same token: a rebuild that changed nothing must not
+        # look like a change, or every page churns on every build.
+        assert ra._media_version(audio, cues) == first
+        # One byte of audio moves it, which is the whole point.
+        audio.write_bytes(b"\x00\x02")
+        assert ra._media_version(audio, cues) != first
+        # And so does a cue, since the timings are what go stale.
+        audio.write_bytes(b"\x00\x01")
+        cues.write_text("WEBVTT\n\n0\n00:00:00.000 --> 00:00:01.000\nHi.\n",
+                        encoding="utf-8")
+        assert ra._media_version(audio, cues) != first
+
+    def test_a_missing_recording_yields_no_version(self, tmp_path: Path):
+        import importlib.util
+        spec = importlib.util.spec_from_file_location(
+            "ra_mod2", Path(__file__).resolve().parents[1] / "scripts" / "readalong.py")
+        ra = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(ra)
+        # A version nobody can compute must not become a URL nobody can
+        # fetch: better an unversioned src than "?v=" pointing nowhere.
+        assert ra._media_version(tmp_path / "nope.mp3", tmp_path / "nope.vtt") == ""
+
+
+class TestLanguageFallbackIsNoticed:
+    """A reading that happened in another language has to say so.
+
+    Kokoro answers a request it cannot meet by reading in English, and the
+    result sounds entirely fine, so nothing about the audio raises the
+    question. The wrapper's own ``language_fallback`` field cannot answer it
+    either: it exists, and nothing in the chain sets it.
+    """
+
+    def test_a_language_with_no_voice_is_reported(self):
+        import narrate_post
+        # What the wrapper actually returns for a German page: the request
+        # was 'de', the reading came back 'en-us'.
+        report = {"language": "en-us", "voice": "af_heart",
+                  "language_fallback": False}
+        assert narrate_post._language_fell_back("de", report) is True
+
+    def test_the_language_that_was_asked_for_is_not_a_fallback(self):
+        import narrate_post
+        report = {"language": "fr-fr", "voice": "ff_siwis"}
+        # Base tags: the region is the engine's business, not a disagreement.
+        assert narrate_post._language_fell_back("fr", report) is False
+
+    def test_an_unanswerable_question_is_not_a_fallback(self):
+        import narrate_post
+        # A wrapper that reports no language leaves the question open, and an
+        # open question must not be recorded as a finding.
+        assert narrate_post._language_fell_back("fr", {}) is False
+        assert narrate_post._language_fell_back("", {"language": "en-us"}) is False
 
 
 # ── Timeline: pauses honoured, and where each segment landed ──────────────

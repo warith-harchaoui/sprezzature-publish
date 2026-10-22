@@ -60,6 +60,7 @@ Author
 
 from __future__ import annotations
 
+import hashlib
 import sys
 from pathlib import Path
 
@@ -68,6 +69,39 @@ import _narrate  # noqa: E402
 import _readalong  # noqa: E402
 from _argparse import make_parser  # noqa: E402
 from _lang import detect_text_language  # noqa: E402
+
+
+def _media_version(audio: Path, cues: Path) -> str:
+    """``?v=<digest>`` for the recording, or ``""`` when it cannot be read.
+
+    Hashed from the bytes of both files rather than from a timestamp: an
+    mtime differs between two machines that built the same page, which would
+    make the markup non-reproducible and every rebuild look like a change.
+
+    Parameters
+    ----------
+    audio, cues : Path
+        The recording and its timed track, as they are on disk now.
+
+    Returns
+    -------
+    str
+        A query suffix ready to append, ``"?v=abcdef1234"``. Empty when
+        either file is missing, because a version nobody can compute must
+        not become a URL nobody can fetch.
+    """
+    digest = hashlib.sha256()
+    for path in (cues, audio):
+        if not path.is_file():
+            return ""
+        # Read in blocks: the recordings run to tens of megabytes, and a
+        # whole-file read here would be the largest allocation in the tool.
+        with path.open("rb") as handle:
+            for block in iter(lambda: handle.read(1 << 20), b""):
+                digest.update(block)
+    # Ten hex characters. This guards a cache, it does not authenticate
+    # anything, and a short token keeps the generated markup readable.
+    return f"?v={digest.hexdigest()[:10]}"
 
 
 def build(page: Path, narration_dir: Path, out_dir: Path, *,
@@ -158,11 +192,29 @@ def build(page: Path, narration_dir: Path, out_dir: Path, *,
               for sheet in stylesheets if sheet.is_file()),
         ],
     )
+    # The cues and the audio travel under a version, and this is the one
+    # thing in the player that is about deployment rather than about reading.
+    #
+    # The page, the cues and the recording are one object: cue 246 means the
+    # sentence marked ra-246, and the mapping is only true for the recording
+    # the markers were laid against. Their URLs never change, though, so a
+    # cache is free to serve last week's cues to this week's page. Measured
+    # on a site that re-recorded one page: the server held 452 cues, the
+    # browser held 433 from before, the page's markers were the new ones, and
+    # cue 246 fired four minutes away from the sentence it named. The reading
+    # was not slightly out, it was pointing at an unrelated paragraph for the
+    # rest of the page.
+    #
+    # A content digest fixes it at the root rather than by shortening some
+    # cache lifetime: the URL changes exactly when the recording changes, so
+    # the three can never be served out of step, and when nothing changes the
+    # cache keeps working.
+    version = _media_version(audio, cues)
     player = _readalong.player_html(
         audio_src=(f"{href_base.rstrip('/')}/{audio.name}" if href_base
-                   else _readalong.href_from(audio, out_dir)),
+                   else _readalong.href_from(audio, out_dir)) + version,
         vtt_src=(f"{href_base.rstrip('/')}/{cues.name}" if href_base
-                 else _readalong.href_from(cues, out_dir)),
+                 else _readalong.href_from(cues, out_dir)) + version,
         label=_readalong.player_label(lang),
         lang=lang,
         duration_seconds=spoken,

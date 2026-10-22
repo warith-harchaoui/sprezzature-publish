@@ -1936,7 +1936,13 @@ def player_html(
         guessing is how that happens quietly.
         If `lang` has no wording — see :func:`player_strings`.
     """
-    suffix = Path(audio_src).suffix.lower()
+    # The query and the fragment come off before the extension is read.
+    # These two parameters are URLs rather than paths, and the recording now
+    # travels under a content version, so `Path("...mp3?v=abc").suffix` is
+    # ".mp3?v=abc" and the type lookup fails on a file whose type is in the
+    # table. A src is allowed to carry a query; the type is decided by the
+    # name under it.
+    suffix = Path(audio_src.split("?", 1)[0].split("#", 1)[0]).suffix.lower()
     audio_type = AUDIO_TYPES.get(suffix)
     if audio_type is None:
         raise ReadAlongMismatch(

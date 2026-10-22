@@ -4,6 +4,71 @@ All notable changes to `sprezzature-publish` are documented here.
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/);
 versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+
+- **A narrated page is read in one language now, because the orchestrator
+  says which.** `narrate_post` worked the language out from the whole text
+  already, and used it only to decide what `speakable` spells out. It never
+  told the engine. An engine told nothing detects the language of **each
+  block** and picks a voice per block, and a voice *is* a language here: it
+  chooses the phonemiser, so French read by an English voice is not an
+  accent, it is an American spelling the words out.
+
+  Measured on one site's fourteen narrations, 4141 blocks: **89 were read by
+  a voice foreign to their page**, Italian, Spanish and Portuguese among
+  them. The blocks that go wrong are the short ones, where there is nothing
+  to detect: a French letter opened on an English voice because its heading
+  was two words and its second line was "Stanislas, 2021". Pinning the
+  language takes all 89 back to the voice of their page.
+
+  Three parts, and the fix is only whole with all three:
+  - `--lang` is sent to the wrapper on every call, from the language already
+    detected for the page. The flag existed and nothing was passing it.
+  - `--lang` is now accepted on `narrate_post` too, for the page that quotes
+    another language at length and reads as that one.
+  - The manifest records the language, the voice that actually spoke and
+    whether a language fell back for want of a voice. The language is part
+    of the cache key: without that, a recording made block by block answers
+    the next run as fresh and the mixture survives the change that removes
+    it. Rows written before this carry no language, so they miss once and
+    are read again, which is the point rather than a cost. A WAV carries no
+    record of the voice that made it, so the row is the only place the
+    question can be answered.
+
+- **The cues, the audio and the page now travel under one version, so a
+  cache can no longer serve them out of step.** They are a single object:
+  cue 246 means the sentence marked `ra-246`, and that mapping holds only
+  for the recording the markers were laid against. Their URLs never changed
+  when the recording did, so a reader who had the page in cache kept last
+  week's cues against this week's markers.
+
+  Measured on a page re-recorded the day before: the server held 452 cues,
+  the browser held 433 from before, the page's markers were the new ones,
+  and cue 246 fired at 25:08 on a sentence the new recording speaks at
+  23:59. That is not a reading slightly out of step, it is a highlight
+  sitting on an unrelated paragraph for the rest of a forty-minute page, and
+  it would have lasted the full seven days of the cache lifetime.
+
+  `<source>` and `<track>` now carry `?v=<digest>`, hashed from the bytes of
+  the cues and the audio. Hashed rather than stamped from an mtime, which
+  differs between two machines building the same page and would make every
+  rebuild look like a change. When the recording does not move, neither does
+  the token, and the cache keeps doing its job. A missing recording yields
+  no version at all rather than a `?v=` pointing nowhere.
+
+  One thing fell out of it: `player_html` reads the audio type from the
+  extension, and these two parameters are URLs rather than paths, so the
+  query had to come off before the suffix. It did not, and the tests caught
+  it: `.mp3?v=…` is not in the type table.
+
+- **The narration cache never hit on a normal run.** The manifest stores the
+  audio path relative to `out_dir.parent`, and the cache tested it relative
+  to the working directory, so the file was found only when the two
+  coincided. Every re-run re-read the whole page. Absolute paths hit either
+  way, which is what the tests built, which is why it stayed hidden.
+
 ## [1.3.0] — 2026-10-21
 
 ### Added

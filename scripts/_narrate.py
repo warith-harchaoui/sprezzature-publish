@@ -176,6 +176,24 @@ class NarrationManifestEntry:
     voice: str
     source_sha256: str
     duration_seconds: float
+    #: The language the reading was pinned to, as a two-letter tag. Part of
+    #: the cache key, and it has to be: the language picks the voice, and the
+    #: voice picks the phonemiser, so the same text under a different
+    #: language is a different recording rather than the same one with an
+    #: accent. Empty on rows written before the language was recorded, which
+    #: is what makes those rows miss and be read again.
+    language: str = ""
+    #: The voice that actually spoke, as the engine resolved it. Distinct
+    #: from ``voice`` above, which is what the caller *asked* for: asking for
+    #: nothing is the normal case, and then this is the only record of who
+    #: read. The audio file cannot be asked -- a WAV does not carry the name
+    #: of the voice that made it.
+    resolved_voice: str = ""
+    #: True when the requested language had no voice and the engine fell back
+    #: to another one. Recorded rather than inferred, because the fallback is
+    #: silent at every other layer: a page detected as German comes back read
+    #: in English, and nothing in the audio or the cues says so.
+    language_fallback: bool = False
 
 
 # ── Markdown → segments ────────────────────────────────────────────────────
@@ -718,6 +736,13 @@ def read_manifest(path: Path) -> dict[str, NarrationManifestEntry]:
                 voice=str(row["voice"]),
                 source_sha256=str(row["source_sha256"]),
                 duration_seconds=float(row.get("duration_seconds", -1)),
+                # Read with .get rather than indexed: a manifest written
+                # before these three existed is still a valid manifest, and
+                # KeyError here would drop the row entirely rather than
+                # leaving it to miss on comparison.
+                language=str(row.get("language", "")),
+                resolved_voice=str(row.get("resolved_voice", "")),
+                language_fallback=bool(row.get("language_fallback", False)),
             )
         except (KeyError, TypeError, ValueError):
             continue

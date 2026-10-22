@@ -29,16 +29,24 @@ Pipeline
    subprocess and synthesises one WAV per segment, then concatenates
    with the requested pauses.
 5. A manifest entry is written to ``out/audio/manifest.json``
-   recording source path, audio path, engine, voice, sha256, and
-   measured duration so subsequent runs short-circuit on unchanged
-   posts.
+   recording source path, audio path, engine, voice, language, the
+   voice that actually spoke, sha256, and measured duration, so
+   subsequent runs short-circuit on unchanged posts. The language is
+   in the key as well as in the row: it picks the voice, so the same
+   text under a different language is a different recording.
 
 Usage
 -----
 ::
 
-    # Default engine (kokoro): the language of the text picks the voice
+    # Default engine (kokoro): the language of the whole text, detected
+    # once, picks the voice that reads all of it
     python3 sprezzature-publish/scripts/sprezzature-publish-narrate.py posts/hello.md
+
+    # A page that quotes another language at length, where detection would
+    # answer with the quotes rather than with the page
+    python3 sprezzature-publish/scripts/sprezzature-publish-narrate.py \
+        --lang fr posts/lettre.md
 
     # ChatterboxTTS with a custom voice sample (designer's own voice)
     python3 sprezzature-publish/scripts/sprezzature-publish-narrate.py \\
@@ -156,12 +164,19 @@ HTML_SUFFIXES: frozenset[str] = frozenset({".html", ".htm", ".xhtml", ".php"})
 #: to sound like a particular person.
 ENGINES: tuple[str, ...] = ("kokoro", "openvoice", "chatterbox")
 
-#: The default voice, per engine. Kokoro's is empty on purpose: its wrapper
-#: reads the text, detects the language, and picks the voice that speaks it.
-#: A hard-coded default would be a hard-coded language, and on a bilingual
-#: site that is not a small mistake — the language is what the phonemiser
-#: uses, so French read as English is not an accent, it is an American
-#: spelling the words out.
+#: The default voice, per engine. Kokoro's is empty on purpose: the language
+#: picks the voice, and a hard-coded default would be a hard-coded language.
+#: On a bilingual site that is not a small mistake: the language is what the
+#: phonemiser uses, so French read as English is not an accent, it is an
+#: American spelling the words out.
+#:
+#: What makes the empty string safe is ``--lang``, which this module always
+#: sends. Without it the wrapper detects the language of *each block* and
+#: picks a voice per block, which is not the same promise at all. Measured
+#: on one site's fourteen narrations: 89 blocks read by a voice foreign to
+#: their page, Italian and Spanish among them, because "Stanislas, 2021" and
+#: a three-word heading carry no signal. A page has one language; it is
+#: decided once, below, from the whole text.
 DEFAULT_VOICE: dict[str, str] = {
     "kokoro": "",
     "openvoice": "base-en-default",
@@ -360,6 +375,45 @@ def _engine_is_available(engine: str, python: str = sys.executable) -> bool:
         return False
 
 
+def _language_fell_back(requested: str, report: dict[str, Any]) -> bool:
+    """Whether the reading happened in a language other than the one asked for.
+
+    Kokoro carries 54 voices across nine languages, which leaves most of the
+    world out: ask for Welsh and an English voice answers. That is a sane
+    fallback and a terrible silence, because the audio sounds perfectly fine
+    and is simply in the wrong tongue.
+
+    Worked out by comparing tags rather than read off the report. The wrapper
+    does return a ``language_fallback`` field, but nothing in the chain below
+    ever sets it -- the backend computes the flag when it picks the voice and
+    drops it on the floor -- so trusting it would be recording a constant
+    ``False`` and calling it a measurement. What the report does say
+    truthfully is which language it ended up in: ask for ``de`` and it comes
+    back ``en-us``, ask for ``fr`` and it comes back ``fr-fr``. Comparing the
+    base tags is therefore the question actually being answered.
+
+    Parameters
+    ----------
+    requested : str
+        The language asked for, as a two-letter tag.
+    report : dict
+        The wrapper's JSON report, whose ``language`` is the tag it used.
+
+    Returns
+    -------
+    bool
+        True when the two name different languages. False when they agree,
+        and when either side is missing -- an unanswerable question is not
+        evidence of a fallback.
+    """
+    used: str = str(report.get("language", ""))
+    if not requested or not used:
+        return False
+    # Base tags only: "fr" against "fr-fr" is the same language, and the
+    # region is the engine's business rather than a disagreement.
+    return used.split("-", 1)[0].lower() != requested.split("-", 1)[0].lower()
+
+
 def run_engine(
     engine: str,
     *,
@@ -367,6 +421,7 @@ def run_engine(
     voice: str,
     voice_sample: Path | None,
     out_dir: Path,
+    lang: str = "",
     python: str = sys.executable,
 ) -> dict[str, Any]:
     """
@@ -391,6 +446,10 @@ def run_engine(
         engine's built-in voice ``voice``.
     out_dir : Path
         Directory to write the audio into.
+    lang : str
+        Two-letter language tag for the whole reading. Empty leaves the
+        choice to the wrapper, which then makes it *per block* and mixes
+        voices inside one page; every caller here passes it.
 
     Returns
     -------
@@ -428,6 +487,14 @@ def run_engine(
         cmd += ["--voice-sample", str(voice_sample)]
     else:
         cmd += ["--voice", voice]
+    # Sent whenever we know it, which is always in practice. The wrapper
+    # treats an empty --lang as "work it out yourself", and it works it out
+    # one block at a time, so leaving this off is how a bilingual page ends
+    # up with two accents. Harmless to the cloning engines: they take the
+    # same flag and use it for their own language setting, which otherwise
+    # defaults to French for everybody.
+    if lang:
+        cmd += ["--lang", lang]
 
     proc = subprocess.run(cmd, capture_output=True, text=True)
     # Clean the segments scratch file regardless of outcome.
@@ -494,6 +561,15 @@ def parse_args() -> argparse.Namespace:
         type=Path,
         default=None,
         help="Path to a reference WAV for voice cloning. Overrides --voice.",
+    )
+    parser.add_argument(
+        "--lang",
+        default="",
+        help="Two-letter language tag for the whole reading, e.g. 'fr'. "
+             "Left empty it is detected once from the full text, which is "
+             "right for almost every page; set it where a page quotes "
+             "another language at length and detection reads the quotes "
+             "instead of the page.",
     )
     parser.add_argument(
         "--out-dir",
@@ -586,7 +662,14 @@ def main() -> int:
     # equals T underscore..."). The cue keeps the page's words, so the
     # read-along still highlights what a reader sees; only the string handed
     # to the engine changes.
-    lang = detect_text_language(" ".join(seg["text"] for seg in segments))
+    # One language for the page, and it serves two purposes from here: it
+    # decides what `speakable` spells out, and it decides which voice reads.
+    # Detection runs on the joined text of every block rather than block by
+    # block, because that is where the signal is -- a heading or a dateline
+    # on its own is a coin toss.
+    lang = args.lang or detect_text_language(
+        " ".join(seg["text"] for seg in segments)
+    )
     # A formula above a handful of operators is not helped by being spelled
     # out: "the sum over i of x i, all over n" is a transliteration, and
     # only a sentence survives being heard once with no page in front of
@@ -630,7 +713,22 @@ def main() -> int:
                 args.voice_sample.as_posix()
                 if args.voice_sample else args.voice
             )
-            and Path(existing.audio).is_file()
+            # The language belongs in the key for the same reason it belongs
+            # in the call: it chooses the voice, so the same text under a
+            # different language is different audio. Rows written before it
+            # was recorded carry "" and therefore miss, which is the right
+            # outcome rather than a nuisance -- those were read with a voice
+            # per block, and reusing them would carry the mixture forward
+            # through the very change that fixes it.
+            and existing.language == lang
+            # Resolved against the base it was *written* against. The row
+            # stores the path relative to out_dir.parent (see the write
+            # below), while this test used to read it relative to the
+            # process's working directory -- so the file was found only when
+            # the two happened to coincide, and the cache that this whole
+            # block exists for never hit on a normal run. Absolute rows,
+            # which is what the tests build, hit either way and hid it.
+            and (args.out_dir.parent / existing.audio).is_file()
         ):
             print(f"OK cache hit: {existing.audio}")
             return 0
@@ -638,8 +736,9 @@ def main() -> int:
     # An empty --voice means "whatever this engine calls default", and the
     # engines disagree about what that is: openvoice wants a base speaker
     # name, chatterbox the literal string "default", kokoro nothing at all
-    # because it works the language out from the text. Resolving it here
-    # keeps that difference out of every call site below.
+    # because for kokoro the language names the voice and the language is
+    # sent separately. Resolving it here keeps that difference out of every
+    # call site below.
     if not args.voice:
         args.voice = DEFAULT_VOICE.get(args.engine, "")
 
@@ -664,6 +763,7 @@ def main() -> int:
         voice=args.voice,
         voice_sample=args.voice_sample,
         out_dir=args.out_dir,
+        lang=lang,
     )
     elapsed: float = time.monotonic() - started
 
@@ -676,12 +776,29 @@ def main() -> int:
         voice=args.voice_sample.as_posix() if args.voice_sample else args.voice,
         source_sha256=digest,
         duration_seconds=float(result.get("duration_seconds", -1)),
+        language=lang,
+        # What the engine reports it did, not what we asked: the two differ
+        # whenever the ask was empty, which is the normal case here. A WAV
+        # carries no record of the voice that produced it, so if this row
+        # does not say, nothing does.
+        resolved_voice=str(result.get("voice", "")),
+        language_fallback=_language_fell_back(lang, result),
     )
     write_manifest(manifest_path, manifest)
     print(
         f"OK narrated {source_key} in {elapsed:.1f}s → {result['audio']} "
-        f"({result.get('duration_seconds', 0):.1f}s audio)"
+        f"({result.get('duration_seconds', 0):.1f}s audio, "
+        f"{lang} / {result.get('voice', '?')})"
     )
+    # A page whose language has no voice is read in another one, and that is
+    # the kind of thing a log line should not bury: the audio sounds fine,
+    # it is simply the wrong tongue.
+    if _language_fell_back(lang, result):
+        print(
+            f"note: no voice for '{lang}'; read with "
+            f"'{result.get('voice', '?')}' instead",
+            file=sys.stderr,
+        )
     return 0
 
 
