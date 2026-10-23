@@ -4,7 +4,15 @@ test_prompts — regression tests for the YAML-backed prompts.
 Each Ollama-backed script delegates its prompt construction to a YAML
 file under <skill>/scripts/prompts/. The alt-text prompts moved to the
 sprezzature-accessibility repository with the code that assembles them; what is
-left here is sprezzature-publish's half. These tests assert that:
+left here is sprezzature-publish's half.
+
+Two things stayed behind that move and are gone now: a `sys.path` entry for
+`<this repo>/sprezzature-accessibility/scripts`, a monorepo-era path that
+cannot exist in a split repository and so inserted nothing, and a section
+header for `alt_from_ollama` with no tests under it — a heading promising
+coverage that left with the code it covered.
+
+These tests assert that:
 
 1. The YAML loader (`_prompts.load_prompt`) can read each file using
    the stdlib fallback (PyYAML is optional).
@@ -23,13 +31,11 @@ import pytest
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 PUBLISH_SCRIPTS = REPO_ROOT / "scripts"
-A11Y_SCRIPTS = REPO_ROOT / "sprezzature-accessibility" / "scripts"
 
 
 @pytest.fixture(scope="module", autouse=True)
 def _add_publish_scripts_to_path() -> None:
     sys.path.insert(0, str(PUBLISH_SCRIPTS))
-    sys.path.insert(0, str(A11Y_SCRIPTS))
 
 
 # ── YAML files load cleanly ─────────────────────────────────────────────────
@@ -102,4 +108,3 @@ def test_meta_build_prompt_omits_blocks_when_empty() -> None:
     assert "Write the JSON now." in out
 
 
-# ── alt_from_ollama.prompt_for + long_prompt_for ───────────────────────────
