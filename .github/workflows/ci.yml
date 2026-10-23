@@ -12,6 +12,9 @@ concurrency:
 jobs:
   test:
     runs-on: ubuntu-latest
+    # Cran d'arrêt, pas budget : sans lui GitHub laisse courir un job pendu
+    # six heures. Aucun des dix dépôts n'en avait.
+    timeout-minutes: 20
     strategy:
       fail-fast: false
       matrix:
@@ -32,6 +35,11 @@ jobs:
           pip install -e ".[dev,all,api,mcp]"
 
       - name: Lint
+        # Une fois, pas trois. ruff est un analyseur statique : son verdict ne
+        # dépend pas de l'interpréteur, donc le lancer sur chaque version de la
+        # matrice paie trois fois la même réponse. C'est le motif que les sept
+        # autres briques appliquaient déjà à leur étape de lint ou de typage.
+        if: matrix.python-version == '3.12'
         run: ruff check sprezzature_publish scripts tests
 
       # Nothing here needs Ollama or the network: the suite exercises the
