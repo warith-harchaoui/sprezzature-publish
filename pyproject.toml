@@ -78,6 +78,15 @@ mcp = [
     "mcp<2.0",
 ]
 dev = [
+    # The sibling that owns the voice, *base install only* — not `[narrate]`,
+    # whose backends are the weight this package keeps out of its graph on
+    # purpose. `tests/test_narrate.py` checks that the engine command built
+    # here names a module that exists over there; its own docstring says the
+    # check "passed on every developer's laptop and failed on the one
+    # environment that installs nothing extra". It skipped there rather than
+    # failing, which is the same silence. The base install is `click` and
+    # `langdetect`.
+    "sprezzature-audio>=1.5.0",
     "pytest>=8.0", "ruff", "mypy", "httpx>=0.27", "types-PyYAML",
     # tomllib landed in 3.11 and this package claims 3.10.
     'tomli>=2.0; python_version < "3.11"',
