@@ -474,3 +474,42 @@ def test_the_muted_grey_does_not_win_the_ink() -> None:
     palette = _readalong.page_palette(LIGHT)
     assert palette["ink"] == "#111111", "the caption grey won the ink"
     assert _readalong.player_colours(palette)["--ra-accent"] == "#111111"
+
+
+def test_the_sentence_highlight_takes_no_space_until_it_is_lit() -> None:
+    """`.ra-s` adds a border and a padding, and pulls back exactly both.
+
+    The highlight is a tint *and* a 3-pixel left border, because WCAG 1.4.1
+    forbids colour as the only means of conveying information. Both are
+    drawn on a transparent border until a sentence is read, and a transparent
+    border still takes up space -- so the rule compensates with a negative
+    margin.
+
+    It compensated the border and forgot the padding: `-3px` against
+    `3px + 3px`. Three pixels of the rule's own went in front of every
+    sentence, which is a three-pixel indent at the start of each paragraph
+    and a gap after every full stop that reads as a double space, on all
+    twelve narrated articles of a live site. Nothing in the markup shows it:
+    there is no whitespace between one `</span>` and the next `<span>`. It
+    took rendering the same prose twice, with and without the rule, to see.
+
+    Arithmetic rather than a literal, so the three numbers can move together
+    and only a mistake fails.
+    """
+    rule = re.search(r"\.ra-s\s*\{(.*?)\}", CSS, re.S)
+    assert rule, "no .ra-s rule in readalong.css"
+    body = rule.group(1)
+
+    def pixels(name: str) -> int:
+        found = re.search(rf"{name}:\s*(-?\d+)px", body)
+        assert found, f".ra-s declares no {name}"
+        return int(found.group(1))
+
+    border = pixels("border-left")
+    padding = pixels("padding-left")
+    margin = pixels("margin-left")
+    assert margin == -(border + padding), (
+        f".ra-s pulls back {-margin}px and takes up {border + padding}px "
+        f"(border {border} + padding {padding}). A sentence that is not being "
+        f"read must occupy exactly the space it would without this rule."
+    )
