@@ -183,14 +183,34 @@ class ChangelogEntry:
     summary: str
 
 
+#: Inline Markdown, removed so a feed reader shows prose rather than source.
+#: Both the Atom ``<title>`` and the RSS ``<description>`` here are plain
+#: text: a title reading ``**`sprezzature[all]` finally installs all of
+#: it.**`` is what a reader's entry list showed for eight of the hundred and
+#: twenty-one entries, asterisks and backticks included.
+#:
+#: Order matters. Bold before italic, or ``**x**`` leaves a stray ``*`` at
+#: each end; links before emphasis, so the label inside ``[text](url)`` is
+#: itself cleaned.
+_INLINE_MARKDOWN: tuple[tuple[str, str], ...] = (
+    (r"\[([^\]]+)\]\([^)]*\)", r"\1"),   # [label](url) -> label
+    (r"\*\*(.+?)\*\*", r"\1"),            # **bold**
+    (r"__(.+?)__", r"\1"),                 # __bold__
+    (r"(?<!\w)\*(?!\s)(.+?)(?<!\s)\*", r"\1"),  # *italic*, not a bare star
+    (r"`([^`]+)`", r"\1"),                 # `code`
+)
+
+
 def _clean_line(line: str) -> str:
-    """Strip a Markdown bullet marker and surrounding whitespace from one line."""
+    """One Markdown source line as plain prose: no bullet, no inline markup."""
     line = line.strip()
     for marker in ("- ", "* "):
         if line.startswith(marker):
             line = line[len(marker) :].strip()
             break
-    return line
+    for pattern, replacement in _INLINE_MARKDOWN:
+        line = re.sub(pattern, replacement, line)
+    return line.strip()
 
 
 def _unwrap_lines(body_lines: list[str]) -> list[str]:
@@ -356,7 +376,12 @@ def parse_changelog(path: Path, package: str) -> list[ChangelogEntry]:
         date_iso = dates[-1]  # A "through" range: the later date is the release date.
 
         title_m = _TITLE_RE.search(rest)
-        heading_title = title_m.group(1).strip() if title_m else ""
+        # Cleaned like a body line: a heading title is Markdown too, and
+        # `## [1.4.0] — …: `sprezzature[all]` could not install` put the
+        # backticks straight into the Atom title. The body path was fixed
+        # first and this one kept thirteen of them, which is the shape of a
+        # fix applied where the defect was noticed rather than where it lives.
+        heading_title = _clean_line(title_m.group(1)) if title_m else ""
 
         body_end = heading_idx[pos + 1] if pos + 1 < len(heading_idx) else len(lines)
         logical_lines = _drop_retired(_unwrap_lines(lines[idx + 1 : body_end]))

@@ -252,3 +252,67 @@ def test_the_suite_loses_no_title_it_actually_wrote() -> None:
     assert not missed, (
         "headings carrying a title the feed cannot read:\n  " + "\n  ".join(missed[:10])
     )
+
+
+def test_a_feed_title_carries_no_markdown() -> None:
+    """A reader's entry list shows prose, not source.
+
+    Both the Atom `<title>` and the RSS `<description>` are plain text, and
+    `_clean_line` stripped only the bullet marker. Eight of the hundred and
+    twenty-one entries on sprezzature.ai therefore read like
+    `**`sprezzature[all]` finally installs all of it.**` — asterisks and
+    backticks included — because those releases open their body with a bold
+    sentence and the generator takes the first body line as the title when
+    the heading carries none.
+    """
+    from changelog_feed import _clean_line
+
+    cases = {
+        "**`sprezzature[all]` finally installs all of it.**":
+            "sprezzature[all] finally installs all of it.",
+        "- **Why the number moves**, and why it took *this* long.":
+            "Why the number moves, and why it took this long.",
+        "See [the notes](https://example.invalid/x) for `--fix`.":
+            "See the notes for --fix.",
+        "__Bold with underscores__ and plain text.":
+            "Bold with underscores and plain text.",
+    }
+    for source, expected in cases.items():
+        assert _clean_line(source) == expected, source
+
+
+def test_a_lone_asterisk_survives_cleaning() -> None:
+    """Multiplication and footnote markers are not emphasis.
+
+    The italic pattern is the one that over-reaches if written loosely: a
+    bare `*` between spaces, or a `3 * 4`, must come through untouched, or
+    the cleaner starts editing the prose it is supposed to render.
+    """
+    from changelog_feed import _clean_line
+
+    for untouched in ("3 * 4 is twelve", "a footnote marker * stands alone"):
+        assert _clean_line(untouched) == untouched, untouched
+
+
+def test_a_heading_title_is_cleaned_like_a_body_line() -> None:
+    """The two paths into `<title>` have to agree about Markdown.
+
+    A release heading carries its own title — `## [1.4.0] — 2026-10-15:
+    `sprezzature[all]` could not install` — and that path did not go through
+    the cleaner. Stripping the body path alone left thirteen titles on the
+    published feed still carrying backticks: a fix applied where the defect
+    was noticed rather than where it lives.
+    """
+    import tempfile
+
+    source = (
+        "# Changelog\n\n"
+        "## [1.4.0] — 2026-10-15: `sprezzature[all]` could not **install**\n\n"
+        "Body line.\n"
+    )
+    with tempfile.TemporaryDirectory() as tmp:
+        path = Path(tmp) / "CHANGELOG.md"
+        path.write_text(source, encoding="utf-8")
+        entries = feed.parse_changelog(path, "sprezzature")
+    assert entries, "the heading style under test no longer parses"
+    assert entries[0].title == "sprezzature[all] could not install", entries[0].title
