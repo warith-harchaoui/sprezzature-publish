@@ -44,12 +44,8 @@ def _source_of(target: str) -> str:
     """The source file a ``[project.scripts]`` target names."""
     module = target.split(":")[0]
     if module.startswith("sprezzature_publish_scripts."):
-        return (ROOT / "scripts" / f"{module.split('.')[-1]}.py").read_text(
-            encoding="utf-8"
-        )
-    return (ROOT / Path(*module.split(".")).with_suffix(".py")).read_text(
-        encoding="utf-8"
-    )
+        return (ROOT / "scripts" / f"{module.split('.')[-1]}.py").read_text(encoding="utf-8")
+    return (ROOT / Path(*module.split(".")).with_suffix(".py")).read_text(encoding="utf-8")
 
 
 # ── Every declared command exists, and says its own name ───────────────────
@@ -89,8 +85,7 @@ def test_a_command_announces_the_name_that_installs_it(command: str) -> None:
     if not declared:
         pytest.skip("this command takes its name from the entry point itself")
     assert command in declared, (
-        f"`{command}` is the command pip installs, but its --help introduces "
-        f"itself as {declared!r}"
+        f"`{command}` is the command pip installs, but its --help introduces itself as {declared!r}"
     )
 
 
@@ -103,30 +98,56 @@ def test_the_commands_are_named_for_this_package() -> None:
     ``make-map``, ``make-figure``, ``make-alt``.
     """
     for command in CONSOLE_SCRIPTS:
-        assert command.startswith("sprezzature-publish") or command == "make-site", (
-            command
-        )
+        assert command.startswith("sprezzature-publish") or command == "make-site", command
 
 
-# ── Both front doors, over one catalogue ───────────────────────────────────
+# ── One front door, over one catalogue ─────────────────────────────────────
 
 
-def test_both_front_doors_offer_the_same_tools() -> None:
+def test_the_command_list_is_the_catalogue() -> None:
     """
-    The failure a second command line invites.
+    One catalogue, one parser.
 
-    Two catalogues drift; one catalogue cannot. Both front doors read the
-    same ``TOOLS`` table, and this is what holds them to it.
+    There were two front doors until 2026-10-25, kept from drifting by sharing
+    this table; the click module imported ``TOOLS`` from the argparse one, so
+    neither could be removed without the other. Click is the only parser now,
+    and the table is still the single source of the command list.
     """
-    from sprezzature_publish.cli import TOOLS
-    from sprezzature_publish.cli_click import main as click_main
+    from sprezzature_publish._tools import TOOLS
+    from sprezzature_publish.cli import main
 
-    assert set(click_main.commands) == set(TOOLS)
+    assert set(main.commands) - {"tools"} == set(TOOLS)
+
+
+def test_the_two_spellings_are_one_callable() -> None:
+    """
+    ``make-site`` and ``sprezzature-publish`` must resolve to the same target.
+
+    Two names that each had their own implementation is how the pair drifted.
+    Two names pointing at one function cannot.
+    """
+    import tomllib
+
+    scripts = tomllib.loads((ROOT / "pyproject.toml").read_text())["project"]["scripts"]
+    assert scripts["make-site"] == scripts["sprezzature-publish"]
+
+
+def test_click_is_a_base_dependency_and_no_second_parser_grows_back() -> None:
+    """With argparse gone, no parser ships with Python."""
+    import tomllib
+
+    project = tomllib.loads((ROOT / "pyproject.toml").read_text())["project"]
+    assert any(dep.startswith("click") for dep in project["dependencies"])
+    assert "click" not in project.get("optional-dependencies", {})
+    assert not (ROOT / "sprezzature_publish" / "cli_click.py").exists()
+    assert "import argparse" not in (ROOT / "sprezzature_publish" / "cli.py").read_text(
+        encoding="utf-8"
+    )
 
 
 def test_every_tool_in_the_catalogue_resolves() -> None:
     """A tool listed in the front door and importable from nowhere is a lie."""
-    from sprezzature_publish.cli import TOOLS
+    from sprezzature_publish._tools import TOOLS
 
     for tool, (module_name, summary) in TOOLS.items():
         path = ROOT / "scripts" / f"{module_name}.py"

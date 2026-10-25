@@ -100,7 +100,7 @@ dev = [
 # contract (SURFACES.md in the monorepo): `make-site` reads its flags with
 # argparse, `sprezzature-publish` with click, and both call the same engine.
 make-site = "sprezzature_publish.cli:main"
-sprezzature-publish = "sprezzature_publish.cli_click:main"
+sprezzature-publish = "sprezzature_publish.cli:main"
 sprezzature-publish-lint = "sprezzature_publish_scripts.lint_markdown:main"
 sprezzature-publish-html = "sprezzature_publish_scripts.md_to_html:main"
 sprezzature-publish-icons = "sprezzature_publish_scripts.favicons:main"
