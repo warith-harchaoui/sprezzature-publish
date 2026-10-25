@@ -20,7 +20,8 @@ Three responsibilities, intentionally engine-agnostic:
    baseline.
 2. **Pronunciation overrides.** When ``pronunciation.yaml`` sits next
    to the source post (or in the project root), apply token
-   substitution.
+   substitution to the *spoken* string. The cue text keeps the page's
+   words: the override exists to fix a voice, not to rewrite a page.
 3. **Manifest + sha256 cache.** Record every narration into
    ``out/audio/manifest.json`` keyed on
    ``(source_sha256, engine, voice)`` so a re-run skips unchanged
@@ -635,6 +636,33 @@ def load_pronunciation(post_path: Path) -> dict[str, str]:
     return {}
 
 
+def apply_pronunciation_text(text: str, overrides: dict[str, str]) -> str:
+    """
+    Apply token-substitution overrides to one string.
+
+    Substitution is whole-word and case-sensitive. Longer tokens win
+    when they overlap (``"WCAG 2.2"`` beats ``"WCAG"``). This is the
+    string the engine will *speak*; cue text is never passed through
+    here, because a cue must keep the page's words ("Stanislasse", the
+    spelling that restores the final s French otherwise silences, must
+    be heard and never read).
+    """
+    if not overrides:
+        return text
+    tokens: list[str] = sorted(
+        (t for t in overrides if t),
+        key=len,
+        reverse=True,
+    )
+    for token in tokens:
+        text = re.sub(
+            rf"\b{re.escape(token)}\b",
+            overrides[token],
+            text,
+        )
+    return text
+
+
 def apply_pronunciation(
     segments: list[Segment],
     overrides: dict[str, str],
@@ -642,27 +670,16 @@ def apply_pronunciation(
     """
     Apply token-substitution overrides to every segment's text.
 
-    Substitution is whole-word and case-sensitive. Longer tokens win
-    when they overlap (``"WCAG 2.2"`` beats ``"WCAG"``).
+    Kept for sources without a page behind them; the page route goes
+    through :func:`apply_pronunciation_text` on the spoken string
+    instead, so the cues keep the page's words.
     """
     if not overrides:
         return segments
-    tokens: list[str] = sorted(
-        (t for t in overrides if t),
-        key=len,
-        reverse=True,
-    )
-    out: list[Segment] = []
-    for seg in segments:
-        new_text: str = seg["text"]
-        for token in tokens:
-            new_text = re.sub(
-                rf"\b{re.escape(token)}\b",
-                overrides[token],
-                new_text,
-            )
-        out.append({**seg, "text": new_text})
-    return out
+    return [
+        {**seg, "text": apply_pronunciation_text(seg["text"], overrides)}
+        for seg in segments
+    ]
 
 
 # ── LLM enrichment (Ollama, optional) ──────────────────────────────────────

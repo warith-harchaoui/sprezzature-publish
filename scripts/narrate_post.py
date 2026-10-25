@@ -17,8 +17,9 @@ Pipeline
    Each segment carries baseline narration hints derived from the
    Markdown structure (pause lengths, emotion from leading emoji,
    pace from frontmatter ``narration.tone``).
-2. ``_narrate.load_pronunciation`` / ``apply_pronunciation`` adjust
-   the prose so brand names / acronyms are spoken correctly.
+2. ``_narrate.load_pronunciation`` / ``apply_pronunciation_text``
+   adjust what is *spoken* so brand names / acronyms are pronounced
+   correctly; the cue text keeps the page's words.
 3. **Optional** ``--ai-hints`` calls a local Ollama vision-or-text
    model per segment and enriches the hints with semantic context
    the structure alone cannot see (sarcasm, build-up before a
@@ -131,7 +132,7 @@ from _narrate import (  # noqa: E402
     LLM_SYSTEM_PROMPT,
     NarrationManifestEntry,
     Segment,
-    apply_pronunciation,
+    apply_pronunciation_text,
     explode_to_sentences,
     extract_segments,
     load_pronunciation,
@@ -627,9 +628,12 @@ def main() -> int:
         print(f"FAIL post is empty (no narrate-able segments): {args.post}", file=sys.stderr)
         return 1
 
-    # Pronunciation overrides applied before LLM enrichment so the
-    # LLM sees what the engine will actually speak.
-    segments = apply_pronunciation(segments, load_pronunciation(args.post))
+    # Pronunciation overrides are loaded here but applied to the SPOKEN
+    # string only, further down. Applying them to the segments rewrote the
+    # cue text ("Stanislasse" showed up in the read-along), and on the page
+    # route the spoken side was then rebuilt from the page's own words, so
+    # the engine never heard the override at all: the fix was read, not said.
+    pronunciation = load_pronunciation(args.post)
 
     if args.ai_hints:
         # The model is fixed at qwen3-vl:8b (the one authorized LLM); not a CLI
@@ -690,6 +694,9 @@ def main() -> int:
             _readalong.without_markers(spoken[index]["text"]) if spoken else segment["text"]
         )
         say = speakable(source_text, lang, narrator=narrator)
+        # The override takes the spoken string as it leaves `speakable`, so
+        # it also covers a token that a formula or a footnote spelled out.
+        say = apply_pronunciation_text(say, pronunciation)
         if say != segment["text"]:
             segment["say"] = say
 
@@ -697,7 +704,13 @@ def main() -> int:
     manifest_path: Path = args.out_dir / "manifest.json"
     manifest: dict[str, NarrationManifestEntry] = read_manifest(manifest_path)
     source_key: str = args.post.as_posix()
-    digest: str = source_sha256(segments_to_text(segments))
+    # The overrides belong in the digest: they no longer touch the segment
+    # text, so without this a new pronunciation.yaml would hit the cache and
+    # the voice would never say it.
+    digest: str = source_sha256(
+        segments_to_text(segments)
+        + (json.dumps(pronunciation, sort_keys=True, ensure_ascii=False) if pronunciation else "")
+    )
     if not args.force:
         existing = manifest.get(source_key)
         if (
