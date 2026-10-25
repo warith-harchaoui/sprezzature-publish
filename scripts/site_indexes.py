@@ -133,11 +133,11 @@ class AudioEntry:
 #: typically lands as WAV (lossless, what the engines produce) or
 #: MP3 (after the user re-encodes for distribution).
 _AUDIO_MIME: dict[str, str] = {
-    ".wav":  "audio/wav",
-    ".mp3":  "audio/mpeg",
-    ".m4a":  "audio/mp4",
-    ".aac":  "audio/aac",
-    ".ogg":  "audio/ogg",
+    ".wav": "audio/wav",
+    ".mp3": "audio/mpeg",
+    ".m4a": "audio/mp4",
+    ".aac": "audio/aac",
+    ".ogg": "audio/ogg",
     ".opus": "audio/ogg",
     ".flac": "audio/flac",
 }
@@ -203,9 +203,12 @@ def load_audio_manifest(
             if candidate.is_file():
                 length_bytes = candidate.stat().st_size
         out[stem] = AudioEntry(
-            path=audio, mime_type=mime, length_bytes=length_bytes,
+            path=audio,
+            mime_type=mime,
+            length_bytes=length_bytes,
         )
     return out
+
 
 #: Names recognized as a default blog folder when ``--feed-from`` is absent.
 DEFAULT_BLOG_DIRS: tuple[str, ...] = ("posts", "blog", "articles")
@@ -218,6 +221,7 @@ SITEMAP_MAX_URLS: int = 50_000
 
 
 # ── Utility helpers ────────────────────────────────────────────────────────
+
 
 def _today_iso() -> str:
     """Return today's date as ISO-8601 (YYYY-MM-DD) in UTC."""
@@ -297,12 +301,14 @@ def _read_description(path: Path) -> str:
     if path.suffix.lower() in {".html", ".htm"}:
         m = re.search(
             r'<meta[^>]+name=["\']description["\'][^>]+content=["\']([^"\']+)["\']',
-            text, re.I,
+            text,
+            re.I,
         )
         if m:
             return m.group(1).strip()
-        m = re.search(r'<meta[^>]+name=["\']description["\'][^>]+content=["\']([^"\']+)["\']',
-                      text, re.I)
+        m = re.search(
+            r'<meta[^>]+name=["\']description["\'][^>]+content=["\']([^"\']+)["\']', text, re.I
+        )
         if m:
             return m.group(1).strip()
         return ""
@@ -321,6 +327,7 @@ def _read_description(path: Path) -> str:
 
 
 # ── Page discovery ────────────────────────────────────────────────────────
+
 
 def discover_pages(root: Path) -> list[Path]:
     """
@@ -359,6 +366,7 @@ def discover_pages(root: Path) -> list[Path]:
 
 # ── robots.txt ────────────────────────────────────────────────────────────
 
+
 def render_robots(base_url: str, sitemap_url: str) -> str:
     """
     Render a minimal robots.txt allowing all crawlers.
@@ -376,14 +384,11 @@ def render_robots(base_url: str, sitemap_url: str) -> str:
         File body.
     """
     # A conservative default: allow everything, point crawlers at the sitemap.
-    return (
-        "User-agent: *\n"
-        "Allow: /\n"
-        f"Sitemap: {sitemap_url}\n"
-    )
+    return f"User-agent: *\nAllow: /\nSitemap: {sitemap_url}\n"
 
 
 # ── sitemap.xml ───────────────────────────────────────────────────────────
+
 
 def render_sitemap(base_url: str, pages: Iterable[tuple[Path, str]]) -> str:
     """
@@ -419,6 +424,7 @@ def render_sitemap(base_url: str, pages: Iterable[tuple[Path, str]]) -> str:
 
 # ── llms.txt ──────────────────────────────────────────────────────────────
 
+
 def render_llms_txt(
     base_url: str,
     project_name: str,
@@ -453,7 +459,9 @@ def render_llms_txt(
         lines.append(f"## {heading}")
         lines.append("")
         for name, url, desc in entries:
-            full = url if url.startswith(("http://", "https://")) else _format_url(base_url, Path(url))
+            full = (
+                url if url.startswith(("http://", "https://")) else _format_url(base_url, Path(url))
+            )
             if desc:
                 lines.append(f"- [{name}]({full}): {desc}")
             else:
@@ -575,6 +583,7 @@ def render_llms_full_txt(
 
 # ── Atom feed ─────────────────────────────────────────────────────────────
 
+
 def render_atom(
     base_url: str,
     feed_id: str,
@@ -669,6 +678,7 @@ def render_atom(
 
 # ── RSS 2.0 feed (alternative output) ─────────────────────────────────────
 
+
 def render_rss(
     base_url: str,
     feed_title: str,
@@ -749,16 +759,21 @@ def render_rss(
         # when the audio file isn't reachable so the feed still parses.
         audio = (audio_entries or {}).get(rel.with_suffix("").as_posix())
         if audio is not None:
-            ET.SubElement(item, "enclosure", {
-                "url": _format_url(base_url, Path(audio.path)),
-                "length": str(audio.length_bytes),
-                "type": audio.mime_type,
-            })
+            ET.SubElement(
+                item,
+                "enclosure",
+                {
+                    "url": _format_url(base_url, Path(audio.path)),
+                    "length": str(audio.length_bytes),
+                    "type": audio.mime_type,
+                },
+            )
 
     return ET.tostring(rss, encoding="unicode", xml_declaration=True).rstrip() + "\n"
 
 
 # ── humans.txt ────────────────────────────────────────────────────────────
+
 
 def render_humans(authors: list[str], site_meta: dict[str, str]) -> str:
     """
@@ -820,6 +835,7 @@ def read_authors(root: Path) -> list[str]:
 
 # ── Blog-post discovery ────────────────────────────────────────────────────
 
+
 def discover_posts(feed_dir: Path) -> list[tuple[Path, str, str, str]]:
     """
     Walk ``feed_dir`` and discover Markdown / HTML posts.
@@ -866,6 +882,7 @@ def discover_posts(feed_dir: Path) -> list[tuple[Path, str, str, str]]:
 
 # ── Orchestration ─────────────────────────────────────────────────────────
 
+
 def find_blog_dir(root: Path, explicit: Path | None) -> Path | None:
     """
     Resolve the blog-posts directory.
@@ -897,67 +914,88 @@ def main() -> int:
     p = make_parser(
         prog="sprezzature-publish-indexes",
         description="Generate robots.txt, sitemap.xml, llms.txt, an Atom or RSS "
-                    "feed and humans.txt for a static site. Stdlib only.",
+        "feed and humans.txt for a static site. Stdlib only.",
         epilog="Examples:\n"
-               "  sprezzature-publish-indexes --root . --base-url https://example.com\n"
-               "  sprezzature-publish-indexes --root . --base-url https://example.com --feed-from posts\n"
-               "  sprezzature-publish-indexes --root . --base-url https://example.com --rss --humans\n",
+        "  sprezzature-publish-indexes --root . --base-url https://example.com\n"
+        "  sprezzature-publish-indexes --root . --base-url https://example.com --feed-from posts\n"
+        "  sprezzature-publish-indexes --root . --base-url https://example.com --rss --humans\n",
     )
     p.add_argument(
-        "--root", type=Path, default=Path("."),
+        "--root",
+        type=Path,
+        default=Path("."),
         help="Project root. Default: current directory.",
     )
     p.add_argument(
-        "--base-url", required=True,
+        "--base-url",
+        required=True,
         help="Absolute origin of the published site (e.g. https://example.com).",
     )
     p.add_argument(
-        "--out", type=Path,
+        "--out",
+        type=Path,
         help="Output directory. Default: same as --root.",
     )
     p.add_argument(
-        "--feed-from", type=Path, dest="feed_from",
+        "--feed-from",
+        type=Path,
+        dest="feed_from",
         help="Directory containing blog posts. When omitted, posts/ or blog/ is auto-detected.",
     )
     p.add_argument(
-        "--rss", action="store_true",
+        "--rss",
+        action="store_true",
         help="Emit RSS 2.0 instead of Atom 1.0.",
     )
     p.add_argument(
-        "--humans", action="store_true",
+        "--humans",
+        action="store_true",
         help="Emit humans.txt (always reads AUTHORS / CREDITS when present).",
     )
     p.add_argument(
-        "--name", default="",
+        "--name",
+        default="",
         help="Project name. Falls back to the H1 / <title> of the root README / index.",
     )
     p.add_argument(
-        "--summary", default="",
+        "--summary",
+        default="",
         help="Site summary used in llms.txt blockquote.",
     )
     p.add_argument(
-        "--no-llms-full", action="store_true", dest="no_llms_full",
+        "--no-llms-full",
+        action="store_true",
+        dest="no_llms_full",
         help="Skip llms-full.txt (the concatenated full-text corpus). "
-             "By default it is emitted from the Markdown sources.",
+        "By default it is emitted from the Markdown sources.",
     )
     p.add_argument(
-        "--llms-full-max-kb", type=int, default=0, dest="llms_full_max_kb",
+        "--llms-full-max-kb",
+        type=int,
+        default=0,
+        dest="llms_full_max_kb",
         help="Hard size budget (KB) for llms-full.txt. Pages are kept in "
-             "priority order (README / index first) until the budget is "
-             "reached; the rest are dropped and named in a warning. "
-             "0 (default) means no cap.",
+        "priority order (README / index first) until the budget is "
+        "reached; the rest are dropped and named in a warning. "
+        "0 (default) means no cap.",
     )
     p.add_argument(
-        "--audio-manifest", type=Path, default=None, dest="audio_manifest",
+        "--audio-manifest",
+        type=Path,
+        default=None,
+        dest="audio_manifest",
         help="Path to out/audio/manifest.json (from narrate_post.py). "
-             "When passed, feed entries gain <enclosure> rows so the "
-             "blog feed doubles as a podcast feed.",
+        "When passed, feed entries gain <enclosure> rows so the "
+        "blog feed doubles as a podcast feed.",
     )
     p.add_argument(
-        "--audio-root", type=Path, default=None, dest="audio_root",
+        "--audio-root",
+        type=Path,
+        default=None,
+        dest="audio_root",
         help="Directory the audio paths in --audio-manifest are relative "
-             "to. When set, the renderer stats each file to populate the "
-             "enclosure 'length' attribute. Defaults to --root.",
+        "to. When set, the renderer stats each file to populate the "
+        "enclosure 'length' attribute. Defaults to --root.",
     )
     args = p.parse_args()
 
@@ -1032,7 +1070,11 @@ def main() -> int:
         if docs:
             max_bytes: int = max(0, args.llms_full_max_kb) * 1024
             body, dropped = render_llms_full_txt(
-                base_url, project_name, args.summary, docs, max_bytes=max_bytes,
+                base_url,
+                project_name,
+                args.summary,
+                docs,
+                max_bytes=max_bytes,
             )
             (out_dir / "llms-full.txt").write_text(body, encoding="utf-8")
             size_kb: float = len(body.encode("utf-8")) / 1024
@@ -1041,8 +1083,7 @@ def main() -> int:
             if dropped:
                 print(
                     f"  ⚠ {len(dropped)} page(s) dropped to honor "
-                    f"--llms-full-max-kb {args.llms_full_max_kb}: "
-                    + ", ".join(dropped)
+                    f"--llms-full-max-kb {args.llms_full_max_kb}: " + ", ".join(dropped)
                 )
             elif not max_bytes and len(body.encode("utf-8")) > LLMS_FULL_SOFT_LIMIT:
                 print(
@@ -1064,7 +1105,8 @@ def main() -> int:
                     args.audio_manifest,
                     audio_root=(args.audio_root or root),
                 )
-                if args.audio_manifest else {}
+                if args.audio_manifest
+                else {}
             )
             if args.rss:
                 body = render_rss(
@@ -1087,12 +1129,9 @@ def main() -> int:
                 feed_path = out_dir / "feed.atom"
             feed_path.write_text(body, encoding="utf-8")
             n_audio: int = sum(
-                1 for p, _, _, _ in posts
-                if p.with_suffix("").as_posix() in audio_entries
+                1 for p, _, _, _ in posts if p.with_suffix("").as_posix() in audio_entries
             )
-            audio_note: str = (
-                f", {n_audio} with audio enclosure" if audio_entries else ""
-            )
+            audio_note: str = f", {n_audio} with audio enclosure" if audio_entries else ""
             print(f"→ Wrote {feed_path} ({len(posts)} post(s){audio_note})")
         else:
             print(f"→ No posts found in {feed_dir}; skipping feed.")

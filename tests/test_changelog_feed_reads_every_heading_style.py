@@ -62,18 +62,12 @@ HEADINGS = [
 
 
 @pytest.mark.parametrize("line,expected", HEADINGS)
-def test_every_heading_style_in_the_suite_is_recognised(
-    line: str, expected: str
-) -> None:
+def test_every_heading_style_in_the_suite_is_recognised(line: str, expected: str) -> None:
     """A style nobody parses looks exactly like a package that stopped shipping."""
     m = feed._HEADING_RE.match(line)
     assert m, f"unparsed release heading: {line!r}"
     version = (
-        m.group("bracket")
-        or m.group("vprefix")
-        or m.group("plain")
-        or m.group("bare")
-        or ""
+        m.group("bracket") or m.group("vprefix") or m.group("plain") or m.group("bare") or ""
     ).strip()
     assert version == expected, f"{line!r} parsed as {version!r}, expected {expected!r}"
 
@@ -92,11 +86,7 @@ def test_prose_headings_are_not_read_as_releases(line: str) -> None:
     if m is None:
         return
     version = (
-        m.group("bracket")
-        or m.group("vprefix")
-        or m.group("plain")
-        or m.group("bare")
-        or ""
+        m.group("bracket") or m.group("vprefix") or m.group("plain") or m.group("bare") or ""
     ).strip()
     assert not re.fullmatch(r"\d+\.\d[\w.\-]*", version), (
         f"prose heading {line!r} was read as release {version!r}"
@@ -138,11 +128,7 @@ def test_each_sibling_changelog_yields_its_newest_release() -> None:
         m = feed._HEADING_RE.match(top)
         assert m, f"{name}: newest release heading is unparsable by the feed: {top!r}"
         version = (
-            m.group("bracket")
-            or m.group("vprefix")
-            or m.group("plain")
-            or m.group("bare")
-            or ""
+            m.group("bracket") or m.group("vprefix") or m.group("plain") or m.group("bare") or ""
         ).strip()
         assert re.fullmatch(r"[\d.]+", version) or version == "Unreleased", (
             f"{name}: {top!r} parsed as {version!r}"
@@ -226,12 +212,8 @@ def test_the_suite_loses_no_title_it_actually_wrote() -> None:
     """
     import re
 
-    siblings = sorted(
-        p for p in REPO_ROOT.parent.glob("sprezzature*/CHANGELOG.md") if p.is_file()
-    )
-    assert siblings, (
-        "no sibling changelogs found; this test is looking in the wrong place"
-    )
+    siblings = sorted(p for p in REPO_ROOT.parent.glob("sprezzature*/CHANGELOG.md") if p.is_file())
+    assert siblings, "no sibling changelogs found; this test is looking in the wrong place"
 
     # "Has a title" is defined here independently of the pattern under test --
     # otherwise this would assert the implementation against itself. A title is
@@ -249,8 +231,8 @@ def test_the_suite_loses_no_title_it_actually_wrote() -> None:
             rest = match.group("rest")
             if has_title.search(rest) and not feed._TITLE_RE.search(rest):
                 missed.append(f"{path.parent.name}: {line}")
-    assert not missed, (
-        "headings carrying a title the feed cannot read:\n  " + "\n  ".join(missed[:10])
+    assert not missed, "headings carrying a title the feed cannot read:\n  " + "\n  ".join(
+        missed[:10]
     )
 
 
@@ -268,14 +250,10 @@ def test_a_feed_title_carries_no_markdown() -> None:
     from changelog_feed import _clean_line
 
     cases = {
-        "**`sprezzature[all]` finally installs all of it.**":
-            "sprezzature[all] finally installs all of it.",
-        "- **Why the number moves**, and why it took *this* long.":
-            "Why the number moves, and why it took this long.",
-        "See [the notes](https://example.invalid/x) for `--fix`.":
-            "See the notes for --fix.",
-        "__Bold with underscores__ and plain text.":
-            "Bold with underscores and plain text.",
+        "**`sprezzature[all]` finally installs all of it.**": "sprezzature[all] finally installs all of it.",
+        "- **Why the number moves**, and why it took *this* long.": "Why the number moves, and why it took this long.",
+        "See [the notes](https://example.invalid/x) for `--fix`.": "See the notes for --fix.",
+        "__Bold with underscores__ and plain text.": "Bold with underscores and plain text.",
     }
     for source, expected in cases.items():
         assert _clean_line(source) == expected, source

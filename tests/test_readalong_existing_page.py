@@ -79,8 +79,7 @@ def narration_for(page_html: str, *, scope: str | None = None):
     return _readalong.parse_vtt(_narrate.cues_to_vtt(timeline.cues))
 
 
-def inject(page_html: str, *, scope: str | None = None, head: str = "",
-           player: str = "") -> str:
+def inject(page_html: str, *, scope: str | None = None, head: str = "", player: str = "") -> str:
     """Run a page through the whole route and return what a reader would get."""
     return _readalong.inject_into_page(
         page_html,
@@ -229,9 +228,7 @@ class TestTheRealPage:
         assert crossings(source) == []
         assert crossings(built) == []
 
-    def test_every_sentence_of_the_recording_has_somewhere_to_light_up(
-        self, source, built
-    ):
+    def test_every_sentence_of_the_recording_has_somewhere_to_light_up(self, source, built):
         cues = narration_for(source, scope="article")
         assert ids_in(built) == list(range(len(cues)))
 
@@ -249,9 +246,7 @@ class TestTheRealPage:
         # longer among the narrated blocks. Thirty-seven citations read out
         # is ten minutes of author names and arXiv numbers.
         assert source.count('<li id="ref-') >= 30
-        assert not any(block.tag == "li" for block in blocks), (
-            "the notes are back in the narration"
-        )
+        assert not any(block.tag == "li" for block in blocks), "the notes are back in the narration"
         assert "<cite" in source
 
     def test_the_page_no_longer_exercises_the_split_on_its_own(self, built):
@@ -311,9 +306,7 @@ class TestScope:
 
     def test_without_a_scope_the_header_is_read_too(self):
         """Not a bug -- the documented default, and why ``--scope`` exists."""
-        spoken = " ".join(
-            block.visible for block in _readalong.page_blocks(FURNISHED_PAGE)
-        )
+        spoken = " ".join(block.visible for block in _readalong.page_blocks(FURNISHED_PAGE))
         assert "Site name." in spoken
 
     @pytest.mark.parametrize(
@@ -376,7 +369,10 @@ class TestWhatIsNotRead:
             ("aria-hidden", '<p>Kept.</p><p aria-hidden="true">Dropped.</p>'),
             ("hidden", "<p>Kept.</p><p hidden>Dropped.</p>"),
             ("a hidden wrapper", '<p>Kept.</p><div aria-hidden="true"><p>Dropped.</p></div>'),
-            ("deep in a wrapper", '<p>Kept.</p><div aria-hidden="true"><div><p>Dropped.</p></div></div>'),
+            (
+                "deep in a wrapper",
+                '<p>Kept.</p><div aria-hidden="true"><div><p>Dropped.</p></div></div>',
+            ),
         ],
     )
     def test_what_a_screen_reader_ignores_is_not_spoken(self, name, markup):
@@ -409,8 +405,8 @@ class TestSentencesThatCrossElements:
     #: mid-sentence and a note picks up where it leaves off, with no full stop
     #: in between. No single span can hold that.
     ENTRY = (
-        '<li><cite>Shinn, N. and Yao, S. (2023). '
-        '<em>Reflexion</em>, NeurIPS.</cite> '
+        "<li><cite>Shinn, N. and Yao, S. (2023). "
+        "<em>Reflexion</em>, NeurIPS.</cite> "
         "<span>Keeps a memory of comments across attempts.</span></li>"
     )
 
@@ -508,14 +504,12 @@ class TestPlacement:
 
     def test_a_fragment_with_no_head_gets_the_links_at_the_top(self):
         """A PHP include is not a document; it still has to link its assets."""
-        built = inject("<article><p>A fragment.</p></article>", scope="article",
-                       head="<!--HEAD-->")
+        built = inject("<article><p>A fragment.</p></article>", scope="article", head="<!--HEAD-->")
         assert built.startswith("<!--HEAD-->")
 
     def test_a_player_with_nowhere_to_go_says_so(self):
         with pytest.raises(_readalong.ReadAlongMismatch, match="nowhere to put the player"):
-            inject("<p>A fragment with no body.</p>", scope="#absent",
-                   player="<!--PLAYER-->")
+            inject("<p>A fragment with no body.</p>", scope="#absent", player="<!--PLAYER-->")
 
     def test_the_php_prologue_survives(self):
         """The fixture is served through PHP; losing its guard would publish
@@ -613,9 +607,7 @@ class TestSegmentsFromBlocks:
         assert self.kinds(blocks) == [("paragraph", "Real prose.")]
 
     def test_an_unknown_tag_is_read_as_a_paragraph_not_dropped(self):
-        assert self.kinds([("section", "Still prose.", False)]) == [
-            ("paragraph", "Still prose.")
-        ]
+        assert self.kinds([("section", "Still prose.", False)]) == [("paragraph", "Still prose.")]
 
     def test_the_narration_and_the_page_see_the_same_sentences(self):
         """The property the whole route rests on, on the real page."""
@@ -624,20 +616,14 @@ class TestSegmentsFromBlocks:
         spoken = [
             text
             for text in (
-                _readalong._unframe(
-                    segment["text"], _narrate.QUOTE_OPENING, _narrate.QUOTE_CLOSING
-                )
+                _readalong._unframe(segment["text"], _narrate.QUOTE_OPENING, _narrate.QUOTE_CLOSING)
                 for segment in _narrate.explode_to_sentences(
-                    _narrate.segments_from_blocks(
-                        [(b.tag, b.visible, b.in_quote) for b in blocks]
-                    )
+                    _narrate.segments_from_blocks([(b.tag, b.visible, b.in_quote) for b in blocks])
                 )
             )
             if text is not None
         ]
-        shown = _readalong.page_sentences(
-            source, split=_narrate.split_sentences, scope="article"
-        )
+        shown = _readalong.page_sentences(source, split=_narrate.split_sentences, scope="article")
         assert spoken == shown
 
 
@@ -652,9 +638,10 @@ class TestAssetPaths:
 
     def test_a_file_one_level_up_climbs_out(self, tmp_path):
         (tmp_path / "built").mkdir()
-        assert _readalong.href_from(
-            tmp_path / "audio" / "voice.mp3", tmp_path / "built"
-        ) == "../audio/voice.mp3"
+        assert (
+            _readalong.href_from(tmp_path / "audio" / "voice.mp3", tmp_path / "built")
+            == "../audio/voice.mp3"
+        )
 
     def test_the_separator_is_a_slash_whatever_the_platform(self, tmp_path):
         href = _readalong.href_from(tmp_path / "a" / "b" / "voice.mp3", tmp_path)
@@ -672,7 +659,7 @@ class TestTheCommand:
         """A page beside a narration run, as ``narrate_post.py`` would leave it."""
         page = tmp_path / "ralph-loops.html"
         source = (
-            "<!doctype html><html lang=\"en\"><head><title>T</title></head><body>"
+            '<!doctype html><html lang="en"><head><title>T</title></head><body>'
             "<nav><p>Home. About.</p></nav>"
             "<article><h1>A title.</h1><p>One sentence. And a second one.</p></article>"
             "</body></html>"
@@ -701,15 +688,17 @@ class TestTheCommand:
     def run(self, *args):
         return subprocess.run(
             [sys.executable, str(SCRIPTS / "readalong.py"), *map(str, args)],
-            capture_output=True, text=True,
+            capture_output=True,
+            text=True,
         )
 
     def test_it_builds_a_page_without_touching_the_input(self, narrated, tmp_path):
         page, narration = narrated
         before = page.read_text(encoding="utf-8")
         out = tmp_path / "built"
-        result = self.run(page, "--narration", narration, "--out", out,
-                          "--scope", "article", "--lang", "en")
+        result = self.run(
+            page, "--narration", narration, "--out", out, "--scope", "article", "--lang", "en"
+        )
         assert result.returncode == 0, result.stderr
         assert page.read_text(encoding="utf-8") == before
         built = (out / "ralph-loops.html").read_text(encoding="utf-8")
@@ -721,8 +710,12 @@ class TestTheCommand:
         highlight and no error -- the failure this checks for."""
         page, narration = narrated
         out = tmp_path / "built"
-        assert self.run(page, "--narration", narration, "--out", out,
-                        "--scope", "article", "--lang", "en").returncode == 0
+        assert (
+            self.run(
+                page, "--narration", narration, "--out", out, "--scope", "article", "--lang", "en"
+            ).returncode
+            == 0
+        )
         for name in _readalong.ASSET_FILES:
             assert (out / name).is_file()
         built = (out / "ralph-loops.html").read_text(encoding="utf-8")
@@ -732,10 +725,14 @@ class TestTheCommand:
     def test_the_scope_keeps_the_navigation_out_of_the_player(self, narrated, tmp_path):
         page, narration = narrated
         out = tmp_path / "built"
-        assert self.run(page, "--narration", narration, "--out", out,
-                        "--scope", "article", "--lang", "en").returncode == 0
+        assert (
+            self.run(
+                page, "--narration", narration, "--out", out, "--scope", "article", "--lang", "en"
+            ).returncode
+            == 0
+        )
         built = (out / "ralph-loops.html").read_text(encoding="utf-8")
-        nav = built[built.index("<nav>"):built.index("</nav>")]
+        nav = built[built.index("<nav>") : built.index("</nav>")]
         assert 'class="ra-s"' not in nav
 
     def test_a_page_with_no_narration_names_the_command_to_run_first(self, tmp_path):
@@ -743,14 +740,24 @@ class TestTheCommand:
         page.write_text("<article><p>Unrecorded.</p></article>", encoding="utf-8")
         empty = tmp_path / "audio"
         empty.mkdir()
-        result = self.run(page, "--narration", empty, "--out", tmp_path / "built",
-                          "--scope", "article", "--lang", "en")
+        result = self.run(
+            page,
+            "--narration",
+            empty,
+            "--out",
+            tmp_path / "built",
+            "--scope",
+            "article",
+            "--lang",
+            "en",
+        )
         assert result.returncode == 1
         assert "narrate_post.py" in result.stderr
 
     def test_a_missing_page_is_a_usage_error_not_a_crash(self, tmp_path):
-        result = self.run(tmp_path / "absent.html", "--narration", tmp_path,
-                          "--out", tmp_path / "built")
+        result = self.run(
+            tmp_path / "absent.html", "--narration", tmp_path, "--out", tmp_path / "built"
+        )
         assert result.returncode == 2
         assert "no such page" in result.stderr
 
@@ -761,8 +768,17 @@ class TestTheCommand:
             page.read_text(encoding="utf-8").replace("One sentence.", "A rewritten one."),
             encoding="utf-8",
         )
-        result = self.run(page, "--narration", narration, "--out", tmp_path / "built",
-                          "--scope", "article", "--lang", "en")
+        result = self.run(
+            page,
+            "--narration",
+            narration,
+            "--out",
+            tmp_path / "built",
+            "--scope",
+            "article",
+            "--lang",
+            "en",
+        )
         assert result.returncode == 1
         assert not (tmp_path / "built" / "ralph-loops.html").exists()
 
@@ -793,9 +809,7 @@ def test_the_narration_command_and_the_readalong_command_connect(
     (narration / "narration.wav").write_bytes(b"RIFF....WAVE")
 
     found = _readalong.narration_sources(narration, "ralph-loops")
-    assert found is not None, (
-        "narrate_post's own output was not recognised as a narration"
-    )
+    assert found is not None, "narrate_post's own output was not recognised as a narration"
     audio, cues = found
     assert audio.name == "narration.wav"
     assert cues.name == "narration.vtt"

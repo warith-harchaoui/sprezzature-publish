@@ -83,10 +83,11 @@ INFO = "info"
 @dataclass
 class Finding:
     """One lint finding: file path, 1-indexed line, rule id, severity, and message."""
+
     path: Path
-    line: int            # 1-indexed
-    rule: str            # short id e.g. "MD001"
-    severity: str        # ERROR / WARNING / INFO
+    line: int  # 1-indexed
+    rule: str  # short id e.g. "MD001"
+    severity: str  # ERROR / WARNING / INFO
     message: str
 
 
@@ -113,6 +114,7 @@ def fenced_blocks(text: str) -> list[tuple[int, str, str]]:
 
 # ── Static rules ──────────────────────────────────────────────────────────
 
+
 def lint_heading_order(path: Path, text: str) -> list[Finding]:
     """MD001 — heading levels must not skip (h1 → h3 is wrong)."""
     findings: list[Finding] = []
@@ -122,10 +124,15 @@ def lint_heading_order(path: Path, text: str) -> list[Finding]:
         level = len(m.group(1))
         if last_level and level > last_level + 1:
             line = text[: m.start()].count("\n") + 1
-            findings.append(Finding(
-                path, line, "MD001", ERROR,
-                f"Heading level jumps from h{last_level} to h{level}.",
-            ))
+            findings.append(
+                Finding(
+                    path,
+                    line,
+                    "MD001",
+                    ERROR,
+                    f"Heading level jumps from h{last_level} to h{level}.",
+                )
+            )
         last_level = level
     return findings
 
@@ -136,10 +143,15 @@ def lint_trailing_whitespace(path: Path, text: str) -> list[Finding]:
     for i, line in enumerate(text.splitlines(), 1):
         rstripped = line.rstrip(" \t")
         if rstripped != line and not line.endswith("  "):  # `  ` = MD line break
-            findings.append(Finding(
-                path, i, "MD009", WARNING,
-                "Trailing whitespace (use two spaces only for an intentional line break).",
-            ))
+            findings.append(
+                Finding(
+                    path,
+                    i,
+                    "MD009",
+                    WARNING,
+                    "Trailing whitespace (use two spaces only for an intentional line break).",
+                )
+            )
     return findings
 
 
@@ -148,10 +160,15 @@ def lint_fenced_code_language(path: Path, text: str) -> list[Finding]:
     findings: list[Finding] = []
     for start_line, lang, _body in fenced_blocks(text):
         if not lang:
-            findings.append(Finding(
-                path, start_line, "MD040", WARNING,
-                "Fenced code block missing language hint (use ```bash, ```python, ```mermaid, …).",
-            ))
+            findings.append(
+                Finding(
+                    path,
+                    start_line,
+                    "MD040",
+                    WARNING,
+                    "Fenced code block missing language hint (use ```bash, ```python, ```mermaid, …).",
+                )
+            )
     return findings
 
 
@@ -164,10 +181,15 @@ def lint_image_alt(path: Path, text: str) -> list[Finding]:
             # Empty alt is *valid* for decorative images, but tag it as INFO so the
             # author confirms it intentionally. See alt-text-ai.md in sprezzature-accessibility.
             line = text[: m.start()].count("\n") + 1
-            findings.append(Finding(
-                path, line, "MD045", INFO,
-                "Empty alt text — confirm this image is decorative (otherwise add an alt).",
-            ))
+            findings.append(
+                Finding(
+                    path,
+                    line,
+                    "MD045",
+                    INFO,
+                    "Empty alt text — confirm this image is decorative (otherwise add an alt).",
+                )
+            )
     return findings
 
 
@@ -234,14 +256,20 @@ def lint_local_links(path: Path, text: str) -> list[Finding]:
         target = (parent / rel).resolve()
         if not target.exists():
             line = text[: m.start()].count("\n") + 1
-            findings.append(Finding(
-                path, line, "MD050", ERROR,
-                f"Local link target does not exist: {href}",
-            ))
+            findings.append(
+                Finding(
+                    path,
+                    line,
+                    "MD050",
+                    ERROR,
+                    f"Local link target does not exist: {href}",
+                )
+            )
     return findings
 
 
 # ── LaTeX checks ──────────────────────────────────────────────────────────
+
 
 def _strip_code(text: str) -> str:
     """
@@ -249,10 +277,12 @@ def _strip_code(text: str) -> str:
     markers like `$$` or backtick math. Preserves line breaks so reported line
     numbers stay accurate.
     """
+
     # Blank out fenced blocks but keep their newlines.
     def blank_fence(m: re.Match[str]) -> str:
         """Replace a fenced block with equal-count newlines to preserve line numbers."""
         return "\n" * m.group(0).count("\n")
+
     no_fence = FENCE_RE.sub(blank_fence, text)
     # Blank out inline-code spans.
     return re.sub(r"`+[^`\n]*`+", lambda m: " " * len(m.group(0)), no_fence)
@@ -266,10 +296,15 @@ def lint_latex_blocks(path: Path, text: str) -> list[Finding]:
     # 1) Stray $$ not paired (count must be even).
     dollar_dollar = re.findall(r"(?<!\\)\$\$", prose)
     if len(dollar_dollar) % 2 != 0:
-        findings.append(Finding(
-            path, 1, "MDX001", ERROR,
-            f"Odd number of `$$` delimiters ({len(dollar_dollar)}); display math is unbalanced.",
-        ))
+        findings.append(
+            Finding(
+                path,
+                1,
+                "MDX001",
+                ERROR,
+                f"Odd number of `$$` delimiters ({len(dollar_dollar)}); display math is unbalanced.",
+            )
+        )
 
     # 2) Within each $$…$$ block, multi-line formulas should be inside
     #    an alignment env (align, aligned, gather) and use `\\` for line breaks.
@@ -278,14 +313,21 @@ def lint_latex_blocks(path: Path, text: str) -> list[Finding]:
         start_line = text[: m.start()].count("\n") + 1
         body_lines = [ln for ln in body.splitlines() if ln.strip()]
         if len(body_lines) > 1:
-            uses_env = any(env in body for env in ("\\begin{align", "\\begin{aligned", "\\begin{gather"))
+            uses_env = any(
+                env in body for env in ("\\begin{align", "\\begin{aligned", "\\begin{gather")
+            )
             uses_double_backslash = re.search(r"(?<!\\)\\\\(?!\\)", body) is not None
             if not uses_env and not uses_double_backslash:
-                findings.append(Finding(
-                    path, start_line, "MDX002", WARNING,
-                    "Multi-line display math without `\\\\` line breaks or an `align`/`gather` "
-                    "environment. Most renderers will collapse the lines.",
-                ))
+                findings.append(
+                    Finding(
+                        path,
+                        start_line,
+                        "MDX002",
+                        WARNING,
+                        "Multi-line display math without `\\\\` line breaks or an `align`/`gather` "
+                        "environment. Most renderers will collapse the lines.",
+                    )
+                )
 
     # 3) Inside align/aligned/gather, each non-trailing line should end with `\\`.
     for m in ALIGN_ENV_RE.finditer(prose):
@@ -296,20 +338,27 @@ def lint_latex_blocks(path: Path, text: str) -> list[Finding]:
         # Drop the last line (no `\\` expected) and check the rest.
         for idx, ln in enumerate(lines[:-1]):
             if not ln.endswith("\\\\"):
-                findings.append(Finding(
-                    path, start_line + idx + 1, "MDX003", ERROR,
-                    f"`\\begin{{{env}}}` block: line {idx+1} missing `\\\\` line break.",
-                ))
+                findings.append(
+                    Finding(
+                        path,
+                        start_line + idx + 1,
+                        "MDX003",
+                        ERROR,
+                        f"`\\begin{{{env}}}` block: line {idx + 1} missing `\\\\` line break.",
+                    )
+                )
 
     return findings
 
 
 # ── Mermaid rendering ─────────────────────────────────────────────────────
 
+
 def have_python_mmdc() -> bool:
     """Return ``True`` when the Python ``mmdc`` package is importable."""
     try:
         import mmdc  # noqa: F401
+
         return True
     except ImportError:
         return False
@@ -334,6 +383,7 @@ def render_mermaid_block(mermaid_src: str, out_png: Path) -> tuple[bool, str]:
     if have_python_mmdc():
         try:
             import mmdc  # type: ignore
+
             mmdc.render(mermaid_src, output_path=str(out_png), format="png")
             return True, f"rendered via python mmdc → {out_png}"
         except Exception as exc:  # pylint: disable=broad-except
@@ -358,8 +408,7 @@ def render_mermaid_block(mermaid_src: str, out_png: Path) -> tuple[bool, str]:
             return True, f"rendered via node mmdc → {out_png}"
         except subprocess.CalledProcessError as exc:
             return False, (
-                f"node mmdc failed: {exc.stderr.strip() or exc}\n"
-                f"(python mmdc note: {python_err})"
+                f"node mmdc failed: {exc.stderr.strip() or exc}\n(python mmdc note: {python_err})"
             )
 
     return False, (
@@ -402,10 +451,15 @@ def process_mermaid_blocks(
         png_path = out_dir / png_name
         ok, msg = render_mermaid_block(body, png_path)
         if not ok:
-            findings.append(Finding(
-                path, start_line, "MMD001", ERROR,
-                f"Mermaid render failed: {msg}",
-            ))
+            findings.append(
+                Finding(
+                    path,
+                    start_line,
+                    "MMD001",
+                    ERROR,
+                    f"Mermaid render failed: {msg}",
+                )
+            )
             continue
         # Insert `![Mermaid diagram](png_name)` just above the block, but
         # only if no `<img>` / `![](…)` already references the same PNG.
@@ -425,6 +479,7 @@ try:
     import requests  # type: ignore
     from _ollama import OLLAMA_URL, pick_default_model  # type: ignore
     from _prompts import render as render_prompt  # type: ignore
+
     HAVE_AI = True
 except ImportError:
     HAVE_AI = False
@@ -441,9 +496,11 @@ def ai_suggest_mermaid(mermaid_src: str, model: str) -> list[dict] | None:
         return None
     payload = {
         "model": model,
-        "prompt": render_prompt("mermaid_labels",
-                                 prompts_dir=Path(__file__).resolve().parent / "prompts",
-                                 mermaid_src=mermaid_src),
+        "prompt": render_prompt(
+            "mermaid_labels",
+            prompts_dir=Path(__file__).resolve().parent / "prompts",
+            mermaid_src=mermaid_src,
+        ),
         "stream": False,
         "options": {"temperature": 0.2},
     }
@@ -463,9 +520,12 @@ def ai_caption_latex(latex_src: str, lang: str, model: str) -> str | None:
         return None
     payload = {
         "model": model,
-        "prompt": render_prompt("latex_caption",
-                                 prompts_dir=Path(__file__).resolve().parent / "prompts",
-                                 latex_src=latex_src, lang=lang),
+        "prompt": render_prompt(
+            "latex_caption",
+            prompts_dir=Path(__file__).resolve().parent / "prompts",
+            latex_src=latex_src,
+            lang=lang,
+        ),
         "stream": False,
         "options": {"temperature": 0.2},
     }
@@ -490,16 +550,21 @@ STATIC_RULES = (
 
 
 def lint_file(
-    path: Path, *, render_mermaid: bool, out_dir: Path | None,
-    fix: bool, ai: bool, ai_lang: str, ai_model: str,
+    path: Path,
+    *,
+    render_mermaid: bool,
+    out_dir: Path | None,
+    fix: bool,
+    ai: bool,
+    ai_lang: str,
+    ai_model: str,
 ) -> tuple[list[Finding], list[str]]:
     """Lint one Markdown file. Returns (findings, ai_notes)."""
     try:
         text = path.read_text(encoding="utf-8")
     except UnicodeDecodeError as exc:
         return (
-            [Finding(path, 1, "MD000", WARNING,
-                     f"Skipped — not valid UTF-8: {exc}")],
+            [Finding(path, 1, "MD000", WARNING, f"Skipped — not valid UTF-8: {exc}")],
             [],
         )
     findings: list[Finding] = []
@@ -531,7 +596,9 @@ def lint_file(
                 if lang.lower() == "mermaid":
                     sug = ai_suggest_mermaid(body, model)
                     if sug:
-                        ai_notes.append(f"[mermaid] suggested edits: {json.dumps(sug, ensure_ascii=False)}")
+                        ai_notes.append(
+                            f"[mermaid] suggested edits: {json.dumps(sug, ensure_ascii=False)}"
+                        )
             # LaTeX captions.
             for m in DISPLAY_MATH_RE.finditer(text):
                 latex = m.group(1).strip()
@@ -542,11 +609,23 @@ def lint_file(
     return findings, ai_notes
 
 
-DEFAULT_EXCLUDE_DIRS = frozenset({
-    "node_modules", ".git", ".venv", "venv", "__pycache__",
-    ".pytest_cache", ".mypy_cache", ".ruff_cache", "dist", "build",
-    ".deepeval", ".private", "4ml",
-})
+DEFAULT_EXCLUDE_DIRS = frozenset(
+    {
+        "node_modules",
+        ".git",
+        ".venv",
+        "venv",
+        "__pycache__",
+        ".pytest_cache",
+        ".mypy_cache",
+        ".ruff_cache",
+        "dist",
+        "build",
+        ".deepeval",
+        ".private",
+        "4ml",
+    }
+)
 
 
 def gather_targets(target: Path) -> list[Path]:
@@ -577,8 +656,7 @@ def _lint_standalone_mermaid(
         png_path = out_dir / f"{path.stem}.png"
         ok, msg = render_mermaid_block(src, png_path)
         if not ok:
-            findings.append(Finding(path, 1, "MMD001", ERROR,
-                                    f"Mermaid render failed: {msg}"))
+            findings.append(Finding(path, 1, "MMD001", ERROR, f"Mermaid render failed: {msg}"))
     return findings, []
 
 
@@ -587,9 +665,9 @@ def main() -> int:
     p = make_parser(
         prog="sprezzature-publish-lint",
         description="Lint Markdown — heading order, code-fence languages, image alt, "
-                    "local links, LaTeX delimiter balance, and Mermaid block syntax. "
-                    "Optionally render Mermaid blocks to local PNG and ask Ollama for "
-                    "label / caption suggestions.",
+        "local links, LaTeX delimiter balance, and Mermaid block syntax. "
+        "Optionally render Mermaid blocks to local PNG and ask Ollama for "
+        "label / caption suggestions.",
         epilog=(
             "Examples:\n"
             "  sprezzature-publish-lint docs/intro.md\n"
@@ -598,24 +676,47 @@ def main() -> int:
         ),
     )
     p.add_argument("target", type=Path, help="Markdown file or directory.")
-    p.add_argument("--format", choices=["text", "json"], default="text",
-                   help="Output format. Default: text.")
-    p.add_argument("--fix", action="store_true",
-                   help="Apply safe mechanical fixes in place: MD009 strip trailing "
-                        "whitespace (preserves the intentional two-space line break); "
-                        "with --render-mermaid, also insert PNG sibling references. "
-                        "Idempotent. Never invents content.")
-    p.add_argument("--render-mermaid", action="store_true", dest="render_mermaid",
-                   help="Render each Mermaid block to a local PNG sibling.")
-    p.add_argument("--out-dir", type=Path, dest="out_dir",
-                   help="Directory for rendered Mermaid PNGs. Default: alongside the source.")
-    p.add_argument("--ai", action="store_true",
-                   help="Ask the local Ollama daemon for Mermaid label improvements and "
-                        "LaTeX captions. Read-only — never mutates the source.")
-    p.add_argument("--ai-lang", default="en", dest="ai_lang",
-                   help="Language of the document, used for LaTeX captions. Default: en.")
-    p.add_argument("--ai-model", default="", dest="ai_model",
-                   help="Override the Ollama model tag. Default: hardware-picked.")
+    p.add_argument(
+        "--format", choices=["text", "json"], default="text", help="Output format. Default: text."
+    )
+    p.add_argument(
+        "--fix",
+        action="store_true",
+        help="Apply safe mechanical fixes in place: MD009 strip trailing "
+        "whitespace (preserves the intentional two-space line break); "
+        "with --render-mermaid, also insert PNG sibling references. "
+        "Idempotent. Never invents content.",
+    )
+    p.add_argument(
+        "--render-mermaid",
+        action="store_true",
+        dest="render_mermaid",
+        help="Render each Mermaid block to a local PNG sibling.",
+    )
+    p.add_argument(
+        "--out-dir",
+        type=Path,
+        dest="out_dir",
+        help="Directory for rendered Mermaid PNGs. Default: alongside the source.",
+    )
+    p.add_argument(
+        "--ai",
+        action="store_true",
+        help="Ask the local Ollama daemon for Mermaid label improvements and "
+        "LaTeX captions. Read-only — never mutates the source.",
+    )
+    p.add_argument(
+        "--ai-lang",
+        default="en",
+        dest="ai_lang",
+        help="Language of the document, used for LaTeX captions. Default: en.",
+    )
+    p.add_argument(
+        "--ai-model",
+        default="",
+        dest="ai_model",
+        help="Override the Ollama model tag. Default: hardware-picked.",
+    )
     args = p.parse_args()
 
     targets = gather_targets(args.target)
@@ -643,13 +744,21 @@ def main() -> int:
             all_ai_notes.append((path, notes))
 
     if args.format == "json":
-        print(json.dumps([{
-            "path": str(f.path),
-            "line": f.line,
-            "rule": f.rule,
-            "severity": f.severity,
-            "message": f.message,
-        } for f in all_findings], indent=2))
+        print(
+            json.dumps(
+                [
+                    {
+                        "path": str(f.path),
+                        "line": f.line,
+                        "rule": f.rule,
+                        "severity": f.severity,
+                        "message": f.message,
+                    }
+                    for f in all_findings
+                ],
+                indent=2,
+            )
+        )
     else:
         for f in all_findings:
             print(f"{f.path}:{f.line}: {f.severity}: {f.rule}: {f.message}")

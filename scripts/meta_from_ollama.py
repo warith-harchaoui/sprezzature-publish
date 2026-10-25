@@ -116,9 +116,14 @@ PAGE_TEXT_LIMIT: int = 6000
 
 #: Directory where successful JSON outputs are cached. Override with the
 #: ``SPREZZATURE_CACHE_DIR`` env var.
-CACHE_DIR: Path = Path(
-    os.environ.get("SPREZZATURE_CACHE_DIR") or os.environ.get("FRONT_CACHE_DIR") or Path.home() / ".cache" / "sprezzature-skill"
-) / "meta"
+CACHE_DIR: Path = (
+    Path(
+        os.environ.get("SPREZZATURE_CACHE_DIR")
+        or os.environ.get("FRONT_CACHE_DIR")
+        or Path.home() / ".cache" / "sprezzature-skill"
+    )
+    / "meta"
+)
 
 #: Cache toggle, mirroring the same flag in :mod:`alt_from_ollama`.
 NO_CACHE: bool = bool(os.environ.get("SPREZZATURE_NO_CACHE") or os.environ.get("FRONT_NO_CACHE"))
@@ -152,6 +157,7 @@ Rules:
 
 
 # ── Cache helpers ───────────────────────────────────────────────────────────
+
 
 def _cache_key(goal: str, page_text: str, site_name: str, lang: str, model: str) -> str:
     """
@@ -220,6 +226,7 @@ def _cache_set(key: str, value: dict) -> None:
 
 # ── HTML fetching + cheap text extraction ───────────────────────────────────
 
+
 def fetch_url(url: str) -> str:
     """
     Fetch an HTTP(S) URL and return the body as a string.
@@ -275,6 +282,7 @@ def extract_text(html: str, limit: int = PAGE_TEXT_LIMIT) -> str:
 # Deferred import — see plain_language.py for the same pattern.
 try:
     from _prompts import render as render_prompt  # type: ignore
+
     HAVE_PROMPTS = True
 except ImportError:
     HAVE_PROMPTS = False
@@ -303,9 +311,7 @@ def build_prompt(goal: str, page_text: str, site_name: str, lang: str) -> str:
     lang_line: str = LANG_INSTRUCTIONS.get(lang, LANG_INSTRUCTIONS["en"])
     brand_block: str = f"\nBrand / site name: {site_name}\n" if site_name else ""
     goal_block: str = f"\nPage goal: {goal}\n" if goal else ""
-    page_block: str = (
-        f"\nPage content (extracted text):\n{page_text}\n" if page_text else ""
-    )
+    page_block: str = f"\nPage content (extracted text):\n{page_text}\n" if page_text else ""
 
     if not HAVE_PROMPTS:
         # Fallback when _prompts is not importable. Keeps a usable —
@@ -355,7 +361,7 @@ def extract_json(text: str) -> dict:
     end = text.rfind("}")
     if start == -1 or end == -1 or end <= start:
         raise ValueError(f"Model did not return JSON. Raw response:\n{text}")
-    return json.loads(text[start:end + 1])
+    return json.loads(text[start : end + 1])
 
 
 # ── CLI entry point ─────────────────────────────────────────────────────────
@@ -437,9 +443,7 @@ def _cli(
         if re.match(r"^https?://", source, re.I):
             page_text = extract_text(fetch_url(source))
         else:
-            page_text = extract_text(
-                Path(source).read_text(encoding="utf-8", errors="ignore")
-            )
+            page_text = extract_text(Path(source).read_text(encoding="utf-8", errors="ignore"))
 
     # Language: explicit --lang wins. Otherwise ALWAYS detect from the
     # extracted page text via langdetect — no configured default; the

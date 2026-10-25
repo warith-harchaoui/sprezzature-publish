@@ -34,6 +34,7 @@ def _load_yaml(text: str) -> dict[str, Any]:
     """Use PyYAML if available; otherwise fall back to a tiny parser."""
     try:
         import yaml  # type: ignore
+
         return yaml.safe_load(text)
     except ImportError:
         return _yaml_lite(text)
@@ -122,7 +123,7 @@ def load_prompt(name: str, prompts_dir: Path | None = None) -> dict[str, Any]:
     data = _load_yaml(path.read_text(encoding="utf-8"))
     rules = data.get("rules", [])
     if isinstance(rules, list):
-        data["rules_numbered"] = "\n".join(f"{i+1}. {r}" for i, r in enumerate(rules))
+        data["rules_numbered"] = "\n".join(f"{i + 1}. {r}" for i, r in enumerate(rules))
     else:
         data["rules_numbered"] = ""
     # Expose the shared writing-standards block unless the prompt overrides it.

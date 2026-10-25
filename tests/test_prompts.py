@@ -40,18 +40,20 @@ def _add_publish_scripts_to_path() -> None:
 
 # ── YAML files load cleanly ─────────────────────────────────────────────────
 
+
 @pytest.mark.parametrize(
     "name, must_contain",
     [
-            ("mermaid_labels",          "Reply with a JSON array"),
-        ("latex_caption",           "Plain UTF-8 text"),
-        ("plain_language_rewrite",  "Reply with the rewritten text only"),
-        ("meta_tags_json",          "Return a single JSON object"),
+        ("mermaid_labels", "Reply with a JSON array"),
+        ("latex_caption", "Plain UTF-8 text"),
+        ("plain_language_rewrite", "Reply with the rewritten text only"),
+        ("meta_tags_json", "Return a single JSON object"),
     ],
 )
 def test_prompt_yaml_loads(name: str, must_contain: str) -> None:
     """Every prompt YAML the project ships parses and exposes its contract."""
     from _prompts import load_prompt  # type: ignore
+
     prompts_dir = REPO_ROOT / "scripts" / "prompts"
     data = load_prompt(name, prompts_dir=prompts_dir)
     assert "template" in data
@@ -61,8 +63,10 @@ def test_prompt_yaml_loads(name: str, must_contain: str) -> None:
 
 # ── plain_language.build_prompt ─────────────────────────────────────────────
 
+
 def test_plain_language_build_prompt_substitutes_runtime_fields() -> None:
     from plain_language import build_prompt  # type: ignore
+
     out = build_prompt(
         text="Marketing seamlessly boosts revenue.",
         grade=8,
@@ -79,14 +83,17 @@ def test_plain_language_build_prompt_substitutes_runtime_fields() -> None:
 
 def test_plain_language_build_prompt_without_preserve_omits_clause() -> None:
     from plain_language import build_prompt  # type: ignore
+
     out = build_prompt(text="Hello.", grade=8, lang="en", preserve=[])
     assert "Keep these tokens verbatim" not in out
 
 
 # ── meta_from_ollama.build_prompt ───────────────────────────────────────────
 
+
 def test_meta_build_prompt_includes_brand_goal_blocks_when_supplied() -> None:
     from meta_from_ollama import build_prompt  # type: ignore
+
     out = build_prompt(
         goal="Landing page for a small ML lab",
         page_text="",
@@ -101,10 +108,9 @@ def test_meta_build_prompt_includes_brand_goal_blocks_when_supplied() -> None:
 
 def test_meta_build_prompt_omits_blocks_when_empty() -> None:
     from meta_from_ollama import build_prompt  # type: ignore
+
     out = build_prompt(goal="", page_text="", site_name="", lang="en")
     assert "Brand / site name" not in out
     assert "Page goal" not in out
     assert "Return a single JSON object" in out
     assert "Write the JSON now." in out
-
-

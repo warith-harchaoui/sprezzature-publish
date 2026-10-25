@@ -30,6 +30,7 @@ def fresh_cache(tmp_path, monkeypatch):
 
 # ── _cache_key ──────────────────────────────────────────────────────────────
 
+
 class TestCacheKey:
     def test_preserve_order_does_not_change_key(self):
         # ``preserve`` is sorted before hashing so callers can pass terms in
@@ -43,12 +44,15 @@ class TestCacheKey:
         k2 = pl._cache_key("text", 8, "en", ["Other"], "m:tag")
         assert k1 != k2
 
-    @pytest.mark.parametrize("attr,value", [
-        ("text", "different"),
-        ("grade", 6),
-        ("lang", "fr"),
-        ("model", "other:tag"),
-    ])
+    @pytest.mark.parametrize(
+        "attr,value",
+        [
+            ("text", "different"),
+            ("grade", 6),
+            ("lang", "fr"),
+            ("model", "other:tag"),
+        ],
+    )
     def test_each_input_invalidates_key(self, attr, value):
         base = dict(text="text", grade=8, lang="en", preserve=["X"], model="m:tag")
         modified = dict(base)
@@ -57,6 +61,7 @@ class TestCacheKey:
 
 
 # ── build_prompt ────────────────────────────────────────────────────────────
+
 
 class TestBuildPrompt:
     def test_preserve_clause_only_when_terms_present(self):
@@ -80,6 +85,7 @@ class TestBuildPrompt:
 
 
 # ── rewrite ─────────────────────────────────────────────────────────────────
+
 
 class TestRewrite:
     def test_empty_input_short_circuits(self, fresh_cache):
@@ -117,8 +123,7 @@ class TestRewrite:
         second_resp.json.return_value = {"response": short_reply}
         second_resp.raise_for_status = MagicMock()
 
-        with patch("requests.post",
-                    side_effect=[first_resp, second_resp]) as mock_post:
+        with patch("requests.post", side_effect=[first_resp, second_resp]) as mock_post:
             out = pl.rewrite(source, lang="en", model="m")
         # The retry's response wins.
         assert out == short_reply
@@ -126,14 +131,15 @@ class TestRewrite:
 
     def test_connection_error_exits_two(self, fresh_cache):
         import requests as real_requests
-        with patch("requests.post",
-                    side_effect=real_requests.exceptions.ConnectionError()):
+
+        with patch("requests.post", side_effect=real_requests.exceptions.ConnectionError()):
             with pytest.raises(SystemExit) as excinfo:
                 pl.rewrite("text", lang="en", model="m")
         assert excinfo.value.code == 2
 
 
 # ── main() ──────────────────────────────────────────────────────────────────
+
 
 class TestMain:
     def test_stdin_tty_prints_hint_and_exits(self, monkeypatch, capsys):
@@ -153,9 +159,18 @@ class TestMain:
         mock_resp = MagicMock()
         mock_resp.json.return_value = {"response": "Get more done."}
         mock_resp.raise_for_status = MagicMock()
-        monkeypatch.setattr(sys, "argv", [
-            "plain", "--input", str(src), "--lang", "en", "--no-cache",
-        ])
+        monkeypatch.setattr(
+            sys,
+            "argv",
+            [
+                "plain",
+                "--input",
+                str(src),
+                "--lang",
+                "en",
+                "--no-cache",
+            ],
+        )
         with patch("requests.post", return_value=mock_resp):
             rc = pl.main()
         assert rc == 0
@@ -169,16 +184,27 @@ class TestMain:
         mock_resp = MagicMock()
         mock_resp.json.return_value = {"response": "Plain copy."}
         mock_resp.raise_for_status = MagicMock()
-        monkeypatch.setattr(sys, "argv", [
-            "plain", "--input", str(src), "--lang", "en",
-            "--preserve", "Tailwind, Montserrat",
-        ])
+        monkeypatch.setattr(
+            sys,
+            "argv",
+            [
+                "plain",
+                "--input",
+                str(src),
+                "--lang",
+                "en",
+                "--preserve",
+                "Tailwind, Montserrat",
+            ],
+        )
         # Spy on build_prompt to confirm the preserve list arrives parsed.
         seen: list[list[str]] = []
         original = pl.build_prompt
+
         def spy(text, grade, lang, preserve):
             seen.append(preserve)
             return original(text, grade, lang, preserve)
+
         monkeypatch.setattr(pl, "build_prompt", spy)
         with patch("requests.post", return_value=mock_resp):
             rc = pl.main()

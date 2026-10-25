@@ -107,11 +107,25 @@ NARRATED_BLOCKS: frozenset[str] = frozenset(
 #: contents of a ``<style>`` block.
 SKIPPED_SUBTREES: frozenset[str] = frozenset(
     {
-        "pre", "table",
-        "script", "style", "template", "noscript", "svg", "head", "title",
-        "nav", "footer", "aside", "form", "dialog", "select", "option",
+        "pre",
+        "table",
+        "script",
+        "style",
+        "template",
+        "noscript",
+        "svg",
+        "head",
+        "title",
+        "nav",
+        "footer",
+        "aside",
+        "form",
+        "dialog",
+        "select",
+        "option",
     }
 )
+
 
 def _matches(selector: str, tag: str, attrs: list[tuple[str, str | None]]) -> bool:
     """Whether an element matches a one-step selector.
@@ -126,8 +140,7 @@ def _matches(selector: str, tag: str, attrs: list[tuple[str, str | None]]) -> bo
         return any(name == "id" and value == selector[1:] for name, value in attrs)
     if selector.startswith("."):
         return any(
-            name == "class" and selector[1:] in (value or "").split()
-            for name, value in attrs
+            name == "class" and selector[1:] in (value or "").split() for name, value in attrs
         )
     return tag == selector.lower()
 
@@ -144,6 +157,7 @@ def _is_hidden(attrs: list[tuple[str, str | None]]) -> bool:
         if name == "aria-hidden" and (value or "").strip().lower() == "true":
             return True
     return False
+
 
 #: Class on every wrapped sentence. Short because it appears once per
 #: sentence and a long name is measurable page weight on a long post.
@@ -170,8 +184,22 @@ AUDIO_TYPES: dict[str, str] = {
 #: hard line break inside a paragraph is ordinary prose, so this was not a
 #: rare case.
 VOID_ELEMENTS: frozenset[str] = frozenset(
-    {"area", "base", "br", "col", "embed", "hr", "img", "input", "link",
-     "meta", "param", "source", "track", "wbr"}
+    {
+        "area",
+        "base",
+        "br",
+        "col",
+        "embed",
+        "hr",
+        "img",
+        "input",
+        "link",
+        "meta",
+        "param",
+        "source",
+        "track",
+        "wbr",
+    }
 )
 
 #: Strikethrough markers, which this project's renderer does not implement:
@@ -423,8 +451,7 @@ def strip_player(html_text: str) -> tuple[str, int]:
     >>> markers
     1
     """
-    opening = re.search(
-        rf'<div[^>]*\b{re.escape(PLAYER_CLASS)}\b[^>]*>', html_text)
+    opening = re.search(rf"<div[^>]*\b{re.escape(PLAYER_CLASS)}\b[^>]*>", html_text)
     if opening is not None:
         end = _balanced_element(html_text, opening.start(), "div")
         # Swallow the blank line the injection left behind, never the
@@ -432,32 +459,32 @@ def strip_player(html_text: str) -> tuple[str, int]:
         # corruption of the prose.
         while end < len(html_text) and html_text[end] in " \t\r\n":
             end += 1
-        html_text = html_text[:opening.start()] + html_text[end:]
+        html_text = html_text[: opening.start()] + html_text[end:]
 
     markers = 0
     while True:
-        found = re.search(
-            rf'<span\s[^>]*\b{re.escape(SENTENCE_CLASS)}\b[^>]*>', html_text)
+        found = re.search(rf"<span\s[^>]*\b{re.escape(SENTENCE_CLASS)}\b[^>]*>", html_text)
         if found is None:
             break
         end = _balanced_element(html_text, found.start(), "span")
         closing = html_text.rindex("</span>", found.end(), end)
-        html_text = (html_text[:found.start()]
-                     + html_text[found.end():closing]
-                     + html_text[end:])
+        html_text = html_text[: found.start()] + html_text[found.end() : closing] + html_text[end:]
         markers += 1
 
     for asset in ASSET_FILES:
         html_text = re.sub(
-            rf'[ \t]*<(?:link|script)\b[^>]*{re.escape(asset)}[^>]*>'
-            rf'(?:</script>)?[ \t]*\r?\n?',
-            "", html_text)
+            rf"[ \t]*<(?:link|script)\b[^>]*{re.escape(asset)}[^>]*>"
+            rf"(?:</script>)?[ \t]*\r?\n?",
+            "",
+            html_text,
+        )
 
     return html_text, markers
 
 
-def disagreements(html_text: str, cues: Sequence[VttCue], *,
-                  tolerate: Sequence[str] = ()) -> list[str]:
+def disagreements(
+    html_text: str, cues: Sequence[VttCue], *, tolerate: Sequence[str] = ()
+) -> list[str]:
     """What a *delivered* page and a *delivered* VTT disagree about.
 
     :func:`inject_into_page` already refuses to write markers onto prose that
@@ -480,9 +507,12 @@ def disagreements(html_text: str, cues: Sequence[VttCue], *,
 
     Returns one line per disagreement, empty when the two agree.
     """
-    wanted = [c for c in cues
-              if " ".join(c.text.split()).rstrip(".").lower()
-              not in {t.rstrip(".").lower() for t in tolerate}]
+    wanted = [
+        c
+        for c in cues
+        if " ".join(c.text.split()).rstrip(".").lower()
+        not in {t.rstrip(".").lower() for t in tolerate}
+    ]
 
     # No scope argument, deliberately. The markers only exist where they
     # were injected, so they *are* the scope; asking the caller to name it
@@ -494,8 +524,7 @@ def disagreements(html_text: str, cues: Sequence[VttCue], *,
     body = re.sub(r"<\?.*?\?>", " ", html_text, flags=re.S)
 
     found: list[tuple[str, float | None, str]] = []
-    for marker in re.finditer(
-            rf'<span\s[^>]*\b{re.escape(SENTENCE_CLASS)}\b[^>]*>', body):
+    for marker in re.finditer(rf"<span\s[^>]*\b{re.escape(SENTENCE_CLASS)}\b[^>]*>", body):
         attrs = marker.group()
         # Named apart from the loop variables below: reusing `name` and
         # `start` for both a Match and a str made the whole function
@@ -504,11 +533,13 @@ def disagreements(html_text: str, cues: Sequence[VttCue], *,
         has_start = re.search(r'data-start="([^"]*)"', attrs)
         end = _balanced_element(body, marker.start(), "span")
         closing = body.rindex("</span>", marker.end(), end)
-        found.append((
-            has_id.group(1) if has_id else "?",
-            float(has_start.group(1)) if has_start else None,
-            _visible_text(body[marker.end():closing]),
-        ))
+        found.append(
+            (
+                has_id.group(1) if has_id else "?",
+                float(has_start.group(1)) if has_start else None,
+                _visible_text(body[marker.end() : closing]),
+            )
+        )
 
     out: list[str] = []
     if len(found) != len(wanted):
@@ -518,16 +549,16 @@ def disagreements(html_text: str, cues: Sequence[VttCue], *,
             out.append(f"{name}: no data-start")
             continue
         if abs(start - cue.start_seconds) > 0.0005:
-            out.append(
-                f"{name}: data-start {start:.3f} "
-                f"against {cue.start_seconds:.3f}")
+            out.append(f"{name}: data-start {start:.3f} against {cue.start_seconds:.3f}")
         spoken = " ".join(cue.text.split())
         if said != spoken:
             # Say *where* they part, not how each begins: two sentences that
             # differ at their thirtieth word look identical in a report that
             # prints the first sixty characters of each.
-            at = next((i for i in range(min(len(said), len(spoken)))
-                       if said[i] != spoken[i]), min(len(said), len(spoken)))
+            at = next(
+                (i for i in range(min(len(said), len(spoken))) if said[i] != spoken[i]),
+                min(len(said), len(spoken)),
+            )
             window = slice(max(0, at - 30), at + 30)
             out.append(f"{name} at {at}: {said[window]!r} against {spoken[window]!r}")
     return out
@@ -557,18 +588,40 @@ _REFERENCE_MARKER = re.compile(r"[\[(]?\s*\d{1,3}\s*[\])]?")
 #: is tried first and why a page whose heading is in no language this table
 #: knows still works. But plenty of pages list their sources without
 #: linking a single marker to them, and for those the name is all there is.
-NOTE_SECTION_HEADINGS: frozenset[str] = frozenset({
-    # English
-    "references", "reference", "bibliography", "notes", "footnotes",
-    "endnotes", "sources", "further reading", "works cited", "citations",
-    "see also",
-    # French
-    "references", "bibliographie", "notes", "notes et references",
-    "sources", "pour aller plus loin", "ouvrages cites", "a lire aussi",
-    # A few more that cost nothing to know
-    "bibliografia", "referencias", "literatur", "quellen", "fonti",
-    "bibliografie", "referenties", "bibliografía",
-})
+NOTE_SECTION_HEADINGS: frozenset[str] = frozenset(
+    {
+        # English
+        "references",
+        "reference",
+        "bibliography",
+        "notes",
+        "footnotes",
+        "endnotes",
+        "sources",
+        "further reading",
+        "works cited",
+        "citations",
+        "see also",
+        # French
+        "references",
+        "bibliographie",
+        "notes",
+        "notes et references",
+        "sources",
+        "pour aller plus loin",
+        "ouvrages cites",
+        "a lire aussi",
+        # A few more that cost nothing to know
+        "bibliografia",
+        "referencias",
+        "literatur",
+        "quellen",
+        "fonti",
+        "bibliografie",
+        "referenties",
+        "bibliografía",
+    }
+)
 
 #: A block that reads like a source rather than like prose: a list item, or
 #: anything carrying a citation element or a bare URL.
@@ -606,13 +659,14 @@ def _mark_named_sections(blocks: list[_Block]) -> bool:
         end = index + 1
         while end < len(blocks) and blocks[end].tag not in HEADING_TAGS:
             end += 1
-        body = blocks[index + 1:end]
+        body = blocks[index + 1 : end]
         if not body:
             continue
         cited = sum(
-            1 for b in body
-            if b.tag == "li" or _LOOKS_CITED.search(b.open_raw + "".join(
-                piece.raw for piece in b.pieces))
+            1
+            for b in body
+            if b.tag == "li"
+            or _LOOKS_CITED.search(b.open_raw + "".join(piece.raw for piece in b.pieces))
         )
         if cited / len(body) < _CITED_SHARE:
             continue
@@ -655,10 +709,7 @@ def _mark_notes(blocks: list[_Block], targets: set[str]) -> None:
     if not targets:
         _mark_named_sections(blocks)
         return
-    marked = [
-        index for index, block in enumerate(blocks)
-        if _element_id(block.open_raw) in targets
-    ]
+    marked = [index for index, block in enumerate(blocks) if _element_id(block.open_raw) in targets]
     if not marked:
         _mark_named_sections(blocks)
         return
@@ -674,7 +725,7 @@ def _mark_notes(blocks: list[_Block], targets: set[str]) -> None:
         # whatever is above them alone.
         start = first
 
-    for block in blocks[start:last + 1]:
+    for block in blocks[start : last + 1]:
         block.narrated = False
 
     # A page can have both: linked footnotes in one section and an unlinked
@@ -695,9 +746,7 @@ HEADING_TAGS: frozenset[str] = frozenset({"h1", "h2", "h3", "h4", "h5", "h6"})
 
 #: What such a wrapper has to contain to earn being narrated: a display
 #: formula, and nothing else.
-_DISPLAY_MATH_ONLY = re.compile(
-    r"\s*(?:\$\$.+?\$\$|\\\[.+?\\\])\s*", re.S
-)
+_DISPLAY_MATH_ONLY = re.compile(r"\s*(?:\$\$.+?\$\$|\\\[.+?\\\])\s*", re.S)
 
 
 class _PageWalker(HTMLParser):
@@ -754,13 +803,18 @@ class _PageWalker(HTMLParser):
     def _emit(self, piece: _Piece) -> None:
         (self._open[-1].pieces if self._open else self.out).append(piece)
 
-    def _raw(self, raw: str, visible: str = "", *, atomic: bool = False,
-             after: int | None = None) -> None:
-        self._emit(_Piece(
-            raw, visible, atomic=atomic,
-            depth=self._depth,
-            after=self._depth if after is None else after,
-        ))
+    def _raw(
+        self, raw: str, visible: str = "", *, atomic: bool = False, after: int | None = None
+    ) -> None:
+        self._emit(
+            _Piece(
+                raw,
+                visible,
+                atomic=atomic,
+                depth=self._depth,
+                after=self._depth if after is None else after,
+            )
+        )
 
     # -- events ------------------------------------------------------------
 
@@ -896,7 +950,7 @@ class _PageWalker(HTMLParser):
         target = self._open[-1].pieces if self._open else self.out
         for index in range(len(target) - 1, -1, -1):
             if target[index].child is block:
-                target[index:index + 1] = [
+                target[index : index + 1] = [
                     _Piece(block.open_raw, atomic=True, depth=target[index].depth),
                     *block.pieces,
                     _Piece(block.close_raw, atomic=True, depth=target[index].depth),
@@ -921,7 +975,7 @@ class _PageWalker(HTMLParser):
         """
         assert self._sup_from is not None
         target = self._open[-1].pieces if self._open else self.out
-        inside = target[self._sup_from + 1:-1]
+        inside = target[self._sup_from + 1 : -1]
         text = "".join(piece.visible for piece in inside).strip()
         if _REFERENCE_MARKER.fullmatch(text):
             for piece in inside:
@@ -975,13 +1029,12 @@ def _walk(body_html: str, scope: str | None = None) -> _PageWalker:
 
 def page_blocks(body_html: str, *, scope: str | None = None) -> list[_Block]:
     """The narrated blocks of a rendered page that show words, in reading order."""
-    return [
-        block for block in _walk(body_html, scope).blocks
-        if block.visible and block.narrated
-    ]
+    return [block for block in _walk(body_html, scope).blocks if block.visible and block.narrated]
 
 
-def page_sentences(body_html: str, *, split: SentenceSplitter, scope: str | None = None) -> list[str]:
+def page_sentences(
+    body_html: str, *, split: SentenceSplitter, scope: str | None = None
+) -> list[str]:
     """Every sentence the page shows, in reading order.
 
     Separate from :func:`wrap_sentences` so the agreement between a page and
@@ -1009,12 +1062,13 @@ def _unframe(text: str, opening: str, closing: str) -> str | None:
     if stripped == closing:
         return None
     if stripped.startswith(opening):
-        return stripped[len(opening):].strip()
+        return stripped[len(opening) :].strip()
     return stripped
 
 
-def align(blocks: list[_Block], cues: list[VttCue], *, split: SentenceSplitter,
-          opening: str, closing: str) -> list[list[list[VttCue]]]:
+def align(
+    blocks: list[_Block], cues: list[VttCue], *, split: SentenceSplitter, opening: str, closing: str
+) -> list[list[list[VttCue]]]:
     """Match each block's sentences to the cues that speak them.
 
     Returns
@@ -1048,13 +1102,12 @@ def align(blocks: list[_Block], cues: list[VttCue], *, split: SentenceSplitter,
         for sentence in split(block.visible):
             _absorb_framing()
             spoken = (
-                _unframe(cues[position].text, opening, closing)
-                if position < len(cues)
-                else None
+                _unframe(cues[position].text, opening, closing) if position < len(cues) else None
             )
             if spoken != sentence:
                 heard = (
-                    repr(cues[position].text) if position < len(cues)
+                    repr(cues[position].text)
+                    if position < len(cues)
                     else "(nothing left in the audio)"
                 )
                 raise ReadAlongMismatch(
@@ -1152,9 +1205,8 @@ def _span_runs(taken: list[_Piece]) -> list[tuple[bool, list[_Piece]]] | None:
         in document order. ``None`` when no split covers every word.
     """
     base = taken[0].depth
-    if (
-        taken[-1].after == base
-        and all(piece.depth >= base and piece.after >= base for piece in taken)
+    if taken[-1].after == base and all(
+        piece.depth >= base and piece.after >= base for piece in taken
     ):
         # The ordinary case, and the one every Markdown page takes.
         return [(True, taken)]
@@ -1173,8 +1225,9 @@ def _span_runs(taken: list[_Piece]) -> list[tuple[bool, list[_Piece]]] | None:
         # The longest prefix that never leaves the element the run starts in,
         # trimmed back to where it closes everything it opened.
         end = 1
-        while end < len(pending) and pending[end].depth >= current \
-                and pending[end].after >= current:
+        while (
+            end < len(pending) and pending[end].depth >= current and pending[end].after >= current
+        ):
             end += 1
         run = pending[:end]
         while run and run[-1].after != current:
@@ -1185,7 +1238,7 @@ def _span_runs(taken: list[_Piece]) -> list[tuple[bool, list[_Piece]]] | None:
         out.append((True, run))
         # Whatever was trimmed stays in `pending` and is reconsidered: it is
         # the start of the next run, not something to drop.
-        del pending[:len(run)]
+        del pending[: len(run)]
 
     spilled = any(
         not is_span and any(_visible_count(piece.visible) for piece in pieces)
@@ -1194,8 +1247,13 @@ def _span_runs(taken: list[_Piece]) -> list[tuple[bool, list[_Piece]]] | None:
     return None if spilled or not any(is_span for is_span, _ in out) else out
 
 
-def _wrap_block(block: _Block, per_sentence: list[list[VttCue]], wrapped: dict[int, str],
-                *, split: SentenceSplitter) -> str:
+def _wrap_block(
+    block: _Block,
+    per_sentence: list[list[VttCue]],
+    wrapped: dict[int, str],
+    *,
+    split: SentenceSplitter,
+) -> str:
     """Wrap one block's sentences, keeping the inline markup it already has."""
     queue = list(block.pieces)
     out: list[str] = []
@@ -1228,8 +1286,12 @@ def _wrap_block(block: _Block, per_sentence: list[list[VttCue]], wrapped: dict[i
         opened_at = taken[0].depth
         if taken[-1].after != opened_at:
             held = len(taken)
-            while taken[-1].after != opened_at and queue and queue[0].child is None \
-                    and _visible_count(queue[0].visible) == 0:
+            while (
+                taken[-1].after != opened_at
+                and queue
+                and queue[0].child is None
+                and _visible_count(queue[0].visible) == 0
+            ):
                 taken.append(queue.pop(0))
             if taken[-1].after != opened_at:
                 queue[:0] = taken[held:]
@@ -1257,17 +1319,22 @@ def _wrap_block(block: _Block, per_sentence: list[list[VttCue]], wrapped: dict[i
             identity = f' id="ra-{cue.index}"' if first else ""
             out.append(
                 f'<span class="{SENTENCE_CLASS}"{identity}{marker} '
-                f'data-start="{cue.start_seconds:.3f}">'
-                + _render(pieces, wrapped)
-                + "</span>"
+                f'data-start="{cue.start_seconds:.3f}">' + _render(pieces, wrapped) + "</span>"
             )
             first = False
     out.append(_render(queue, wrapped))
     return "".join(out)
 
 
-def wrap_sentences(body_html: str, cues: list[VttCue], *, split: SentenceSplitter,
-                   opening: str, closing: str, scope: str | None = None) -> str:
+def wrap_sentences(
+    body_html: str,
+    cues: list[VttCue],
+    *,
+    split: SentenceSplitter,
+    opening: str,
+    closing: str,
+    scope: str | None = None,
+) -> str:
     """Wrap each narrated sentence in a span the highlight can find.
 
     Parameters
@@ -1296,9 +1363,7 @@ def wrap_sentences(body_html: str, cues: list[VttCue], *, split: SentenceSplitte
         If the page's sentences are not the narration's sentences.
     """
     walker = _walk(body_html, scope)
-    blocks = [
-        block for block in walker.blocks if block.visible and block.narrated
-    ]
+    blocks = [block for block in walker.blocks if block.visible and block.narrated]
     assignments = align(blocks, cues, split=split, opening=opening, closing=closing)
 
     # Innermost first, so a parent's render finds its children already
@@ -1313,7 +1378,11 @@ _HEAD_CLOSE = re.compile(r"</head\s*>", re.I)
 
 
 def inject_player_only(
-    html_text: str, *, scope: str | None, head: str, player: str,
+    html_text: str,
+    *,
+    scope: str | None,
+    head: str,
+    player: str,
 ) -> str:
     """The page with the player added and nothing else touched.
 
@@ -1340,8 +1409,17 @@ def inject_player_only(
     return out
 
 
-def inject_into_page(html: str, cues: list[VttCue], *, split: SentenceSplitter, opening: str, closing: str,
-                     scope: str | None = None, head: str = "", player: str = "") -> str:
+def inject_into_page(
+    html: str,
+    cues: list[VttCue],
+    *,
+    split: SentenceSplitter,
+    opening: str,
+    closing: str,
+    scope: str | None = None,
+    head: str = "",
+    player: str = "",
+) -> str:
     """Add a read-along to a page that already exists.
 
     The counterpart to building a page from Markdown: here the document is
@@ -1384,9 +1462,7 @@ def inject_into_page(html: str, cues: list[VttCue], *, split: SentenceSplitter, 
         The page, with the read-along in it.
     """
     walker = _walk(html, scope)
-    blocks = [
-        block for block in walker.blocks if block.visible and block.narrated
-    ]
+    blocks = [block for block in walker.blocks if block.visible and block.narrated]
     assignments = align(blocks, cues, split=split, opening=opening, closing=closing)
 
     wrapped: dict[int, str] = {}
@@ -1460,13 +1536,12 @@ def _parse_colour(text: str) -> tuple[int, int, int] | None:
         digits = match.group("hex")
         if len(digits) == 3:
             digits = "".join(c * 2 for c in digits)
-        return tuple(int(digits[i:i + 2], 16) for i in (0, 2, 4))  # type: ignore[return-value]
+        return tuple(int(digits[i : i + 2], 16) for i in (0, 2, 4))  # type: ignore[return-value]
     parts = [p.strip() for p in re.split(r"[,/\s]+", match.group("rgb")) if p.strip()]
     if len(parts) < 3:
         return None
     try:
-        channels = [int(round(float(p.rstrip("%")) * (2.55 if "%" in p else 1)))
-                    for p in parts[:3]]
+        channels = [int(round(float(p.rstrip("%")) * (2.55 if "%" in p else 1))) for p in parts[:3]]
     except ValueError:
         return None
     # A fully transparent colour is not a colour anybody sees.
@@ -1492,6 +1567,7 @@ def _relative_luminance(rgb: tuple[int, int, int]) -> float:
     def channel(value: int) -> float:
         v = value / 255
         return v / 12.92 if v <= 0.04045 else ((v + 0.055) / 1.055) ** 2.4
+
     red, green, blue = rgb
     return 0.2126 * channel(red) + 0.7152 * channel(green) + 0.0722 * channel(blue)
 
@@ -1769,7 +1845,7 @@ def player_strings(lang: str) -> dict[str, str]:
     if missing:
         raise ReadAlongMismatch(
             f"the {lang!r} player wording is missing {sorted(missing)}; a "
-            f"missing key reaches the page as the string \"None\" inside an "
+            f'missing key reaches the page as the string "None" inside an '
             f"aria-label, which tells a screen-reader user less than English "
             f"would"
         )
@@ -1848,11 +1924,7 @@ def page_words(body_html: str, *, scope: str | None = None) -> list[str]:
     figures on the page describe the same text: anything skipped by one --
     code, tables -- is skipped by both.
     """
-    return [
-        word
-        for block in page_blocks(body_html, scope=scope)
-        for word in block.visible.split()
-    ]
+    return [word for block in page_blocks(body_html, scope=scope) for word in block.visible.split()]
 
 
 def spoken_seconds(vtt_text: str) -> float:
@@ -1891,50 +1963,50 @@ def player_html(
 ) -> str:
     """The audio player, with its cue track.
 
-    ``kind="metadata"`` rather than ``"captions"``: these cues drive a
-    highlight, they are not a caption overlay, and a browser showing them as
-    subtitles over an audio element would be noise. The same file *is* served
-    as captions elsewhere; what changes is the role it is given here.
+        ``kind="metadata"`` rather than ``"captions"``: these cues drive a
+        highlight, they are not a caption overlay, and a browser showing them as
+        subtitles over an audio element would be noise. The same file *is* served
+        as captions elsewhere; what changes is the role it is given here.
 
-    Shape
-    -----
-    Two players in one element, and only ever one of them visible.
+        Shape
+        -----
+        Two players in one element, and only ever one of them visible.
 
-    The ``<audio controls>`` is the page as delivered: it works with no
-    JavaScript, no stylesheet, and no assumptions, and it is what a reader
-    gets if either file fails to load. The ``ra-ui`` block beside it is the
-    designed bar — a round play button, a scrubber, the clock, and the
-    controls a long narration actually needs — and it ships ``hidden``. The
-    module unhides it and hides the native controls in the same breath, so
-    there is no moment where a reader sees two players, and no moment where
-    they see none.
+        The ``<audio controls>`` is the page as delivered: it works with no
+        JavaScript, no stylesheet, and no assumptions, and it is what a reader
+        gets if either file fails to load. The ``ra-ui`` block beside it is the
+        designed bar — a round play button, a scrubber, the clock, and the
+        controls a long narration actually needs — and it ships ``hidden``. The
+        module unhides it and hides the native controls in the same breath, so
+        there is no moment where a reader sees two players, and no moment where
+        they see none.
 
-    Everything the bar says is rendered here rather than in the module. A
-    string built in JavaScript is a string outside the language table, and
-    this component already refuses to label a French page in English; it
-    would be a strange thing to then do from a script.
+        Everything the bar says is rendered here rather than in the module. A
+        string built in JavaScript is a string outside the language table, and
+        this component already refuses to label a French page in English; it
+        would be a strange thing to then do from a script.
 
-``meta_html`` — the reading-and-listening line from
-    :func:`listening_meta_html` — belongs *inside* the card. Emitted as a
-    sibling it became an orphan: the host page puts its own spacing between
-    flex children, so the line ended up floating halfway between the player
-    and the headline, attached to neither. A child cannot shrink its
-    parent's gap, and it should not try; the fix is to stop being a second
-    child.
+    ``meta_html`` — the reading-and-listening line from
+        :func:`listening_meta_html` — belongs *inside* the card. Emitted as a
+        sibling it became an orphan: the host page puts its own spacing between
+        flex children, so the line ended up floating halfway between the player
+        and the headline, attached to neither. A child cannot shrink its
+        parent's gap, and it should not try; the fix is to stop being a second
+        child.
 
-    The total duration is written in as well, from the narration's own
-    measured length. ``preload="none"`` means the browser knows nothing about
-    the file until the reader presses play, so a player that waited for
-    metadata would show ``0:00`` next to a sixty-four-minute recording —
-    exactly when a reader is deciding whether to commit to it.
+        The total duration is written in as well, from the narration's own
+        measured length. ``preload="none"`` means the browser knows nothing about
+        the file until the reader presses play, so a player that waited for
+        metadata would show ``0:00`` next to a sixty-four-minute recording —
+        exactly when a reader is deciding whether to commit to it.
 
-    Raises
-    ------
-    ReadAlongMismatch
-        If the audio file's extension is not one of :data:`AUDIO_TYPES`.
-        Declaring the wrong type is a file the browser declines to play, and
-        guessing is how that happens quietly.
-        If `lang` has no wording — see :func:`player_strings`.
+        Raises
+        ------
+        ReadAlongMismatch
+            If the audio file's extension is not one of :data:`AUDIO_TYPES`.
+            Declaring the wrong type is a file the browser declines to play, and
+            guessing is how that happens quietly.
+            If `lang` has no wording — see :func:`player_strings`.
     """
     # The query and the fragment come off before the extension is read.
     # These two parameters are URLs rather than paths, and the recording now
@@ -1969,7 +2041,7 @@ def player_html(
         f'data-ra-duration="{duration_seconds:.3f}">\n'
         f'  <p class="ra-title" id="ra-label">{html.escape(label)}</p>\n'
         '  <audio controls preload="none" aria-labelledby="ra-label" '
-        'data-ra-audio>\n'
+        "data-ra-audio>\n"
         f'    <source src="{html.escape(audio_src)}" type="{audio_type}">\n'
         f'    <track kind="metadata" src="{html.escape(vtt_src)}" '
         f'srclang="{html.escape(lang)}" label="Sentences" default>\n'

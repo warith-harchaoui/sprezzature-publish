@@ -33,9 +33,7 @@ from pathlib import Path
 from lint_markdown import fix_trailing_whitespace
 
 REPO_ROOT: Path = Path(__file__).resolve().parent.parent
-SCRIPT: Path = (
-    REPO_ROOT / "scripts" / "lint_markdown.py"
-)
+SCRIPT: Path = REPO_ROOT / "scripts" / "lint_markdown.py"
 
 
 # ── Pure-function tests ────────────────────────────────────────────────────
@@ -105,7 +103,8 @@ def test_cli_fix_strips_trailing_whitespace(tmp_path: Path) -> None:
     # Apply the fix.
     proc = subprocess.run(
         [sys.executable, str(SCRIPT), "--fix", str(src)],
-        capture_output=True, text=True,
+        capture_output=True,
+        text=True,
     )
     assert proc.returncode in (0, 1), proc.stderr  # exit 1 if other rules fire
     body: str = src.read_text(encoding="utf-8")
@@ -116,7 +115,8 @@ def test_cli_fix_strips_trailing_whitespace(tmp_path: Path) -> None:
     # Re-lint — MD009 should not appear in the output.
     proc2 = subprocess.run(
         [sys.executable, str(SCRIPT), str(src)],
-        capture_output=True, text=True,
+        capture_output=True,
+        text=True,
     )
     assert "MD009" not in proc2.stdout
 
@@ -127,12 +127,14 @@ def test_cli_fix_is_idempotent(tmp_path: Path) -> None:
     src.write_text("hello   \nworld\n", encoding="utf-8")
     subprocess.run(
         [sys.executable, str(SCRIPT), "--fix", str(src)],
-        capture_output=True, text=True,
+        capture_output=True,
+        text=True,
     )
     first: str = src.read_text(encoding="utf-8")
     subprocess.run(
         [sys.executable, str(SCRIPT), "--fix", str(src)],
-        capture_output=True, text=True,
+        capture_output=True,
+        text=True,
     )
     second: str = src.read_text(encoding="utf-8")
     assert first == second
@@ -142,7 +144,8 @@ def test_help_advertises_md009_in_fix(tmp_path: Path) -> None:
     """``--help`` mentions MD009 / trailing whitespace under ``--fix``."""
     proc = subprocess.run(
         [sys.executable, str(SCRIPT), "--help"],
-        capture_output=True, text=True,
+        capture_output=True,
+        text=True,
     )
     assert proc.returncode == 0
     collapsed: str = " ".join(proc.stdout.split())

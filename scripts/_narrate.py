@@ -89,13 +89,28 @@ INTENSITY_MAX: float = 1.0
 #: modern Markdown (admonitions, callouts, "TIL"-style notes). Extend
 #: per-project via ``pronunciation.yaml`` if needed.
 EMOJI_EMOTION: dict[str, str] = {
-    "⚠️": "cautious", "🚨": "cautious", "❗": "cautious", "🛑": "cautious",
-    "💡": "calm", "📝": "calm", "📌": "calm", "ℹ️": "calm",
-    "🎉": "cheerful", "✨": "cheerful", "🎊": "cheerful",
-    "❤️": "warm", "💙": "warm", "🙏": "warm",
-    "🔥": "enthusiastic", "🚀": "enthusiastic", "⚡": "enthusiastic",
-    "😢": "sad", "😔": "sad", "💔": "sad",
-    "🤔": "contemplative", "🧐": "contemplative",
+    "⚠️": "cautious",
+    "🚨": "cautious",
+    "❗": "cautious",
+    "🛑": "cautious",
+    "💡": "calm",
+    "📝": "calm",
+    "📌": "calm",
+    "ℹ️": "calm",
+    "🎉": "cheerful",
+    "✨": "cheerful",
+    "🎊": "cheerful",
+    "❤️": "warm",
+    "💙": "warm",
+    "🙏": "warm",
+    "🔥": "enthusiastic",
+    "🚀": "enthusiastic",
+    "⚡": "enthusiastic",
+    "😢": "sad",
+    "😔": "sad",
+    "💔": "sad",
+    "🤔": "contemplative",
+    "🧐": "contemplative",
 }
 
 #: Default emotion / pace when no signal carries information.
@@ -106,6 +121,7 @@ DEFAULT_PACE: str = "normal"
 
 # ── Segment shape ──────────────────────────────────────────────────────────
 
+
 class Segment(TypedDict):
     """
     One narration unit. Engine wrappers iterate over a list of these,
@@ -114,14 +130,14 @@ class Segment(TypedDict):
     """
 
     text: str
-    kind: str            # "heading" | "paragraph" | "list_item" | "blockquote"
-    heading_level: int   # 1-6 for "heading", 0 otherwise
+    kind: str  # "heading" | "paragraph" | "list_item" | "blockquote"
+    heading_level: int  # 1-6 for "heading", 0 otherwise
     pause_before_ms: int
     pause_after_ms: int
     emotion: str
     intensity: float
-    pace: str            # "slow" | "normal" | "fast"
-    emphasis_word: str   # empty string when none
+    pace: str  # "slow" | "normal" | "fast"
+    emphasis_word: str  # empty string when none
     #: What the engine should *say*, when that differs from what the page
     #: *shows* -- a formula read as a sentence, a footnote marker dropped.
     #: Absent when the two are the same, which is almost every sentence.
@@ -162,6 +178,7 @@ def make_segment(
 
 
 # ── Manifest entry (kept as a dataclass for readability) ───────────────────
+
 
 @dataclass(frozen=True)
 class NarrationManifestEntry:
@@ -216,9 +233,7 @@ _HTML_COMMENT_RE: re.Pattern[str] = re.compile(r"<!--.*?-->", re.S)
 #: with two on each side so the single ones inside survive. Matching one
 #: backtick at a time consumed the inner pair and left the outer two in the
 #: prose, which a voice then read out as "backtick".
-_INLINE_CODE_RE: re.Pattern[str] = re.compile(
-    r"(?P<fence>`+)(?P<code>.+?)(?P=fence)(?!`)", re.S
-)
+_INLINE_CODE_RE: re.Pattern[str] = re.compile(r"(?P<fence>`+)(?P<code>.+?)(?P=fence)(?!`)", re.S)
 _IMAGE_RE: re.Pattern[str] = re.compile(r"!\[([^\]]*)\]\([^)]*\)")
 _LINK_RE: re.Pattern[str] = re.compile(r"\[([^\]]+)\]\([^)]+\)")
 _HTML_TAG_RE: re.Pattern[str] = re.compile(r"<[^>]+>")
@@ -319,10 +334,10 @@ def _strip_inline(text: str) -> str:
     stripping each side of the span on its own leaves both halves of the
     ``**`` pair behind.
     """
-    text = _IMAGE_RE.sub(r"\1", text)         # keep alt text only
-    text = _LINK_RE.sub(r"\1", text)          # keep link text only
-    text = _AUTOLINK_RE.sub(r"\1", text)      # keep the address
-    text = _HTML_IMG_RE.sub(                  # keep an HTML image's alt text
+    text = _IMAGE_RE.sub(r"\1", text)  # keep alt text only
+    text = _LINK_RE.sub(r"\1", text)  # keep link text only
+    text = _AUTOLINK_RE.sub(r"\1", text)  # keep the address
+    text = _HTML_IMG_RE.sub(  # keep an HTML image's alt text
         lambda m: m.group(1) if m.group(1) is not None else (m.group(2) or ""), text
     )
     held: list[str] = []
@@ -334,8 +349,8 @@ def _strip_inline(text: str) -> str:
         # the emphasis patterns rely on.
         return f"\x00{len(held) - 1}\x00"
 
-    text = _INLINE_CODE_RE.sub(_hold, text)   # drop backticks, keep content
-    text = _HTML_TAG_RE.sub("", text)         # strip HTML tags
+    text = _INLINE_CODE_RE.sub(_hold, text)  # drop backticks, keep content
+    text = _HTML_TAG_RE.sub("", text)  # strip HTML tags
     text = _strip_emphasis(text)
     for index, content in enumerate(held):
         text = text.replace(f"\x00{index}\x00", content)
@@ -351,7 +366,7 @@ def _parse_frontmatter(markdown: str) -> tuple[dict[str, Any], str]:
     m = FRONTMATTER_RE.match(markdown)
     if not m:
         return {}, markdown
-    body: str = markdown[m.end():]
+    body: str = markdown[m.end() :]
     try:
         import yaml
     except ImportError:
@@ -469,15 +484,17 @@ def extract_segments(markdown: str) -> list[Segment]:
         if heading_match:
             level: int = len(heading_match.group(1))
             heading_text: str = _strip_inline(heading_match.group(2))
-            segments.append(make_segment(
-                heading_text,
-                kind="heading",
-                heading_level=level,
-                pause_before_ms=PAUSE_HEADING_MS.get(level, 500),
-                pause_after_ms=PAUSE_HEADING_MS.get(level, 500),
-                emotion=_emoji_emotion(heading_text) or tone_baseline,
-                pace=pace_baseline,
-            ))
+            segments.append(
+                make_segment(
+                    heading_text,
+                    kind="heading",
+                    heading_level=level,
+                    pause_before_ms=PAUSE_HEADING_MS.get(level, 500),
+                    pause_after_ms=PAUSE_HEADING_MS.get(level, 500),
+                    emotion=_emoji_emotion(heading_text) or tone_baseline,
+                    pace=pace_baseline,
+                )
+            )
             sticky_emotion = ""
             # If the block has more lines after the heading (rare but
             # possible), narrate the rest as a paragraph below.
@@ -485,12 +502,13 @@ def extract_segments(markdown: str) -> list[Segment]:
             if rest_lines:
                 rest_text: str = _strip_inline(" ".join(rest_lines))
                 if rest_text:
-                    segments.append(make_segment(
-                        rest_text,
-                        emotion=sticky_emotion or _emoji_emotion(rest_text)
-                                or tone_baseline,
-                        pace=pace_baseline,
-                    ))
+                    segments.append(
+                        make_segment(
+                            rest_text,
+                            emotion=sticky_emotion or _emoji_emotion(rest_text) or tone_baseline,
+                            pace=pace_baseline,
+                        )
+                    )
             continue
 
         # Blockquote? Wrap the inner text with "Quote: ... End quote."
@@ -502,15 +520,17 @@ def extract_segments(markdown: str) -> list[Segment]:
             )
             inner = _strip_inline(inner)
             quoted_text: str = f"{QUOTE_OPENING} {inner} {QUOTE_CLOSING}"
-            segments.append(make_segment(
-                quoted_text,
-                kind="blockquote",
-                pause_before_ms=PAUSE_BLOCKQUOTE_MS,
-                pause_after_ms=PAUSE_BLOCKQUOTE_MS,
-                emotion=sticky_emotion or _emoji_emotion(inner) or tone_baseline,
-                intensity=max(INTENSITY_MIN, DEFAULT_INTENSITY - 0.15),
-                pace=pace_baseline,
-            ))
+            segments.append(
+                make_segment(
+                    quoted_text,
+                    kind="blockquote",
+                    pause_before_ms=PAUSE_BLOCKQUOTE_MS,
+                    pause_after_ms=PAUSE_BLOCKQUOTE_MS,
+                    emotion=sticky_emotion or _emoji_emotion(inner) or tone_baseline,
+                    intensity=max(INTENSITY_MIN, DEFAULT_INTENSITY - 0.15),
+                    pace=pace_baseline,
+                )
+            )
             continue
 
         # List? Each item is its own segment with a short pause.
@@ -536,32 +556,34 @@ def extract_segments(markdown: str) -> list[Segment]:
         # "1. Redistributions..." came back as a sentence reading "1.".
         if list_items and _LIST_ITEM_RE.match(lines[0]):
             for i, item_text in enumerate(list_items):
-                segments.append(make_segment(
-                    item_text,
-                    kind="list_item",
-                    pause_before_ms=0,
-                    # Final item gets a paragraph-length pause; others
-                    # get just enough silence to mark enumeration.
-                    pause_after_ms=(
-                        PAUSE_PARAGRAPH_MS if i == len(list_items) - 1
-                        else PAUSE_LIST_ITEM_MS
-                    ),
-                    emotion=sticky_emotion or _emoji_emotion(item_text)
-                            or tone_baseline,
-                    pace=pace_baseline,
-                ))
+                segments.append(
+                    make_segment(
+                        item_text,
+                        kind="list_item",
+                        pause_before_ms=0,
+                        # Final item gets a paragraph-length pause; others
+                        # get just enough silence to mark enumeration.
+                        pause_after_ms=(
+                            PAUSE_PARAGRAPH_MS if i == len(list_items) - 1 else PAUSE_LIST_ITEM_MS
+                        ),
+                        emotion=sticky_emotion or _emoji_emotion(item_text) or tone_baseline,
+                        pace=pace_baseline,
+                    )
+                )
             continue
 
         # Default: a paragraph.
         prose: str = _strip_inline(" ".join(block.splitlines()))
         if prose:
-            segments.append(make_segment(
-                prose,
-                kind="paragraph",
-                pause_after_ms=PAUSE_PARAGRAPH_MS,
-                emotion=sticky_emotion or _emoji_emotion(prose) or tone_baseline,
-                pace=pace_baseline,
-            ))
+            segments.append(
+                make_segment(
+                    prose,
+                    kind="paragraph",
+                    pause_after_ms=PAUSE_PARAGRAPH_MS,
+                    emotion=sticky_emotion or _emoji_emotion(prose) or tone_baseline,
+                    pace=pace_baseline,
+                )
+            )
     return segments
 
 
@@ -578,6 +600,7 @@ def segments_to_text(segments: list[Segment]) -> str:
 
 
 # ── Pronunciation overrides ────────────────────────────────────────────────
+
 
 def load_pronunciation(post_path: Path) -> dict[str, str]:
     """
@@ -605,15 +628,16 @@ def load_pronunciation(post_path: Path) -> dict[str, str]:
             if not isinstance(data, dict):
                 return {}
             return {
-                str(k): str(v) for k, v in data.items()
-                if isinstance(k, (str, int, float))
-                and isinstance(v, (str, int, float))
+                str(k): str(v)
+                for k, v in data.items()
+                if isinstance(k, (str, int, float)) and isinstance(v, (str, int, float))
             }
     return {}
 
 
 def apply_pronunciation(
-    segments: list[Segment], overrides: dict[str, str],
+    segments: list[Segment],
+    overrides: dict[str, str],
 ) -> list[Segment]:
     """
     Apply token-substitution overrides to every segment's text.
@@ -624,7 +648,9 @@ def apply_pronunciation(
     if not overrides:
         return segments
     tokens: list[str] = sorted(
-        (t for t in overrides if t), key=len, reverse=True,
+        (t for t in overrides if t),
+        key=len,
+        reverse=True,
     )
     out: list[Segment] = []
     for seg in segments:
@@ -690,24 +716,36 @@ def merge_llm_hint(seg: Segment, hint: dict[str, Any]) -> Segment:
     if isinstance(hint.get("emotion"), str) and hint["emotion"].strip():
         out["emotion"] = hint["emotion"].strip().lower()
     out["intensity"] = _clamp(
-        hint.get("intensity"), INTENSITY_MIN, INTENSITY_MAX, seg["intensity"],
+        hint.get("intensity"),
+        INTENSITY_MIN,
+        INTENSITY_MAX,
+        seg["intensity"],
     )
     if hint.get("pace") in {"slow", "normal", "fast"}:
         out["pace"] = hint["pace"]
-    out["pause_before_ms"] = int(_clamp(
-        hint.get("pause_before_ms"), PAUSE_MIN_MS, PAUSE_MAX_MS,
-        seg["pause_before_ms"],
-    ))
-    out["pause_after_ms"] = int(_clamp(
-        hint.get("pause_after_ms"), PAUSE_MIN_MS, PAUSE_MAX_MS,
-        seg["pause_after_ms"],
-    ))
+    out["pause_before_ms"] = int(
+        _clamp(
+            hint.get("pause_before_ms"),
+            PAUSE_MIN_MS,
+            PAUSE_MAX_MS,
+            seg["pause_before_ms"],
+        )
+    )
+    out["pause_after_ms"] = int(
+        _clamp(
+            hint.get("pause_after_ms"),
+            PAUSE_MIN_MS,
+            PAUSE_MAX_MS,
+            seg["pause_after_ms"],
+        )
+    )
     if isinstance(hint.get("emphasis_word"), str):
         out["emphasis_word"] = hint["emphasis_word"].strip()
     return out
 
 
 # ── Manifest + sha256 cache ────────────────────────────────────────────────
+
 
 def source_sha256(prose: str) -> str:
     """SHA-256 of the prose fed to the engine, UTF-8 encoded."""
@@ -751,13 +789,12 @@ def read_manifest(path: Path) -> dict[str, NarrationManifestEntry]:
 
 
 def write_manifest(
-    path: Path, entries: dict[str, NarrationManifestEntry],
+    path: Path,
+    entries: dict[str, NarrationManifestEntry],
 ) -> None:
     """Write the manifest to disk, sorted by source path for stable diffs."""
     path.parent.mkdir(parents=True, exist_ok=True)
-    rows: list[dict[str, Any]] = [
-        asdict(entries[source]) for source in sorted(entries)
-    ]
+    rows: list[dict[str, Any]] = [asdict(entries[source]) for source in sorted(entries)]
     path.write_text(
         json.dumps(rows, indent=2, ensure_ascii=False) + "\n",
         encoding="utf-8",
@@ -803,15 +840,17 @@ def cues_to_vtt(cues: list[Cue]) -> str:
     The text is collapsed onto one line before writing: a blank line ends a
     cue, so a hard-wrapped payload would split one cue into two.
     """
-    return _vtt.write_vtt([
-        _vtt.Cue(
-            start=cue.start_seconds,
-            end=cue.end_seconds,
-            text=cue.text,
-            identifier=str(cue.index),
-        ).collapsed()
-        for cue in cues
-    ])
+    return _vtt.write_vtt(
+        [
+            _vtt.Cue(
+                start=cue.start_seconds,
+                end=cue.end_seconds,
+                text=cue.text,
+                identifier=str(cue.index),
+            ).collapsed()
+            for cue in cues
+        ]
+    )
 
 
 # ── Sentences ──────────────────────────────────────────────────────────────
@@ -827,13 +866,58 @@ def cues_to_vtt(cues: list[Cue]) -> str:
 _ABBREVIATIONS: frozenset[str] = frozenset(
     {
         # English
-        "mr", "mrs", "ms", "dr", "prof", "st", "jr", "sr", "vs", "etc",
-        "inc", "ltd", "co", "fig", "al", "e.g", "i.e", "cf", "no", "vol",
-        "ph.d", "approx", "dept", "est", "min", "max",
+        "mr",
+        "mrs",
+        "ms",
+        "dr",
+        "prof",
+        "st",
+        "jr",
+        "sr",
+        "vs",
+        "etc",
+        "inc",
+        "ltd",
+        "co",
+        "fig",
+        "al",
+        "e.g",
+        "i.e",
+        "cf",
+        "no",
+        "vol",
+        "ph.d",
+        "approx",
+        "dept",
+        "est",
+        "min",
+        "max",
         # French
-        "m", "mme", "mlle", "mm", "dr", "pr", "st", "ste", "av", "bd",
-        "env", "ex", "fig", "cf", "éd", "vol", "chap", "p", "pp", "art",
-        "réf", "tél", "pers", "sg", "env",
+        "m",
+        "mme",
+        "mlle",
+        "mm",
+        "dr",
+        "pr",
+        "st",
+        "ste",
+        "av",
+        "bd",
+        "env",
+        "ex",
+        "fig",
+        "cf",
+        "éd",
+        "vol",
+        "chap",
+        "p",
+        "pp",
+        "art",
+        "réf",
+        "tél",
+        "pers",
+        "sg",
+        "env",
     }
 )
 
@@ -851,6 +935,7 @@ _SENTENCE_END = re.compile(
     """,
     re.VERBOSE,
 )
+
 
 def _ends_an_abbreviation(text: str, stop: int) -> bool:
     """Is the full stop at `stop` part of a token that is not a sentence end?"""
@@ -1014,38 +1099,39 @@ def segments_from_blocks(
             after, before = PAUSE_PARAGRAPH_MS, 0
 
         quoted_opens = in_quote and (index == 0 or not blocks[index - 1][2])
-        quoted_closes = in_quote and (
-            index + 1 == len(blocks) or not blocks[index + 1][2]
-        )
+        quoted_closes = in_quote and (index + 1 == len(blocks) or not blocks[index + 1][2])
         if in_quote:
             before = after = PAUSE_BLOCKQUOTE_MS
 
-        out.append(make_segment(
-            f"{QUOTE_OPENING} {text}" if quoted_opens else text,
-            kind="blockquote" if in_quote else kind,
-            heading_level=level,
-            pause_before_ms=before,
-            pause_after_ms=0 if quoted_closes else after,
-            emotion=_emoji_emotion(text) or tone,
-            intensity=(
-                max(INTENSITY_MIN, DEFAULT_INTENSITY - 0.15) if in_quote
-                else DEFAULT_INTENSITY
-            ),
-            pace=pace,
-        ))
+        out.append(
+            make_segment(
+                f"{QUOTE_OPENING} {text}" if quoted_opens else text,
+                kind="blockquote" if in_quote else kind,
+                heading_level=level,
+                pause_before_ms=before,
+                pause_after_ms=0 if quoted_closes else after,
+                emotion=_emoji_emotion(text) or tone,
+                intensity=(
+                    max(INTENSITY_MIN, DEFAULT_INTENSITY - 0.15) if in_quote else DEFAULT_INTENSITY
+                ),
+                pace=pace,
+            )
+        )
         if quoted_closes:
             # Said after the quotation rather than inside it, exactly as the
             # Markdown route ends up once its single quoted segment is split
             # into sentences.
-            out.append(make_segment(
-                QUOTE_CLOSING,
-                kind="blockquote",
-                pause_before_ms=0,
-                pause_after_ms=PAUSE_BLOCKQUOTE_MS,
-                emotion=tone,
-                intensity=max(INTENSITY_MIN, DEFAULT_INTENSITY - 0.15),
-                pace=pace,
-            ))
+            out.append(
+                make_segment(
+                    QUOTE_CLOSING,
+                    kind="blockquote",
+                    pause_before_ms=0,
+                    pause_after_ms=PAUSE_BLOCKQUOTE_MS,
+                    emotion=tone,
+                    intensity=max(INTENSITY_MIN, DEFAULT_INTENSITY - 0.15),
+                    pace=pace,
+                )
+            )
     return out
 
 
@@ -1096,13 +1182,9 @@ def explode_to_sentences(segments: list[Segment]) -> list[Segment]:
         for position, sentence in enumerate(sentences):
             piece: Segment = dict(block)  # type: ignore[assignment]
             piece["text"] = sentence
-            piece["pause_before_ms"] = (
-                int(block.get("pause_before_ms", 0)) if position == 0 else 0
-            )
+            piece["pause_before_ms"] = int(block.get("pause_before_ms", 0)) if position == 0 else 0
             piece["pause_after_ms"] = (
-                int(block.get("pause_after_ms", 0))
-                if position == last
-                else PAUSE_SENTENCE_MS
+                int(block.get("pause_after_ms", 0)) if position == last else PAUSE_SENTENCE_MS
             )
             out.append(piece)
     return out

@@ -21,19 +21,27 @@ import site_indexes as si
 
 # ── _format_url ─────────────────────────────────────────────────────────────
 
+
 class TestFormatUrl:
     def test_collapses_index_html(self):
         # ``section/index.html`` is served at ``section/``.
-        assert si._format_url("https://example.com", Path("section/index.html")) == "https://example.com/section/"
+        assert (
+            si._format_url("https://example.com", Path("section/index.html"))
+            == "https://example.com/section/"
+        )
 
     def test_collapses_root_index(self):
         assert si._format_url("https://example.com/", Path("index.html")) == "https://example.com/"
 
     def test_handles_base_url_without_trailing_slash(self):
-        assert si._format_url("https://example.com", Path("about.html")) == "https://example.com/about.html"
+        assert (
+            si._format_url("https://example.com", Path("about.html"))
+            == "https://example.com/about.html"
+        )
 
 
 # ── _read_title ─────────────────────────────────────────────────────────────
+
 
 class TestReadTitle:
     def test_html_title_tag(self, tmp_path: Path):
@@ -59,6 +67,7 @@ class TestReadTitle:
 
 # ── _read_description ──────────────────────────────────────────────────────
 
+
 class TestReadDescription:
     def test_html_meta_description(self, tmp_path: Path):
         p = tmp_path / "page.html"
@@ -80,6 +89,7 @@ class TestReadDescription:
 
 
 # ── discover_pages ──────────────────────────────────────────────────────────
+
 
 class TestDiscoverPages:
     def test_walks_root_and_output_dirs(self, tmp_path: Path):
@@ -106,6 +116,7 @@ class TestDiscoverPages:
 
 # ── find_blog_dir ──────────────────────────────────────────────────────────
 
+
 class TestFindBlogDir:
     def test_explicit_wins(self, tmp_path: Path):
         (tmp_path / "writings").mkdir()
@@ -126,6 +137,7 @@ class TestFindBlogDir:
 
 # ── render_robots ───────────────────────────────────────────────────────────
 
+
 class TestRenderRobots:
     def test_has_required_lines(self):
         body = si.render_robots("https://example.com", "https://example.com/sitemap.xml")
@@ -134,6 +146,7 @@ class TestRenderRobots:
 
 
 # ── render_sitemap ──────────────────────────────────────────────────────────
+
 
 class TestRenderSitemap:
     def test_well_formed_xml(self):
@@ -154,6 +167,7 @@ class TestRenderSitemap:
 
 # ── render_atom ─────────────────────────────────────────────────────────────
 
+
 class TestRenderAtom:
     def test_atom_required_elements(self):
         posts = [(Path("posts/hello.md"), "Hello", "2026-06-19T12:00:00Z", "Short summary.")]
@@ -169,10 +183,7 @@ class TestRenderAtom:
         assert root.find(f"{ns}id") is not None
         assert root.find(f"{ns}updated") is not None
         # rel="self" link present.
-        self_link = [
-            link for link in root.findall(f"{ns}link")
-            if link.get("rel") == "self"
-        ]
+        self_link = [link for link in root.findall(f"{ns}link") if link.get("rel") == "self"]
         assert len(self_link) == 1
 
         entries = root.findall(f"{ns}entry")
@@ -184,6 +195,7 @@ class TestRenderAtom:
 
 
 # ── render_rss ──────────────────────────────────────────────────────────────
+
 
 class TestRenderRss:
     def test_rss_structure(self):
@@ -211,6 +223,7 @@ class TestRenderRss:
 
 # ── render_humans ───────────────────────────────────────────────────────────
 
+
 class TestRenderHumans:
     def test_has_team_and_site_sections(self):
         body = si.render_humans(
@@ -231,6 +244,7 @@ class TestRenderHumans:
 
 # ── End-to-end main() ───────────────────────────────────────────────────────
 
+
 class TestMain:
     def test_full_project_tree(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys):
         # Build a tiny project: a README, a public/index.html, a docs/ page,
@@ -247,9 +261,12 @@ class TestMain:
         out = tmp_path / "_out"
         argv = [
             "site_indexes",
-            "--root", str(tmp_path),
-            "--out", str(out),
-            "--base-url", "https://example.com",
+            "--root",
+            str(tmp_path),
+            "--out",
+            str(out),
+            "--base-url",
+            "https://example.com",
         ]
         monkeypatch.setattr(sys, "argv", argv)
         rc = si.main()

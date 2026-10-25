@@ -141,6 +141,7 @@ def _bag_of_words_cosine(a: str, b: str) -> float:
 
 # ── Tests ───────────────────────────────────────────────────────────────────
 
+
 @pytest.mark.parametrize("pair", PAIRS, ids=[f"pair-{i:02d}" for i in range(len(PAIRS))])
 def test_rewrite_quality(pair: dict, ollama_available, require_model) -> None:
     """
@@ -164,8 +165,7 @@ def test_rewrite_quality(pair: dict, ollama_available, require_model) -> None:
     # 1) Length cap — ≤ 1.1 × source.
     max_len = int(len(pair["source"]) * 1.1)
     assert len(rewrite) <= max_len, (
-        f"Rewrite exceeds 1.1x source length: {len(rewrite)} > {max_len}. "
-        f"Rewrite={rewrite!r}"
+        f"Rewrite exceeds 1.1x source length: {len(rewrite)} > {max_len}. Rewrite={rewrite!r}"
     )
 
     # 2) Meaning preservation — cheap BoW cosine vs reference. Lenient
@@ -185,8 +185,7 @@ def test_rewrite_quality(pair: dict, ollama_available, require_model) -> None:
     textstat = pytest.importorskip("textstat")
     grade: float = float(textstat.flesch_kincaid_grade(rewrite))
     assert grade <= target_grade + 1, (
-        f"Flesch-Kincaid grade {grade:.1f} > target+1={target_grade + 1}. "
-        f"Rewrite={rewrite!r}"
+        f"Flesch-Kincaid grade {grade:.1f} > target+1={target_grade + 1}. Rewrite={rewrite!r}"
     )
 
     # 4) Banned words — verbatim scan, case-insensitive.

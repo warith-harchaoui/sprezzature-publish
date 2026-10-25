@@ -29,6 +29,7 @@ def fresh_cache(tmp_path, monkeypatch):
 
 # ── extract_text ────────────────────────────────────────────────────────────
 
+
 class TestExtractText:
     def test_strips_script_style_svg_noscript(self):
         html = (
@@ -64,6 +65,7 @@ class TestExtractText:
 
 # ── extract_json ────────────────────────────────────────────────────────────
 
+
 class TestExtractJson:
     def test_clean_json(self):
         obj = meta.extract_json('{"title": "Hello"}')
@@ -85,6 +87,7 @@ class TestExtractJson:
 
 
 # ── build_prompt ────────────────────────────────────────────────────────────
+
 
 class TestBuildPrompt:
     def test_always_includes_schema_hint(self):
@@ -115,6 +118,7 @@ class TestBuildPrompt:
 
 
 # ── _cache_key + round-trip ────────────────────────────────────────────────
+
 
 class TestCache:
     def test_cache_key_deterministic(self):
@@ -147,6 +151,7 @@ class TestCache:
 
 # ── End-to-end main() ──────────────────────────────────────────────────────
 
+
 def _mock_ollama_response(payload_str: str) -> MagicMock:
     """Build a MagicMock that mimics ``requests.Response``."""
     mock = MagicMock()
@@ -162,24 +167,34 @@ class TestMain:
         html_path.write_text("<title>Demo</title><p>Real content here.</p>", encoding="utf-8")
 
         # Mock the model reply.
-        reply = json.dumps({
-            "title": "Demo title",
-            "description": "Short description.",
-            "og_title": "Demo",
-            "og_description": "Short.",
-            "og_image_alt": "",
-            "twitter_title": "Demo",
-            "twitter_description": "Short.",
-            "schema_type": "WebSite",
-            "keywords_hint": ["demo", "test"],
-        })
+        reply = json.dumps(
+            {
+                "title": "Demo title",
+                "description": "Short description.",
+                "og_title": "Demo",
+                "og_description": "Short.",
+                "og_image_alt": "",
+                "twitter_title": "Demo",
+                "twitter_description": "Short.",
+                "schema_type": "WebSite",
+                "keywords_hint": ["demo", "test"],
+            }
+        )
         mock_resp = _mock_ollama_response(reply)
-        monkeypatch.setattr(sys, "argv", [
-            "meta", str(html_path),
-            "--site-name", "Acme",
-            "--lang", "en",
-            "--canonical", "https://example.com/demo",
-        ])
+        monkeypatch.setattr(
+            sys,
+            "argv",
+            [
+                "meta",
+                str(html_path),
+                "--site-name",
+                "Acme",
+                "--lang",
+                "en",
+                "--canonical",
+                "https://example.com/demo",
+            ],
+        )
 
         with patch("requests.post", return_value=mock_resp):
             rc = meta.main()
@@ -209,10 +224,10 @@ class TestMain:
 
     def test_connection_error_returns_two(self, fresh_cache, tmp_path, monkeypatch):
         import requests as real_requests
+
         html_path = tmp_path / "page.html"
         html_path.write_text("<p>Body.</p>", encoding="utf-8")
         monkeypatch.setattr(sys, "argv", ["meta", str(html_path), "--lang", "en"])
-        with patch("requests.post",
-                    side_effect=real_requests.exceptions.ConnectionError()):
+        with patch("requests.post", side_effect=real_requests.exceptions.ConnectionError()):
             rc = meta.main()
         assert rc == 2

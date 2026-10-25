@@ -24,13 +24,16 @@ import favicons as fv  # noqa: E402
 from PIL import Image  # noqa: E402
 
 
-def _make_source(path: Path, *, size: int = 256, color: tuple[int, int, int, int] = (255, 0, 0, 255)) -> Path:
+def _make_source(
+    path: Path, *, size: int = 256, color: tuple[int, int, int, int] = (255, 0, 0, 255)
+) -> Path:
     """Write a square solid-colour PNG and return its path."""
     Image.new("RGBA", (size, size), color).save(path, format="PNG")
     return path
 
 
 # ── parse_hex ───────────────────────────────────────────────────────────────
+
 
 class TestParseHex:
     def test_six_digit(self):
@@ -57,6 +60,7 @@ class TestParseHex:
 
 # ── resize_square ───────────────────────────────────────────────────────────
 
+
 class TestResizeSquare:
     def test_output_size_matches(self):
         src = Image.new("RGBA", (100, 50), (0, 0, 255, 255))
@@ -76,6 +80,7 @@ class TestResizeSquare:
 
 # ── flatten_on ──────────────────────────────────────────────────────────────
 
+
 class TestFlattenOn:
     def test_returns_rgb(self):
         src = Image.new("RGBA", (8, 8), (255, 0, 0, 128))
@@ -90,6 +95,7 @@ class TestFlattenOn:
 
 
 # ── make_maskable ───────────────────────────────────────────────────────────
+
 
 class TestMakeMaskable:
     def test_canvas_is_maskable_size(self):
@@ -109,6 +115,7 @@ class TestMakeMaskable:
 
 # ── End-to-end main() ───────────────────────────────────────────────────────
 
+
 class TestMain:
     def test_emits_full_set(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
         source = _make_source(tmp_path / "logo.png", size=256, color=(0, 122, 255, 255))
@@ -118,10 +125,14 @@ class TestMain:
         argv = [
             "favicons",
             str(source),
-            "--out", str(out_dir),
-            "--name", "Test App",
-            "--bg", "#FFFFFF",
-            "--theme-dark", "#000000",
+            "--out",
+            str(out_dir),
+            "--name",
+            "Test App",
+            "--bg",
+            "#FFFFFF",
+            "--theme-dark",
+            "#000000",
         ]
         monkeypatch.setattr(sys, "argv", argv)
         rc = fv.main()
@@ -129,8 +140,11 @@ class TestMain:
 
         # Every advertised artefact lands on disk.
         expected = [
-            "favicon-16.png", "favicon-32.png", "favicon-48.png",
-            "icon-192.png", "icon-512.png",
+            "favicon-16.png",
+            "favicon-32.png",
+            "favicon-48.png",
+            "icon-192.png",
+            "icon-512.png",
             "apple-touch-icon.png",
             "icon-maskable-512.png",
             "favicon.ico",
@@ -141,8 +155,12 @@ class TestMain:
             assert (out_dir / name).is_file(), f"missing {name}"
 
         # PNG sizes are correct.
-        for size, name in [(16, "favicon-16.png"), (32, "favicon-32.png"),
-                           (192, "icon-192.png"), (512, "icon-512.png")]:
+        for size, name in [
+            (16, "favicon-16.png"),
+            (32, "favicon-32.png"),
+            (192, "icon-192.png"),
+            (512, "icon-512.png"),
+        ]:
             assert Image.open(out_dir / name).size == (size, size)
 
         # apple-touch-icon is 180×180 and opaque.
@@ -156,5 +174,5 @@ class TestMain:
         assert any(icon.get("purpose") == "maskable" for icon in manifest["icons"])
         # The two theme-color meta tags appear in the head snippet.
         head = (out_dir / "head.html").read_text(encoding="utf-8")
-        assert 'prefers-color-scheme: light' in head
-        assert 'prefers-color-scheme: dark' in head
+        assert "prefers-color-scheme: light" in head
+        assert "prefers-color-scheme: dark" in head

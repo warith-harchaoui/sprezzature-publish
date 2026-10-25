@@ -52,8 +52,12 @@ def cues() -> list[_readalong.VttCue]:
 
 def wrapped(page: str, cues: list[_readalong.VttCue]) -> str:
     return _readalong.wrap_sentences(
-        page, cues, split=_narrate.split_sentences, scope="article",
-        opening=OPENING, closing=CLOSING,
+        page,
+        cues,
+        split=_narrate.split_sentences,
+        scope="article",
+        opening=OPENING,
+        closing=CLOSING,
     )
 
 
@@ -84,10 +88,7 @@ class TestItComesBackOutExactly:
 
     def test_nested_divs_do_not_cut_the_player_in_half(self):
         """The trap: stopping at the first ``</div>`` leaves the tail behind."""
-        page = (
-            '<div class="ra-player"><div><div>controls</div></div></div>\n'
-            "<p>Prose.</p>"
-        )
+        page = '<div class="ra-player"><div><div>controls</div></div></div>\n<p>Prose.</p>'
         back, _ = _readalong.strip_player(page)
         assert "ra-player" not in back
         assert "controls" not in back
@@ -119,18 +120,15 @@ class TestItCatchesAPageEditedAfterItShipped:
     def test_a_missing_marker_is_counted(self, cues):
         page = "<article><p>First one. Second one.</p></article>"
         short = wrapped(page, cues)
-        short = short[:short.index('<span class="ra-s" id="ra-1"')] + "</p></article>"
-        assert any("against" in line for line in
-                   _readalong.disagreements(short, cues))
+        short = short[: short.index('<span class="ra-s" id="ra-1"')] + "</p></article>"
+        assert any("against" in line for line in _readalong.disagreements(short, cues))
 
     def test_a_cue_with_no_marker_can_be_tolerated(self, cues):
         """A narration says "End quote." aloud; the page never says it."""
         page = "<article><p>First one. Second one.</p></article>"
-        spoken = _readalong.parse_vtt(
-            VTT + "\n2\n00:00:03.000 --> 00:00:03.500\nEnd quote.\n")
+        spoken = _readalong.parse_vtt(VTT + "\n2\n00:00:03.000 --> 00:00:03.500\nEnd quote.\n")
         assert _readalong.disagreements(wrapped(page, cues), spoken)
-        assert _readalong.disagreements(
-            wrapped(page, cues), spoken, tolerate=("End quote.",)) == []
+        assert _readalong.disagreements(wrapped(page, cues), spoken, tolerate=("End quote.",)) == []
 
     def test_a_template_tag_does_not_hide_a_marker(self, cues):
         """On a PHP page the ``?>`` of a template tag closes a ``[^>]*`` early.
@@ -140,7 +138,8 @@ class TestItCatchesAPageEditedAfterItShipped:
         """
         page = "<article><p>First one. Second one.</p></article>"
         with_template = wrapped(page, cues).replace(
-            "<article>", '<article data-src="<?= ASSETS ?>/x.png">')
+            "<article>", '<article data-src="<?= ASSETS ?>/x.png">'
+        )
         assert _readalong.disagreements(with_template, cues) == []
 
 
@@ -151,9 +150,9 @@ class TestTheCommandLine:
         import readalong
 
         page = tmp_path / "post.html"
-        page.write_text(wrapped(
-            "<article><p>First one. Second one.</p></article>", cues),
-            encoding="utf-8")
+        page.write_text(
+            wrapped("<article><p>First one. Second one.</p></article>", cues), encoding="utf-8"
+        )
         out = readalong.strip(page, tmp_path / "built")
         assert "ra-s" not in out.read_text(encoding="utf-8")
         # The input is never modified in place: a live page is not a draft.
@@ -163,9 +162,9 @@ class TestTheCommandLine:
         import readalong
 
         page = tmp_path / "post.html"
-        page.write_text(wrapped(
-            "<article><p>First one. Second one.</p></article>", cues),
-            encoding="utf-8")
+        page.write_text(
+            wrapped("<article><p>First one. Second one.</p></article>", cues), encoding="utf-8"
+        )
         narration = tmp_path / "audio"
         narration.mkdir()
         (narration / "narration.vtt").write_text(VTT, encoding="utf-8")

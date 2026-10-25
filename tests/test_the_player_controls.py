@@ -125,7 +125,7 @@ def test_the_scrubber_is_a_range_input() -> None:
 def test_every_control_has_a_non_empty_accessible_name(control: str) -> None:
     """An icon button with no label is an unlabelled button."""
     html = player()
-    match = re.search(rf'<button[^>]*\b{control}\b[^>]*>', html)
+    match = re.search(rf"<button[^>]*\b{control}\b[^>]*>", html)
     assert match
     label = re.search(r'aria-label="([^"]*)"', match.group(0))
     assert label and label.group(1).strip(), f"{control} has no aria-label"
@@ -162,9 +162,7 @@ def test_a_language_missing_a_key_is_refused(monkeypatch) -> None:
     Guards the check itself. Without this, dropping a key from the table
     would take its own assertion with it and the suite would stay green.
     """
-    monkeypatch.setitem(
-        _readalong.PLAYER_LABELS, "xx", {"title": "T", "play": "P"}
-    )
+    monkeypatch.setitem(_readalong.PLAYER_LABELS, "xx", {"title": "T", "play": "P"})
     with pytest.raises(_readalong.ReadAlongMismatch, match="missing"):
         _readalong.player_strings("xx")
 
@@ -227,8 +225,7 @@ def test_the_bar_remembers_where_the_reader_got_to() -> None:
     assert "localStorage" in JS
     assert "location.pathname" in JS
     assert "localStorage.removeItem" in JS, (
-        "a finished recording must forget its position, or 'continue' lands "
-        "on the closing word"
+        "a finished recording must forget its position, or 'continue' lands on the closing word"
     )
 
 
@@ -276,7 +273,7 @@ def test_forced_colours_do_not_erase_the_button() -> None:
     disc would arrive as a plain square. The circle is drawn with a border
     instead, which forced colours keep.
     """
-    forced = CSS[CSS.index("@media (forced-colors: active)"):]
+    forced = CSS[CSS.index("@media (forced-colors: active)") :]
     assert re.search(r"\.ra-play\s*\{[^}]*border-radius:\s*50%", forced)
     assert re.search(r"\.ra-play\s*\{[^}]*border:\s*2px solid ButtonText", forced)
 
@@ -294,7 +291,7 @@ def test_there_is_exactly_one_colour_literal_and_it_is_the_accent() -> None:
     `--ra-accent` hook, and nothing else hard-coded. More than one means a
     second colour crept in somewhere a host page cannot reach.
     """
-    player_css = CSS[CSS.index("/* The player"):CSS.index("/* The highlight.")]
+    player_css = CSS[CSS.index("/* The player") : CSS.index("/* The highlight.")]
     literals = set(re.findall(r"#[0-9a-fA-F]{3,8}\b", player_css))
     assert literals == {ACCENT}, f"colour literals in the player: {sorted(literals)}"
 
@@ -337,7 +334,7 @@ def test_the_accent_clears_contrast_on_a_light_and_a_dark_page() -> None:
 
     def _luminance(colour: str) -> float:
         colour = colour.lstrip("#")
-        red, green, blue = (int(colour[i:i + 2], 16) for i in (0, 2, 4))
+        red, green, blue = (int(colour[i : i + 2], 16) for i in (0, 2, 4))
         return 0.2126 * _channel(red) + 0.7152 * _channel(green) + 0.0722 * _channel(blue)
 
     def _ratio(one: str, other: str) -> float:
@@ -455,9 +452,7 @@ def test_the_bar_stands_on_the_pages_paper_not_the_browsers() -> None:
     theme — and a white bar across the foot of one is a slab of light.
     """
     assert "var(--ra-paper, Canvas)" in CSS
-    assert _readalong.player_colours(_readalong.page_palette(DARK))["--ra-paper"] == (
-        "#111113"
-    )
+    assert _readalong.player_colours(_readalong.page_palette(DARK))["--ra-paper"] == ("#111113")
 
 
 def test_the_muted_grey_does_not_win_the_ink() -> None:

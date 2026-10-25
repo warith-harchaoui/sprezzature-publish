@@ -194,6 +194,7 @@ OLLAMA_URL: str = os.environ.get("OLLAMA_URL", "http://localhost:11434")
 
 # ── LLM enrichment (optional, opt-in via --ai-hints) ──────────────────────
 
+
 def _llm_classify_segment(
     seg: Segment,
     *,
@@ -284,6 +285,7 @@ def enrich_with_llm(
 
 # ── Engine dispatch ────────────────────────────────────────────────────────
 
+
 def _math_narrator(model: str) -> MathNarrator:
     """A reader for formulas too tangled to spell out, or ``None``.
 
@@ -301,9 +303,7 @@ def _math_narrator(model: str) -> MathNarrator:
     prompts = Path(__file__).resolve().parent / "prompts"
 
     def narrate(latex: str, lang: str) -> str | None:
-        prompt = render_prompt(
-            "latex_caption", prompts_dir=prompts, latex_src=latex, lang=lang
-        )
+        prompt = render_prompt("latex_caption", prompts_dir=prompts, latex_src=latex, lang=lang)
         answer = str(_llm_chat(prompt, model=model)).strip().strip('"').strip()
         return answer or None
 
@@ -480,8 +480,10 @@ def run_engine(
 
     cmd: list[str] = [
         *command,
-        "--segments", str(segments_file),
-        "--out-dir", str(out_dir),
+        "--segments",
+        str(segments_file),
+        "--out-dir",
+        str(out_dir),
     ]
     if voice_sample:
         cmd += ["--voice-sample", str(voice_sample)]
@@ -515,12 +517,11 @@ def run_engine(
     try:
         return json.loads(last_line)
     except json.JSONDecodeError as e:
-        raise RuntimeError(
-            f"{engine} wrapper returned non-JSON output:\n{proc.stdout}"
-        ) from e
+        raise RuntimeError(f"{engine} wrapper returned non-JSON output:\n{proc.stdout}") from e
 
 
 # ── CLI ────────────────────────────────────────────────────────────────────
+
 
 def parse_args() -> argparse.Namespace:
     """Parse the command-line arguments."""
@@ -539,8 +540,8 @@ def parse_args() -> argparse.Namespace:
         "--scope",
         default=None,
         help="HTML input only: the element to read, as 'article', '#id' or "
-             "'.class'. Without it the whole document is read — header, nav "
-             "and footer included, which is rarely what a reader asked for.",
+        "'.class'. Without it the whole document is read — header, nav "
+        "and footer included, which is rarely what a reader asked for.",
     )
     parser.add_argument(
         "--engine",
@@ -552,9 +553,9 @@ def parse_args() -> argparse.Namespace:
         "--voice",
         default="",
         help="Engine built-in voice name. Left empty, each engine uses its "
-             "own default — for kokoro that means detecting the language of "
-             "the text and picking the voice that speaks it. Ignored if "
-             "--voice-sample is set.",
+        "own default — for kokoro that means detecting the language of "
+        "the text and picking the voice that speaks it. Ignored if "
+        "--voice-sample is set.",
     )
     parser.add_argument(
         "--voice-sample",
@@ -566,10 +567,10 @@ def parse_args() -> argparse.Namespace:
         "--lang",
         default="",
         help="Two-letter language tag for the whole reading, e.g. 'fr'. "
-             "Left empty it is detected once from the full text, which is "
-             "right for almost every page; set it where a page quotes "
-             "another language at length and detection reads the quotes "
-             "instead of the page.",
+        "Left empty it is detected once from the full text, which is "
+        "right for almost every page; set it where a page quotes "
+        "another language at length and detection reads the quotes "
+        "instead of the page.",
     )
     parser.add_argument(
         "--out-dir",
@@ -586,7 +587,7 @@ def parse_args() -> argparse.Namespace:
         "--ai-hints-only",
         action="store_true",
         help="Print the enriched segment hints as JSON and exit. "
-             "Useful for review before invoking the TTS engine.",
+        "Useful for review before invoking the TTS engine.",
     )
     parser.add_argument(
         "--force",
@@ -617,16 +618,13 @@ def main() -> int:
         # a parallel list rather than threaded through `Segment`, because
         # the two differ only in their text and every other decision — the
         # pauses, the emotion, the kind — is identical by construction.
-        spoken_blocks = [
-            (block.tag, block.spoken, block.in_quote) for block in page
-        ]
+        spoken_blocks = [(block.tag, block.spoken, block.in_quote) for block in page]
         spoken_segments: list[Segment] | None = segments_from_blocks(spoken_blocks)
     else:
         segments = extract_segments(source)
         spoken_segments = None
     if not segments:
-        print(f"FAIL post is empty (no narrate-able segments): {args.post}",
-              file=sys.stderr)
+        print(f"FAIL post is empty (no narrate-able segments): {args.post}", file=sys.stderr)
         return 1
 
     # Pronunciation overrides applied before LLM enrichment so the
@@ -667,9 +665,7 @@ def main() -> int:
     # Detection runs on the joined text of every block rather than block by
     # block, because that is where the signal is -- a heading or a dateline
     # on its own is a coin toss.
-    lang = args.lang or detect_text_language(
-        " ".join(seg["text"] for seg in segments)
-    )
+    lang = args.lang or detect_text_language(" ".join(seg["text"] for seg in segments))
     # A formula above a handful of operators is not helped by being spelled
     # out: "the sum over i of x i, all over n" is a transliteration, and
     # only a sentence survives being heard once with no page in front of
@@ -691,8 +687,7 @@ def main() -> int:
         spoken = None
     for index, segment in enumerate(segments):
         source_text = (
-            _readalong.without_markers(spoken[index]["text"])
-            if spoken else segment["text"]
+            _readalong.without_markers(spoken[index]["text"]) if spoken else segment["text"]
         )
         say = speakable(source_text, lang, narrator=narrator)
         if say != segment["text"]:
@@ -709,10 +704,8 @@ def main() -> int:
             existing is not None
             and existing.source_sha256 == digest
             and existing.engine == args.engine
-            and existing.voice == (
-                args.voice_sample.as_posix()
-                if args.voice_sample else args.voice
-            )
+            and existing.voice
+            == (args.voice_sample.as_posix() if args.voice_sample else args.voice)
             # The language belongs in the key for the same reason it belongs
             # in the call: it chooses the voice, so the same text under a
             # different language is different audio. Rows written before it
@@ -795,8 +788,7 @@ def main() -> int:
     # it is simply the wrong tongue.
     if _language_fell_back(lang, result):
         print(
-            f"note: no voice for '{lang}'; read with "
-            f"'{result.get('voice', '?')}' instead",
+            f"note: no voice for '{lang}'; read with '{result.get('voice', '?')}' instead",
             file=sys.stderr,
         )
     return 0

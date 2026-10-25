@@ -19,7 +19,8 @@ FIXTURE = REPO_ROOT / "tests" / "fixtures" / "public" / "gettysburg.md"
 def _run(*args: str) -> subprocess.CompletedProcess:
     return subprocess.run(
         [sys.executable, str(SCRIPT), *args],
-        capture_output=True, text=True,
+        capture_output=True,
+        text=True,
     )
 
 
@@ -61,9 +62,7 @@ def test_link_syntax_in_code_span_is_not_a_broken_link(tmp_path: Path) -> None:
         encoding="utf-8",
     )
     proc = _run(str(doc), "--format", "text")
-    assert "MD050" not in proc.stdout, (
-        f"code-span link syntax wrongly flagged:\n{proc.stdout}"
-    )
+    assert "MD050" not in proc.stdout, f"code-span link syntax wrongly flagged:\n{proc.stdout}"
 
     # A genuine broken link OUTSIDE code must still be caught.
     doc.write_text("See [the missing page](does-not-exist.md).\n", encoding="utf-8")

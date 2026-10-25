@@ -104,6 +104,7 @@ ICO_SIZES: tuple[int, ...] = (16, 32, 48)
 
 # ── Argument-parsing helpers ────────────────────────────────────────────────
 
+
 def parse_hex(s: str) -> tuple[int, int, int]:
     """
     Parse a 3- or 6-digit hex color into an ``(R, G, B)`` triple.
@@ -134,6 +135,7 @@ def parse_hex(s: str) -> tuple[int, int, int]:
 
 
 # ── Image loading + resizing ────────────────────────────────────────────────
+
 
 def open_source(path: Path) -> tuple[Image.Image, bool]:
     """
@@ -251,6 +253,7 @@ def make_maskable(im: Image.Image, bg: tuple[int, int, int]) -> Image.Image:
 
 # ── Manifest + HTML head ────────────────────────────────────────────────────
 
+
 def write_manifest(
     out_dir: Path,
     name: str,
@@ -292,9 +295,7 @@ def write_manifest(
         "display": "standalone",
         "start_url": "/",
     }
-    (out_dir / "site.webmanifest").write_text(
-        json.dumps(manifest, indent=2), encoding="utf-8"
-    )
+    (out_dir / "site.webmanifest").write_text(json.dumps(manifest, indent=2), encoding="utf-8")
 
 
 def write_head_snippet(
@@ -320,19 +321,22 @@ def write_head_snippet(
     snippet: list[str] = []
     if has_svg:
         snippet.append('<link rel="icon" href="/favicon.svg" type="image/svg+xml">')
-    snippet.extend([
-        '<link rel="icon" href="/favicon.ico" sizes="any">',
-        '<link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png">',
-        '<link rel="icon" href="/favicon-16.png" sizes="16x16" type="image/png">',
-        '<link rel="apple-touch-icon" href="/apple-touch-icon.png" sizes="180x180">',
-        '<link rel="manifest" href="/site.webmanifest">',
-        f'<meta name="theme-color" content="{theme_hex_light}" media="(prefers-color-scheme: light)">',
-        f'<meta name="theme-color" content="{theme_hex_dark}" media="(prefers-color-scheme: dark)">',
-    ])
+    snippet.extend(
+        [
+            '<link rel="icon" href="/favicon.ico" sizes="any">',
+            '<link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png">',
+            '<link rel="icon" href="/favicon-16.png" sizes="16x16" type="image/png">',
+            '<link rel="apple-touch-icon" href="/apple-touch-icon.png" sizes="180x180">',
+            '<link rel="manifest" href="/site.webmanifest">',
+            f'<meta name="theme-color" content="{theme_hex_light}" media="(prefers-color-scheme: light)">',
+            f'<meta name="theme-color" content="{theme_hex_dark}" media="(prefers-color-scheme: dark)">',
+        ]
+    )
     (out_dir / "head.html").write_text("\n".join(snippet) + "\n", encoding="utf-8")
 
 
 # ── CLI entry point ─────────────────────────────────────────────────────────
+
 
 def main() -> int:
     """
@@ -346,42 +350,51 @@ def main() -> int:
     p = make_parser(
         prog="sprezzature-publish-icons",
         description="Generate the full favicon / PWA / Apple-touch icon set "
-                    "(including site.webmanifest and a paste-ready head.html) "
-                    "from a single source logo.",
+        "(including site.webmanifest and a paste-ready head.html) "
+        "from a single source logo.",
         epilog="Examples:\n"
-               "  sprezzature-publish-icons logo.svg --out public --name 'Project'\n"
-               "  sprezzature-publish-icons logo.png --bg '#ffffff' --theme-dark '#000000'\n",
+        "  sprezzature-publish-icons logo.svg --out public --name 'Project'\n"
+        "  sprezzature-publish-icons logo.png --bg '#ffffff' --theme-dark '#000000'\n",
     )
     p.add_argument(
-        "source", type=Path,
+        "source",
+        type=Path,
         help="Path to the logo (PNG, JPG, WebP, or SVG).",
     )
     p.add_argument(
-        "--raster", type=Path,
+        "--raster",
+        type=Path,
         help="If --source is SVG, use this PNG for raster outputs.",
     )
     p.add_argument(
-        "--out", type=Path, default=Path("public"),
+        "--out",
+        type=Path,
+        default=Path("public"),
         help="Output directory. Default: ./public",
     )
     p.add_argument(
-        "--name", default="App",
+        "--name",
+        default="App",
         help="Long name in the webmanifest.",
     )
     p.add_argument(
-        "--short-name", default=None,
+        "--short-name",
+        default=None,
         help="Short name in the webmanifest.",
     )
     p.add_argument(
-        "--bg", default="#FFFFFF",
+        "--bg",
+        default="#FFFFFF",
         help="Solid background for opaque icons (apple-touch, maskable).",
     )
     p.add_argument(
-        "--theme-light", default=None,
+        "--theme-light",
+        default=None,
         help="theme-color for prefers-color-scheme: light. Default: --bg",
     )
     p.add_argument(
-        "--theme-dark", default="#000000",
+        "--theme-dark",
+        default="#000000",
         help="theme-color for prefers-color-scheme: dark.",
     )
     args = p.parse_args()
@@ -397,8 +410,7 @@ def main() -> int:
         # The SVG path is preserved but the raster pipeline needs a PNG.
         shutil.copyfile(args.source, args.out / "favicon.svg")
         sys.stderr.write(
-            "Wrote favicon.svg only. Re-run with --raster <png-path> "
-            "to also produce the PNGs.\n"
+            "Wrote favicon.svg only. Re-run with --raster <png-path> to also produce the PNGs.\n"
         )
         return 0
 
@@ -406,9 +418,7 @@ def main() -> int:
     if is_svg:
         shutil.copyfile(args.source, args.out / "favicon.svg")
     raster_im: Image.Image = (
-        Image.open(args.raster or args.source).convert("RGBA")
-        if is_svg
-        else source_im
+        Image.open(args.raster or args.source).convert("RGBA") if is_svg else source_im
     )
 
     # Standard PNG sizes (transparent). Sizes ≥ 192 land under
@@ -416,9 +426,7 @@ def main() -> int:
     for size in PNG_SIZES:
         im = resize_square(raster_im, size)
         out_path = (
-            args.out / f"icon-{size}.png"
-            if size >= 192
-            else args.out / f"favicon-{size}.png"
+            args.out / f"icon-{size}.png" if size >= 192 else args.out / f"favicon-{size}.png"
         )
         im.save(out_path, format="PNG", optimize=True)
 

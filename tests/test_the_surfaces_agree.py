@@ -126,17 +126,13 @@ def test_the_two_spellings_are_one_callable() -> None:
     Two names that each had their own implementation is how the pair drifted.
     Two names pointing at one function cannot.
     """
-    import tomllib
-
-    scripts = tomllib.loads((ROOT / "pyproject.toml").read_text())["project"]["scripts"]
+    scripts = PYPROJECT["project"]["scripts"]
     assert scripts["make-site"] == scripts["sprezzature-publish"]
 
 
 def test_click_is_a_base_dependency_and_no_second_parser_grows_back() -> None:
     """With argparse gone, no parser ships with Python."""
-    import tomllib
-
-    project = tomllib.loads((ROOT / "pyproject.toml").read_text())["project"]
+    project = PYPROJECT["project"]
     assert any(dep.startswith("click") for dep in project["dependencies"])
     assert "click" not in project.get("optional-dependencies", {})
     assert not (ROOT / "sprezzature_publish" / "cli_click.py").exists()

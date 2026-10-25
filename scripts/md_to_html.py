@@ -182,6 +182,7 @@ PAGE_TEMPLATE = """<!DOCTYPE html>
 @dataclass
 class Conversion:
     """Result of converting one Markdown file: source, destination, success flag, message."""
+
     src: Path
     dst: Path
     ok: bool
@@ -191,11 +192,19 @@ class Conversion:
 #: Mermaid diagram kinds → a human noun, so the fallback alt says what the
 #: reader is looking at instead of the meaningless "Mermaid diagram".
 _MERMAID_KINDS: dict[str, str] = {
-    "flowchart": "flowchart", "graph": "flowchart", "sequencediagram": "sequence diagram",
-    "classdiagram": "class diagram", "statediagram": "state diagram",
-    "erdiagram": "entity-relationship diagram", "gantt": "Gantt chart",
-    "pie": "pie chart", "journey": "user-journey map", "gitgraph": "Git graph",
-    "mindmap": "mind map", "timeline": "timeline", "quadrantchart": "quadrant chart",
+    "flowchart": "flowchart",
+    "graph": "flowchart",
+    "sequencediagram": "sequence diagram",
+    "classdiagram": "class diagram",
+    "statediagram": "state diagram",
+    "erdiagram": "entity-relationship diagram",
+    "gantt": "Gantt chart",
+    "pie": "pie chart",
+    "journey": "user-journey map",
+    "gitgraph": "Git graph",
+    "mindmap": "mind map",
+    "timeline": "timeline",
+    "quadrantchart": "quadrant chart",
 }
 
 
@@ -274,14 +283,15 @@ def _replace_mermaid_blocks(text: str, src_path: Path, out_dir: Path) -> tuple[s
             f'<img src="{png.name}" alt="{html.escape(alt)}" loading="lazy">'
             f'<details class="mt-2 text-sm label-2"><summary>Source</summary>'
             f'<pre><code class="language-mermaid">{html.escape(body)}</code></pre>'
-            f'</details></figure>'
+            f"</details></figure>"
         )
-        text = text[: m.start()] + replacement + text[m.end():]
+        text = text[: m.start()] + replacement + text[m.end() :]
     return text, rendered, failed
 
 
-def _attach_readalong(body_html: str, *, src: Path, out_dir: Path, narration_dir: Path,
-                      lang: str) -> tuple[str, str]:
+def _attach_readalong(
+    body_html: str, *, src: Path, out_dir: Path, narration_dir: Path, lang: str
+) -> tuple[str, str]:
     """Wrap the page's sentences and build its player.
 
     Returns the body and the markup for the document head. Raises
@@ -316,7 +326,8 @@ def _attach_readalong(body_html: str, *, src: Path, out_dir: Path, narration_dir
     player = _readalong.player_html(
         audio_src=_readalong.href_from(audio, out_dir),
         vtt_src=_readalong.href_from(cues, out_dir),
-        label=label, lang=lang,
+        label=label,
+        lang=lang,
         duration_seconds=spoken,
         meta_html=meta,
         # A rendered page has no stylesheet of its own yet -- the site's
@@ -327,15 +338,25 @@ def _attach_readalong(body_html: str, *, src: Path, out_dir: Path, narration_dir
     return f"{player}\n{wrapped}", _readalong.head_markup()
 
 
-def convert_one(src: Path, out_dir: Path, *, title: str, site_name: str,
-                lang: str, description: str, katex_base: str,
-                narration_dir: Path | None = None) -> Conversion:
+def convert_one(
+    src: Path,
+    out_dir: Path,
+    *,
+    title: str,
+    site_name: str,
+    lang: str,
+    description: str,
+    katex_base: str,
+    narration_dir: Path | None = None,
+) -> Conversion:
     """Convert a single Markdown file to a styled standalone HTML page."""
     try:
         import markdown  # type: ignore
     except ImportError:
         return Conversion(
-            src, out_dir / f"{src.stem}.html", False,
+            src,
+            out_dir / f"{src.stem}.html",
+            False,
             "missing dependency: `pip install markdown` (see requirements-md-to-html.txt)",
         )
 
@@ -362,7 +383,7 @@ def convert_one(src: Path, out_dir: Path, *, title: str, site_name: str,
     # Derive a title from the first H1 if the user didn't pass one.
     if title == "":
         m = re.search(r"^#\s+(.+?)\s*$", raw, re.MULTILINE)
-        title = (m.group(1).strip() if m else src.stem)
+        title = m.group(1).strip() if m else src.stem
     if description == "":
         # First non-empty paragraph after the title.
         body_lines = [ln for ln in raw.splitlines() if ln.strip() and not ln.startswith("#")]
@@ -372,12 +393,16 @@ def convert_one(src: Path, out_dir: Path, *, title: str, site_name: str,
     if narration_dir is not None:
         try:
             body_html, readalong_head = _attach_readalong(
-                body_html, src=src, out_dir=out_dir,
-                narration_dir=narration_dir, lang=lang,
+                body_html,
+                src=src,
+                out_dir=out_dir,
+                narration_dir=narration_dir,
+                lang=lang,
             )
         except _readalong.ReadAlongMismatch as mismatch:
-            return Conversion(src, out_dir / f"{src.stem}.html", False,
-                              f"read-along refused: {mismatch}")
+            return Conversion(
+                src, out_dir / f"{src.stem}.html", False, f"read-along refused: {mismatch}"
+            )
 
     page = PAGE_TEMPLATE.format(
         lang=html.escape(lang),
@@ -406,31 +431,45 @@ def main() -> int:
     p = make_parser(
         prog="sprezzature-publish-html",
         description="Markdown → HTML converter integrated with the sprezzature skill — "
-                    "local Mermaid PNG rendering, KaTeX for LaTeX, Tailwind shell.",
+        "local Mermaid PNG rendering, KaTeX for LaTeX, Tailwind shell.",
         epilog="Examples:\n"
-               "  sprezzature-publish-html README.md --out site/\n"
-               "  sprezzature-publish-html docs/ --out site/ --title 'Docs' --lang en\n",
+        "  sprezzature-publish-html README.md --out site/\n"
+        "  sprezzature-publish-html docs/ --out site/ --title 'Docs' --lang en\n",
     )
     p.add_argument("target", type=Path, help="Markdown file or directory.")
     p.add_argument("--out", type=Path, required=True, help="Output directory.")
     p.add_argument("--title", default="", help="Page title. Default: first H1 of each source.")
-    p.add_argument("--site-name", default="", dest="site_name",
-                   help="Sticky-header brand name. Default: page title.")
-    p.add_argument("--lang", default="auto",
-                   help="HTML lang attribute (BCP-47). Default: auto = detect per file.")
-    p.add_argument("--description", default="",
-                   help="Meta description. Default: first prose paragraph (truncated).")
     p.add_argument(
-        "--katex-base", default="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/",
-        dest="katex_base",
-        help="Base URL for KaTeX assets. Pass a local path for an offline build. "
-             "Default: jsdelivr CDN.",
+        "--site-name",
+        default="",
+        dest="site_name",
+        help="Sticky-header brand name. Default: page title.",
     )
     p.add_argument(
-        "--readalong", type=Path, default=None, dest="narration_dir",
+        "--lang",
+        default="auto",
+        help="HTML lang attribute (BCP-47). Default: auto = detect per file.",
+    )
+    p.add_argument(
+        "--description",
+        default="",
+        help="Meta description. Default: first prose paragraph (truncated).",
+    )
+    p.add_argument(
+        "--katex-base",
+        default="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/",
+        dest="katex_base",
+        help="Base URL for KaTeX assets. Pass a local path for an offline build. "
+        "Default: jsdelivr CDN.",
+    )
+    p.add_argument(
+        "--readalong",
+        type=Path,
+        default=None,
+        dest="narration_dir",
         help="Directory holding a narration run (the audio plus narration.vtt). "
-             "Pages with a recording there get a player and a sentence-by-sentence "
-             "highlight; pages without one are converted unchanged.",
+        "Pages with a recording there get a player and a sentence-by-sentence "
+        "highlight; pages without one are converted unchanged.",
     )
     args = p.parse_args()
 
@@ -450,9 +489,12 @@ def main() -> int:
         rel_dir = src.resolve().relative_to(root.resolve()).parent
         out_subdir = args.out / rel_dir
         result = convert_one(
-            src, out_subdir,
-            title=args.title, site_name=args.site_name,
-            lang=args.lang, description=args.description,
+            src,
+            out_subdir,
+            title=args.title,
+            site_name=args.site_name,
+            lang=args.lang,
+            description=args.description,
             katex_base=args.katex_base.rstrip("/") + "/",
             narration_dir=args.narration_dir,
         )

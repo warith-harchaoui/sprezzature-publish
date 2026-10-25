@@ -27,7 +27,9 @@ def _run(target: Path, out: Path) -> subprocess.CompletedProcess[str]:
     """Invoke the converter on ``target`` writing into ``out``."""
     return subprocess.run(
         [sys.executable, str(SCRIPT), str(target), "--out", str(out)],
-        capture_output=True, text=True, check=True,
+        capture_output=True,
+        text=True,
+        check=True,
     )
 
 
@@ -65,10 +67,13 @@ def test_language_is_detected_not_assumed(tmp_path: Path) -> None:
 
 def test_mermaid_alt_prefers_author_text_then_kind() -> None:
     """accDescr > accTitle > diagram-kind fallback; never 'Mermaid diagram'."""
-    assert _mermaid_alt("graph TD\n  accDescr: The full build pipeline\n  A-->B") == \
-        "The full build pipeline"
-    assert _mermaid_alt("flowchart LR\n  accTitle: Request lifecycle\n  A-->B") == \
-        "Request lifecycle"
+    assert (
+        _mermaid_alt("graph TD\n  accDescr: The full build pipeline\n  A-->B")
+        == "The full build pipeline"
+    )
+    assert (
+        _mermaid_alt("flowchart LR\n  accTitle: Request lifecycle\n  A-->B") == "Request lifecycle"
+    )
     assert _mermaid_alt("sequenceDiagram\n  A->>B: hi") == "sequence diagram (diagram source below)"
     # An %%{init}%% directive line must not be mistaken for the diagram kind.
     assert _mermaid_alt("%%{init: {}}%%\nflowchart LR\n A-->B").startswith("flowchart")

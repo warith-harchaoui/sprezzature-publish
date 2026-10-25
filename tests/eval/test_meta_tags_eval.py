@@ -115,9 +115,7 @@ def test_meta_tag_shape(
 
     # description 100..155 chars — Google's SERP truncation window.
     desc: str = (data.get("description") or "").strip()
-    assert 100 <= len(desc) <= 155, (
-        f"description length {len(desc)} outside 100..155: {desc!r}"
-    )
+    assert 100 <= len(desc) <= 155, f"description length {len(desc)} outside 100..155: {desc!r}"
 
     # schema_type matches the page kind. Compare case-insensitively
     # against the accepted set for this kind.
@@ -133,9 +131,9 @@ def test_meta_tag_shape(
     og_title: str = (data.get("og_title") or "").strip()
     if og_title:
         a, b = og_title.lower(), title.lower()
-        assert a in b or b in a or any(
-            tok in b for tok in a.split() if len(tok) > 4
-        ), f"og_title {og_title!r} bears no resemblance to title {title!r}"
+        assert a in b or b in a or any(tok in b for tok in a.split() if len(tok) > 4), (
+            f"og_title {og_title!r} bears no resemblance to title {title!r}"
+        )
 
     # keywords_hint length 3..8 — when present.
     keywords = data.get("keywords_hint")

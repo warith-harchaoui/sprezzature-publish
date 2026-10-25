@@ -99,15 +99,21 @@ from _ollama import (  # noqa: E402
 MAX_LENGTH_FACTOR: float = 1.1
 
 #: Cache directory for the rewriter. Override with ``SPREZZATURE_CACHE_DIR``.
-CACHE_DIR: Path = Path(
-    os.environ.get("SPREZZATURE_CACHE_DIR") or os.environ.get("FRONT_CACHE_DIR") or Path.home() / ".cache" / "sprezzature-skill"
-) / "plain"
+CACHE_DIR: Path = (
+    Path(
+        os.environ.get("SPREZZATURE_CACHE_DIR")
+        or os.environ.get("FRONT_CACHE_DIR")
+        or Path.home() / ".cache" / "sprezzature-skill"
+    )
+    / "plain"
+)
 
 #: Cache toggle, mirroring the other Ollama helpers.
 NO_CACHE: bool = bool(os.environ.get("SPREZZATURE_NO_CACHE") or os.environ.get("FRONT_NO_CACHE"))
 
 
 # ── Cache helpers ────────────────────────────────────────────────────────────
+
 
 def _cache_key(text: str, grade: int, lang: str, preserve: list[str], model: str) -> str:
     """
@@ -173,6 +179,7 @@ def _cache_set(key: str, text: str) -> None:
 # helpers (e.g. `LANG_INSTRUCTIONS`, `detect_text_language`).
 try:
     from _prompts import render as render_prompt  # type: ignore
+
     HAVE_PROMPTS = True
 except ImportError:
     HAVE_PROMPTS = False
@@ -227,6 +234,7 @@ def build_prompt(text: str, grade: int, lang: str, preserve: list[str]) -> str:
 
 
 # ── Public API ──────────────────────────────────────────────────────────────
+
 
 def rewrite(
     text: str,
@@ -336,14 +344,16 @@ def rewrite(
     ),
 )
 @click.option(
-    "--input", "-i",
+    "--input",
+    "-i",
     "input_path",
     type=click.Path(path_type=Path),
     default=None,
     help="Read from this file instead of stdin.",
 )
 @click.option(
-    "--target-grade", "-g",
+    "--target-grade",
+    "-g",
     "target_grade",
     type=int,
     default=8,
@@ -351,7 +361,8 @@ def rewrite(
     help="Reading grade level.",
 )
 @click.option(
-    "--lang", "-l",
+    "--lang",
+    "-l",
     default=None,
     help="BCP-47 base tag (en, fr, es, …). Default: detect from environment.",
 )

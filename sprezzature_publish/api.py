@@ -74,7 +74,7 @@ class LintRequest(BaseModel):
     name: str = Field(
         default="document.md",
         description="Filename to report findings against. Only affects the "
-                    "messages; the content is what is linted.",
+        "messages; the content is what is linted.",
     )
 
 
@@ -85,25 +85,19 @@ class RenderRequest(BaseModel):
     title: str = Field(default="", description="Page title; derived when empty.")
     site_name: str = Field(default="", description="Shown in the page chrome.")
     lang: str = Field(default="en", description="BCP-47 base tag for the page.")
-    description: str = Field(
-        default="", description="Meta description for the rendered page."
-    )
+    description: str = Field(default="", description="Meta description for the rendered page.")
 
 
 class PlainRequest(BaseModel):
     """Prose to rewrite at a reading grade."""
 
     text: str = Field(description="The prose to rewrite.")
-    target_grade: int = Field(
-        default=8, ge=1, le=16, description="Target reading grade."
-    )
-    lang: str | None = Field(
-        default=None, description="BCP-47 base tag. Detected when omitted."
-    )
+    target_grade: int = Field(default=8, ge=1, le=16, description="Target reading grade.")
+    lang: str | None = Field(default=None, description="BCP-47 base tag. Detected when omitted.")
     preserve: list[str] = Field(
         default_factory=list,
         description="Terms to keep verbatim — names, APIs, anything a "
-                    "simplification would quietly get wrong.",
+        "simplification would quietly get wrong.",
     )
 
 
@@ -181,8 +175,7 @@ def render(request: RenderRequest) -> dict:
     if not _installed("markdown"):
         raise HTTPException(
             status_code=503,
-            detail="rendering needs the [html] extra: "
-                   "pip install 'sprezzature-publish[html]'",
+            detail="rendering needs the [html] extra: pip install 'sprezzature-publish[html]'",
         )
     from sprezzature_publish_scripts.md_to_html import convert_one
 
@@ -231,7 +224,7 @@ def plain(request: PlainRequest) -> dict:
         raise HTTPException(
             status_code=503,
             detail="the plain-language rewrite needs the [prose] extra: "
-                   "pip install 'sprezzature-publish[prose]'",
+            "pip install 'sprezzature-publish[prose]'",
         )
     from sprezzature_publish_scripts.plain_language import rewrite
 

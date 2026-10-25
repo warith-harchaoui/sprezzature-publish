@@ -57,8 +57,9 @@ def cues_for(source: str) -> list[_readalong.VttCue]:
     the only step that can lose something.
     """
     timeline = _narrate.Timeline(24_000)
-    for index, segment in enumerate(_narrate.explode_to_sentences(
-            _narrate.extract_segments(source))):
+    for index, segment in enumerate(
+        _narrate.explode_to_sentences(_narrate.extract_segments(source))
+    ):
         timeline.silence(segment["pause_before_ms"])
         timeline.speech(int(24_000 * 1.4), index=index, text=segment["text"])
         timeline.silence(segment["pause_after_ms"])
@@ -68,9 +69,11 @@ def cues_for(source: str) -> list[_readalong.VttCue]:
 def wrap(source: str) -> str:
     """Build the read-along for a Markdown source, start to finish."""
     return _readalong.wrap_sentences(
-        render(source), cues_for(source),
+        render(source),
+        cues_for(source),
         split=_narrate.split_sentences,
-        opening=_narrate.QUOTE_OPENING, closing=_narrate.QUOTE_CLOSING,
+        opening=_narrate.QUOTE_OPENING,
+        closing=_narrate.QUOTE_CLOSING,
     )
 
 
@@ -84,9 +87,7 @@ def unframed(source: str) -> list[str]:
     return [
         text
         for text in (
-            _readalong._unframe(
-                cue.text, _narrate.QUOTE_OPENING, _narrate.QUOTE_CLOSING
-            )
+            _readalong._unframe(cue.text, _narrate.QUOTE_OPENING, _narrate.QUOTE_CLOSING)
             for cue in cues_for(source)
         )
         if text is not None
@@ -145,11 +146,7 @@ class TestTheTwoRoutesAgree:
         throughout this repo's own documentation. Fixing the *rendering* is a
         separate matter, in the source Markdown.
         """
-        source = (
-            "- An item with code:\n\n"
-            "    ```sh\n    git clone x\n    ```\n\n"
-            "- A second item.\n"
-        )
+        source = "- An item with code:\n\n    ```sh\n    git clone x\n    ```\n\n- A second item.\n"
         assert page(source) == unframed(source)
         assert any("git clone x" in sentence for sentence in page(source))
 
@@ -159,15 +156,18 @@ class TestTheTwoRoutesAgree:
 
 
 class TestQuotationFraming:
-    """"Quote:" and "End quote." are spoken and never written."""
+    """ "Quote:" and "End quote." are spoken and never written."""
 
     def test_the_framing_cues_attach_to_the_quotation(self):
         source = "> A quoted line. And a second one.\n"
         cues = cues_for(source)
         blocks = _readalong.page_blocks(render(source))
         assignment = _readalong.align(
-            blocks, cues, split=_narrate.split_sentences,
-            opening=_narrate.QUOTE_OPENING, closing=_narrate.QUOTE_CLOSING,
+            blocks,
+            cues,
+            split=_narrate.split_sentences,
+            opening=_narrate.QUOTE_OPENING,
+            closing=_narrate.QUOTE_CLOSING,
         )
         # Two sentences on the page, three cues in the audio: the closing
         # cue rides along with the sentence it follows.
@@ -200,8 +200,11 @@ class TestItRefusesRatherThanGuess:
         cues = cues_for(source)[:1]
         with pytest.raises(_readalong.ReadAlongMismatch) as raised:
             _readalong.wrap_sentences(
-                render(source), cues, split=_narrate.split_sentences,
-                opening=_narrate.QUOTE_OPENING, closing=_narrate.QUOTE_CLOSING,
+                render(source),
+                cues,
+                split=_narrate.split_sentences,
+                opening=_narrate.QUOTE_OPENING,
+                closing=_narrate.QUOTE_CLOSING,
             )
         assert "Two sentences." in str(raised.value)
         assert "nothing left in the audio" in str(raised.value)
@@ -210,13 +213,17 @@ class TestItRefusesRatherThanGuess:
         source = "Only one sentence.\n"
         cues = [
             *cues_for(source),
-            _readalong.VttCue(index=9, text="A sentence nobody wrote.",
-                              start_seconds=9.0, end_seconds=10.0),
+            _readalong.VttCue(
+                index=9, text="A sentence nobody wrote.", start_seconds=9.0, end_seconds=10.0
+            ),
         ]
         with pytest.raises(_readalong.ReadAlongMismatch) as raised:
             _readalong.wrap_sentences(
-                render(source), cues, split=_narrate.split_sentences,
-                opening=_narrate.QUOTE_OPENING, closing=_narrate.QUOTE_CLOSING,
+                render(source),
+                cues,
+                split=_narrate.split_sentences,
+                opening=_narrate.QUOTE_OPENING,
+                closing=_narrate.QUOTE_CLOSING,
             )
         assert "A sentence nobody wrote." in str(raised.value)
 
@@ -225,14 +232,20 @@ class TestItRefusesRatherThanGuess:
         cues = cues_for(source)
         altered = [
             cues[0],
-            _readalong.VttCue(index=1, text="Something else entirely.",
-                              start_seconds=cues[1].start_seconds,
-                              end_seconds=cues[1].end_seconds),
+            _readalong.VttCue(
+                index=1,
+                text="Something else entirely.",
+                start_seconds=cues[1].start_seconds,
+                end_seconds=cues[1].end_seconds,
+            ),
         ]
         with pytest.raises(_readalong.ReadAlongMismatch) as raised:
             _readalong.wrap_sentences(
-                render(source), altered, split=_narrate.split_sentences,
-                opening=_narrate.QUOTE_OPENING, closing=_narrate.QUOTE_CLOSING,
+                render(source),
+                altered,
+                split=_narrate.split_sentences,
+                opening=_narrate.QUOTE_OPENING,
+                closing=_narrate.QUOTE_CLOSING,
             )
         message = str(raised.value)
         assert "The second." in message and "Something else entirely." in message
@@ -258,8 +271,11 @@ class TestItRefusesRatherThanGuess:
             for i, text in enumerate(sentences)
         ]
         out = _readalong.wrap_sentences(
-            body, cues, split=_narrate.split_sentences,
-            opening=_narrate.QUOTE_OPENING, closing=_narrate.QUOTE_CLOSING,
+            body,
+            cues,
+            split=_narrate.split_sentences,
+            opening=_narrate.QUOTE_OPENING,
+            closing=_narrate.QUOTE_CLOSING,
         )
         # One id per sentence, several spans for the one that needed them.
         assert len(SPAN_RE.findall(out)) == len(sentences)
@@ -285,9 +301,7 @@ class TestItRefusesRatherThanGuess:
 #: across several spans still has exactly one id, on the run it starts at.
 #: ``data-ra-cue`` is optional because it is written only when a sentence
 #: needed more than one span.
-SPAN_RE = re.compile(
-    r'<span class="ra-s" id="ra-\d+"(?: data-ra-cue="\d+")? data-start="[\d.]+">'
-)
+SPAN_RE = re.compile(r'<span class="ra-s" id="ra-\d+"(?: data-ra-cue="\d+")? data-start="[\d.]+">')
 
 
 class TestWrapping:
@@ -343,21 +357,33 @@ class TestWrapping:
 
     def test_a_sentence_that_opens_with_markup_keeps_it_inside_the_span(self):
         body = "<p><strong>Do not</strong> commit this.</p>"
-        cues = [_readalong.VttCue(index=0, text="Do not commit this.",
-                                  start_seconds=0.0, end_seconds=1.0)]
+        cues = [
+            _readalong.VttCue(
+                index=0, text="Do not commit this.", start_seconds=0.0, end_seconds=1.0
+            )
+        ]
         out = _readalong.wrap_sentences(
-            body, cues, split=_narrate.split_sentences,
-            opening=_narrate.QUOTE_OPENING, closing=_narrate.QUOTE_CLOSING,
+            body,
+            cues,
+            split=_narrate.split_sentences,
+            opening=_narrate.QUOTE_OPENING,
+            closing=_narrate.QUOTE_CLOSING,
         )
         assert "<span" in out.split("<strong>")[0]
 
     def test_a_heading_that_is_entirely_a_link_is_wrapped_inside_it(self):
         body = '<h2 id="x"><a href="y.md">Approach: the ideas</a></h2>'
-        cues = [_readalong.VttCue(index=0, text="Approach: the ideas",
-                                  start_seconds=0.0, end_seconds=1.0)]
+        cues = [
+            _readalong.VttCue(
+                index=0, text="Approach: the ideas", start_seconds=0.0, end_seconds=1.0
+            )
+        ]
         out = _readalong.wrap_sentences(
-            body, cues, split=_narrate.split_sentences,
-            opening=_narrate.QUOTE_OPENING, closing=_narrate.QUOTE_CLOSING,
+            body,
+            cues,
+            split=_narrate.split_sentences,
+            opening=_narrate.QUOTE_OPENING,
+            closing=_narrate.QUOTE_CLOSING,
         )
         assert out.count("<span") == 1
         assert SPAN_RE.sub("", out).replace("</span>", "") == body
@@ -375,8 +401,11 @@ class TestWrapping:
             _readalong.VttCue(index=1, text="Line two.", start_seconds=1.0, end_seconds=2.0),
         ]
         out = _readalong.wrap_sentences(
-            body, cues, split=_narrate.split_sentences,
-            opening=_narrate.QUOTE_OPENING, closing=_narrate.QUOTE_CLOSING,
+            body,
+            cues,
+            split=_narrate.split_sentences,
+            opening=_narrate.QUOTE_OPENING,
+            closing=_narrate.QUOTE_CLOSING,
         )
         assert out.count("<span") == 2
 
@@ -398,10 +427,12 @@ class TestVttRoundTrip:
         assert (cues[0].start_seconds, cues[0].end_seconds) == (90.0, 91.5)
 
     def test_the_spoken_length_is_the_end_of_the_last_cue(self):
-        text = _narrate.cues_to_vtt([
-            _narrate.Cue(index=0, text="A.", start_seconds=0.0, end_seconds=2.0),
-            _narrate.Cue(index=1, text="B.", start_seconds=2.5, end_seconds=9.75),
-        ])
+        text = _narrate.cues_to_vtt(
+            [
+                _narrate.Cue(index=0, text="A.", start_seconds=0.0, end_seconds=2.0),
+                _narrate.Cue(index=1, text="B.", start_seconds=2.5, end_seconds=9.75),
+            ]
+        )
         assert _readalong.spoken_seconds(text) == 9.75
         assert _readalong.spoken_seconds("WEBVTT\n") == 0.0
 
@@ -410,26 +441,28 @@ class TestPlayer:
     """The audio element, and what it declares about its file."""
 
     def test_the_source_type_comes_from_the_extension(self):
-        for name, declared in [("a.wav", "audio/wav"), ("a.mp3", "audio/mpeg"),
-                               ("a.m4a", "audio/mp4"), ("a.flac", "audio/flac")]:
-            out = _readalong.player_html(audio_src=name, vtt_src="a.vtt",
-                                         label="Listen", lang="en")
+        for name, declared in [
+            ("a.wav", "audio/wav"),
+            ("a.mp3", "audio/mpeg"),
+            ("a.m4a", "audio/mp4"),
+            ("a.flac", "audio/flac"),
+        ]:
+            out = _readalong.player_html(audio_src=name, vtt_src="a.vtt", label="Listen", lang="en")
             assert f'type="{declared}"' in out
 
     def test_an_unknown_extension_raises_rather_than_being_guessed(self):
         with pytest.raises(_readalong.ReadAlongMismatch, match="no audio type known"):
-            _readalong.player_html(audio_src="a.aiff", vtt_src="a.vtt",
-                                   label="Listen", lang="en")
+            _readalong.player_html(audio_src="a.aiff", vtt_src="a.vtt", label="Listen", lang="en")
 
     def test_the_cue_track_is_metadata_not_captions(self):
-        out = _readalong.player_html(audio_src="a.wav", vtt_src="a.vtt",
-                                     label="Listen", lang="en")
+        out = _readalong.player_html(audio_src="a.wav", vtt_src="a.vtt", label="Listen", lang="en")
         assert 'kind="metadata"' in out
         assert 'kind="captions"' not in out
 
     def test_the_player_has_an_accessible_name(self):
-        out = _readalong.player_html(audio_src="a.wav", vtt_src="a.vtt",
-                                     label="Listen to this page", lang="en")
+        out = _readalong.player_html(
+            audio_src="a.wav", vtt_src="a.vtt", label="Listen to this page", lang="en"
+        )
         assert 'aria-labelledby="ra-label"' in out
         assert "Listen to this page" in out
 
@@ -478,9 +511,7 @@ class TestListeningMeta:
             assert out.count("<time") == 1
 
     def test_an_unknown_language_is_visible_rather_than_served_english(self):
-        with pytest.raises(
-            _readalong.ReadAlongMismatch, match="no listening-time wording"
-        ):
+        with pytest.raises(_readalong.ReadAlongMismatch, match="no listening-time wording"):
             _readalong.listening_meta_html(spoken_seconds=30.0, lang="de")
 
     def test_the_word_count_skips_what_the_narration_skipped(self):

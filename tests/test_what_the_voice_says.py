@@ -86,12 +86,12 @@ def test_a_footnote_marker_is_not_spoken() -> None:
 @pytest.mark.parametrize(
     ("inner", "spoken"),
     [
-        ("1", False),          # a plain marker
-        ("[12]", False),       # the bracketed convention
-        ("(3)", False),        # and the parenthesised one
-        ("n", True),           # an exponent, which is content
-        ("th", True),          # an ordinal
-        ("note", True),        # a word is a word
+        ("1", False),  # a plain marker
+        ("[12]", False),  # the bracketed convention
+        ("(3)", False),  # and the parenthesised one
+        ("n", True),  # an exponent, which is content
+        ("th", True),  # an ordinal
+        ("note", True),  # a word is a word
     ],
 )
 def test_a_superscript_is_judged_by_what_it_holds(inner: str, spoken: bool) -> None:
@@ -148,9 +148,7 @@ def test_a_formula_becomes_a_sentence() -> None:
         (r"\sigma \neq \tau", "sigma is not equal to tau"),
     ],
 )
-def test_the_common_notation_reads_as_a_person_would_say_it(
-    latex: str, expected: str
-) -> None:
+def test_the_common_notation_reads_as_a_person_would_say_it(latex: str, expected: str) -> None:
     assert speak_math(latex, "en") == expected
 
 
@@ -195,9 +193,7 @@ def test_a_french_page_hears_french_operators() -> None:
     assert speakable(r"La borne vaut \(\sqrt{2\ln K}\).", "fr") == (
         "La borne vaut la racine carrée de 2 log K."
     )
-    assert speak_math(r"R = T_{BA} \circ T_{AB}", "fr") == (
-        "R égale T B A composé avec T A B"
-    )
+    assert speak_math(r"R = T_{BA} \circ T_{AB}", "fr") == ("R égale T B A composé avec T A B")
 
 
 def test_a_language_with_no_vocabulary_is_refused() -> None:
@@ -210,9 +206,7 @@ def test_a_page_without_maths_never_asks_about_the_language() -> None:
     The refusal must not fire on every page in a language the maths table
     has never heard of. Most pages have no formula at all.
     """
-    assert speakable("Plain prose, nothing to read.", "de") == (
-        "Plain prose, nothing to read."
-    )
+    assert speakable("Plain prose, nothing to read.", "de") == ("Plain prose, nothing to read.")
 
 
 # ── When spelling is not reading ───────────────────────────────────────────
@@ -236,8 +230,9 @@ def test_a_narrator_is_asked_only_about_the_hard_ones() -> None:
         asked.append(latex)
         return "the average of the x values"
 
-    out = speakable(r"Simple \(R\) and hard \(\frac{\sum_{i=1}^{n} x_i}{n}\).",
-                    "en", narrator=narrator)
+    out = speakable(
+        r"Simple \(R\) and hard \(\frac{\sum_{i=1}^{n} x_i}{n}\).", "en", narrator=narrator
+    )
     assert asked == [r"\frac{\sum_{i=1}^{n} x_i}{n}"]
     assert "the average of the x values" in out
     assert "R" in out
@@ -249,14 +244,16 @@ def test_a_narrator_that_answers_with_latex_is_ignored() -> None:
     put the markup straight into the voice — the thing this module exists
     to prevent — so the deterministic reading wins.
     """
-    out = speakable(r"Hard \(\frac{\sum_{i=1}^{n} x_i}{n}\).", "en",
-                    narrator=lambda latex, lang: r"\frac{a}{b}")
+    out = speakable(
+        r"Hard \(\frac{\sum_{i=1}^{n} x_i}{n}\).", "en", narrator=lambda latex, lang: r"\frac{a}{b}"
+    )
     assert "\\" not in out
     assert "the ratio of" in out
 
 
 def test_a_narrator_that_fails_costs_nothing() -> None:
     """The deterministic reading is the baseline, not a degraded mode."""
+
     def broken(latex: str, lang: str) -> str:
         raise RuntimeError("no model here")
 
@@ -273,12 +270,8 @@ def test_an_expectation_reads_as_a_phrase() -> None:
     difference between the two jobs. Spelled, it is "E, open bracket, theta,
     mid, m, close bracket"; told, it is a sentence.
     """
-    assert speak_math(r"\mathbb{E}[\theta \mid m]", "en") == (
-        "the expected value of theta given m"
-    )
-    assert speak_math(r"\mathbb{E}[\theta \mid m]", "fr") == (
-        "l'espérance de theta sachant m"
-    )
+    assert speak_math(r"\mathbb{E}[\theta \mid m]", "en") == ("the expected value of theta given m")
+    assert speak_math(r"\mathbb{E}[\theta \mid m]", "fr") == ("l'espérance de theta sachant m")
 
 
 def test_a_compound_fraction_is_bound_by_its_phrasing() -> None:
@@ -299,9 +292,7 @@ def test_an_implicit_product_gets_the_word_and_the_comma() -> None:
     Said aloud the symbol sounds like a stray letter, and the comma is what
     closes the ratio before the product opens.
     """
-    said = speak_math(
-        r"\frac{\tau^2}{\tau^2 + \sigma^2}\; m", "en"
-    )
+    said = speak_math(r"\frac{\tau^2}{\tau^2 + \sigma^2}\; m", "en")
     assert said.endswith(", times m")
     assert " ," not in said
 
@@ -333,7 +324,7 @@ MATH_PAGE = (
     "<article>"
     "<p>the more so as the measurement is noisy:</p>"
     r'<div class="drz-math">$$\mathbb{E}[\theta \mid m] = '
-    r'\frac{\tau^2}{\tau^2 + \sigma^2} m$$</div>'
+    r"\frac{\tau^2}{\tau^2 + \sigma^2} m$$</div>"
     "<p>This is the shrinkage formula.</p>"
     "</article>"
 )
@@ -405,12 +396,8 @@ def test_dropping_a_marker_does_not_move_a_sentence_boundary() -> None:
     )
     block = _readalong.page_blocks(html, scope="article")[0]
 
-    page = explode_to_sentences(
-        segments_from_blocks([(block.tag, block.visible, block.in_quote)])
-    )
-    said = explode_to_sentences(
-        segments_from_blocks([(block.tag, block.spoken, block.in_quote)])
-    )
+    page = explode_to_sentences(segments_from_blocks([(block.tag, block.visible, block.in_quote)]))
+    said = explode_to_sentences(segments_from_blocks([(block.tag, block.spoken, block.in_quote)]))
     assert len(page) == 2, "the page itself does not have two sentences here"
     assert len(said) == len(page), (
         "the marker moved a sentence boundary: page "
@@ -436,16 +423,22 @@ def test_the_marker_is_invisible_but_findable() -> None:
 
 def _sources_section(heading: str, items: int = 6) -> str:
     entries = "".join(
-        f'<li><cite>Author {i} (2024). A paper.</cite> arxiv.org/abs/{i}</li>'
-        for i in range(items)
+        f"<li><cite>Author {i} (2024). A paper.</cite> arxiv.org/abs/{i}</li>" for i in range(items)
     )
     return f"<article><p>Body text here.</p><h2>{heading}</h2><ol>{entries}</ol></article>"
 
 
 @pytest.mark.parametrize(
     "heading",
-    ["References", "Bibliography", "Références", "Further reading",
-     "Sources", "Works cited", "NOTES"],
+    [
+        "References",
+        "Bibliography",
+        "Références",
+        "Further reading",
+        "Sources",
+        "Works cited",
+        "NOTES",
+    ],
 )
 def test_a_sources_section_is_silenced_whatever_it_is_called(heading: str) -> None:
     """

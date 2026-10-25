@@ -104,10 +104,18 @@ def _media_version(audio: Path, cues: Path) -> str:
     return f"?v={digest.hexdigest()[:10]}"
 
 
-def build(page: Path, narration_dir: Path, out_dir: Path, *,
-          scope: str | None, lang: str, follow: bool = True,
-          stylesheets: tuple[Path, ...] = (), head: bool = True,
-          href_base: str = "") -> Path:
+def build(
+    page: Path,
+    narration_dir: Path,
+    out_dir: Path,
+    *,
+    scope: str | None,
+    lang: str,
+    follow: bool = True,
+    stylesheets: tuple[Path, ...] = (),
+    head: bool = True,
+    href_base: str = "",
+) -> Path:
     """Write `page` with its read-along into `out_dir`; return the new path.
 
     Parameters
@@ -188,8 +196,11 @@ def build(page: Path, narration_dir: Path, out_dir: Path, *,
         source,
         stylesheets=[
             *_readalong.local_stylesheets(source, page),
-            *(sheet.read_text(encoding="utf-8", errors="replace")
-              for sheet in stylesheets if sheet.is_file()),
+            *(
+                sheet.read_text(encoding="utf-8", errors="replace")
+                for sheet in stylesheets
+                if sheet.is_file()
+            ),
         ],
     )
     # The cues and the audio travel under a version, and this is the one
@@ -211,10 +222,18 @@ def build(page: Path, narration_dir: Path, out_dir: Path, *,
     # cache keeps working.
     version = _media_version(audio, cues)
     player = _readalong.player_html(
-        audio_src=(f"{href_base.rstrip('/')}/{audio.name}" if href_base
-                   else _readalong.href_from(audio, out_dir)) + version,
-        vtt_src=(f"{href_base.rstrip('/')}/{cues.name}" if href_base
-                 else _readalong.href_from(cues, out_dir)) + version,
+        audio_src=(
+            f"{href_base.rstrip('/')}/{audio.name}"
+            if href_base
+            else _readalong.href_from(audio, out_dir)
+        )
+        + version,
+        vtt_src=(
+            f"{href_base.rstrip('/')}/{cues.name}"
+            if href_base
+            else _readalong.href_from(cues, out_dir)
+        )
+        + version,
         label=_readalong.player_label(lang),
         lang=lang,
         duration_seconds=spoken,
@@ -223,8 +242,10 @@ def build(page: Path, narration_dir: Path, out_dir: Path, *,
     )
     if not follow:
         built = _readalong.inject_player_only(
-            source, scope=scope,
-            head=_readalong.head_markup() if head else "", player=player,
+            source,
+            scope=scope,
+            head=_readalong.head_markup() if head else "",
+            player=player,
         )
     else:
         built = _readalong.inject_into_page(
@@ -268,8 +289,7 @@ def strip(page: Path, out_dir: Path) -> Path:
     return destination
 
 
-def check(page: Path, narration_dir: Path, *,
-          tolerate: tuple[str, ...] = ()) -> list[str]:
+def check(page: Path, narration_dir: Path, *, tolerate: tuple[str, ...] = ()) -> list[str]:
     """What a shipped `page` and a shipped narration disagree about.
 
     :func:`build` already refuses to write markers onto prose that moved
@@ -296,10 +316,8 @@ def check(page: Path, narration_dir: Path, *,
 
     Returns one line per disagreement, and an empty list when the two agree.
     """
-    cues = _readalong.parse_vtt(
-        (narration_dir / "narration.vtt").read_text(encoding="utf-8"))
-    return _readalong.disagreements(
-        page.read_text(encoding="utf-8"), cues, tolerate=tolerate)
+    cues = _readalong.parse_vtt((narration_dir / "narration.vtt").read_text(encoding="utf-8"))
+    return _readalong.disagreements(page.read_text(encoding="utf-8"), cues, tolerate=tolerate)
 
 
 def main() -> int:
@@ -308,72 +326,92 @@ def main() -> int:
         prog="sprezzature-publish-readalong",
         description="Add a sentence-by-sentence read-along to an existing HTML page.",
         epilog="Examples:\n"
-               "  narrate_post.py page.html --scope article --out-dir audio/\n"
-               "  readalong.py page.html --narration audio/ --scope article --out built/\n",
+        "  narrate_post.py page.html --scope article --out-dir audio/\n"
+        "  readalong.py page.html --narration audio/ --scope article --out built/\n",
     )
     parser.add_argument("page", type=Path, help="HTML page to wire up.")
     parser.add_argument(
-        "--narration", type=Path, default=None, dest="narration_dir",
+        "--narration",
+        type=Path,
+        default=None,
+        dest="narration_dir",
         help="Directory holding the narration run (narration.vtt + the audio). "
-             "Required except with --strip, which reads nothing but the page.",
+        "Required except with --strip, which reads nothing but the page.",
     )
     parser.add_argument(
-        "--out", type=Path, default=None, dest="out_dir",
+        "--out",
+        type=Path,
+        default=None,
+        dest="out_dir",
         help="Output directory. The input page is never modified in place. "
-             "Required except with --check, which writes nothing.",
+        "Required except with --check, which writes nothing.",
     )
     parser.add_argument(
-        "--strip", action="store_true",
+        "--strip",
+        action="store_true",
         help="Take the read-along back out instead of putting it in. The "
-             "first half of correcting a sentence in a page that already "
-             "has a voice: strip, edit the prose, then record again. Needs "
-             "--out and ignores --narration.",
+        "first half of correcting a sentence in a page that already "
+        "has a voice: strip, edit the prose, then record again. Needs "
+        "--out and ignores --narration.",
     )
     parser.add_argument(
-        "--check", action="store_true",
+        "--check",
+        action="store_true",
         help="Compare a shipped page to its shipped cues and say nothing if "
-             "they agree. Catches the one failure nothing else does: a page "
-             "edited after its player was written in, whose every timestamp "
-             "now points at the wrong sentence. Needs --narration and "
-             "writes nothing.",
+        "they agree. Catches the one failure nothing else does: a page "
+        "edited after its player was written in, whose every timestamp "
+        "now points at the wrong sentence. Needs --narration and "
+        "writes nothing.",
     )
     parser.add_argument(
-        "--tolerate", action="append", default=[], metavar="TEXT",
+        "--tolerate",
+        action="append",
+        default=[],
+        metavar="TEXT",
         help="With --check: a cue text that legitimately carries no marker. "
-             "A narration says 'End quote.' after a block quotation, and "
-             "those words are not on the page. Repeatable.",
+        "A narration says 'End quote.' after a block quotation, and "
+        "those words are not on the page. Repeatable.",
     )
     parser.add_argument(
-        "--scope", default=None,
+        "--scope",
+        default=None,
         help="Element to read: 'article', '#id' or '.class'. Without it the "
-             "whole document is read, navigation and footer included.",
+        "whole document is read, navigation and footer included.",
     )
     parser.add_argument(
-        "--css", type=Path, action="append", default=[], dest="stylesheets",
+        "--css",
+        type=Path,
+        action="append",
+        default=[],
+        dest="stylesheets",
         metavar="PATH",
         help="A stylesheet to read the page's colours from. Repeatable. For "
-             "a page built from a fragment, which carries none of its own.",
+        "a page built from a fragment, which carries none of its own.",
     )
     parser.add_argument(
-        "--no-head", action="store_true",
+        "--no-head",
+        action="store_true",
         help="Do not write the stylesheet and module links into the page. "
-             "For a templated site that carries them in its layout.",
+        "For a templated site that carries them in its layout.",
     )
     parser.add_argument(
-        "--href-base", default="", metavar="URL",
+        "--href-base",
+        default="",
+        metavar="URL",
         help="URL prefix for the audio and the cues, instead of a path "
-             "relative to the output. For a page not served from where it "
-             "is stored.",
+        "relative to the output. For a page not served from where it "
+        "is stored.",
     )
     parser.add_argument(
         "--no-follow",
         action="store_true",
         help="Add the player without the sentence-by-sentence highlight. A "
-             "supported shape, not a degraded one: some readers want to read "
-             "ahead of the voice rather than be led by it.",
+        "supported shape, not a degraded one: some readers want to read "
+        "ahead of the voice rather than be led by it.",
     )
     parser.add_argument(
-        "--lang", default="auto",
+        "--lang",
+        default="auto",
         help="BCP-47 language tag. Default: auto = detect from the page's text.",
     )
     args = parser.parse_args()
@@ -383,8 +421,7 @@ def main() -> int:
         return 2
 
     if args.strip and args.check:
-        print("readalong: --strip and --check do opposite things; pick one",
-              file=sys.stderr)
+        print("readalong: --strip and --check do opposite things; pick one", file=sys.stderr)
         return 2
 
     if args.strip:
@@ -394,8 +431,7 @@ def main() -> int:
         before = args.page.read_text(encoding="utf-8")
         destination = strip(args.page, args.out_dir)
         _, markers = _readalong.strip_player(before)
-        print(f"{args.page} \u2192 {destination}: "
-              f"player out, {markers} markers unwrapped")
+        print(f"{args.page} \u2192 {destination}: player out, {markers} markers unwrapped")
         return 0
 
     if args.check:
@@ -403,8 +439,7 @@ def main() -> int:
             print("readalong: --check needs --narration", file=sys.stderr)
             return 2
         try:
-            found = check(args.page, args.narration_dir,
-                          tolerate=tuple(args.tolerate))
+            found = check(args.page, args.narration_dir, tolerate=tuple(args.tolerate))
         except FileNotFoundError as missing:
             print(f"readalong: {missing}", file=sys.stderr)
             return 1
@@ -416,8 +451,7 @@ def main() -> int:
             print(f"  {line}", file=sys.stderr)
         return 1
 
-    for name, value in (("--narration", args.narration_dir),
-                        ("--out", args.out_dir)):
+    for name, value in (("--narration", args.narration_dir), ("--out", args.out_dir)):
         if value is None:
             print(f"readalong: {name} is required", file=sys.stderr)
             return 2
@@ -427,16 +461,19 @@ def main() -> int:
         # Detected from what the page *says*, not from a `lang` attribute: a
         # template exported from a design tool often carries the wrong one,
         # and the wording of "3 min listen" is the reader's, not the tool's.
-        words = _readalong.page_words(
-            args.page.read_text(encoding="utf-8"), scope=args.scope
-        )
+        words = _readalong.page_words(args.page.read_text(encoding="utf-8"), scope=args.scope)
         lang = detect_text_language(" ".join(words))
 
     try:
         destination = build(
-            args.page, args.narration_dir, args.out_dir,
-            scope=args.scope, lang=lang, follow=not args.no_follow,
-            stylesheets=tuple(args.stylesheets), head=not args.no_head,
+            args.page,
+            args.narration_dir,
+            args.out_dir,
+            scope=args.scope,
+            lang=lang,
+            follow=not args.no_follow,
+            stylesheets=tuple(args.stylesheets),
+            head=not args.no_head,
             href_base=args.href_base,
         )
     except (FileNotFoundError, _readalong.ReadAlongMismatch) as failure:
@@ -446,10 +483,13 @@ def main() -> int:
     if args.no_follow:
         print(f"{args.page} → {destination}: player only, lang={lang}")
         return 0
-    sentences = len(_readalong.page_sentences(
-        args.page.read_text(encoding="utf-8"),
-        split=_narrate.split_sentences, scope=args.scope,
-    ))
+    sentences = len(
+        _readalong.page_sentences(
+            args.page.read_text(encoding="utf-8"),
+            split=_narrate.split_sentences,
+            scope=args.scope,
+        )
+    )
     print(f"{args.page} → {destination}: {sentences} sentences wrapped, lang={lang}")
     return 0
 

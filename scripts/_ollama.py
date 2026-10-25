@@ -59,9 +59,7 @@ def pick_default_model() -> str:
 def detect_lang() -> str:
     """Detect the desired output language as a two-letter code."""
     raw: str | None = (
-        os.environ.get("ALT_LANG")
-        or os.environ.get("LC_ALL")
-        or os.environ.get("LANG")
+        os.environ.get("ALT_LANG") or os.environ.get("LC_ALL") or os.environ.get("LANG")
     )
     if not raw:
         try:

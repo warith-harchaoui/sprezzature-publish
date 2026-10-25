@@ -109,15 +109,7 @@ class TestExtractSegments:
         assert segs[0]["text"] == "Plain emphasis and span."
 
     def test_frontmatter_tone_applied_as_baseline(self):
-        md = (
-            "---\n"
-            "title: hello\n"
-            "narration:\n"
-            "  tone: cheerful\n"
-            "  pace: slow\n"
-            "---\n\n"
-            "Hello, world.\n"
-        )
+        md = "---\ntitle: hello\nnarration:\n  tone: cheerful\n  pace: slow\n---\n\nHello, world.\n"
         segs = _narrate.extract_segments(md)
         assert segs[0]["emotion"] == "cheerful"
         assert segs[0]["pace"] == "slow"
@@ -144,12 +136,7 @@ class TestExtractSegments:
         assert emotions[3] == _narrate.DEFAULT_EMOTION
 
     def test_heading_resets_sticky_emotion(self):
-        md = (
-            "[emotion: angry]\n\n"
-            "Angry paragraph.\n\n"
-            "# New section\n\n"
-            "Back to neutral.\n"
-        )
+        md = "[emotion: angry]\n\nAngry paragraph.\n\n# New section\n\nBack to neutral.\n"
         segs = _narrate.extract_segments(md)
         # Order: angry paragraph, heading (reset), neutral paragraph.
         assert segs[0]["emotion"] == "angry"
@@ -183,13 +170,15 @@ class TestPronunciation:
         post = tmp_path / "post.md"
         post.write_text("body", encoding="utf-8")
         (tmp_path / "pronunciation.yaml").write_text(
-            "WCAG: wuh-cag\n", encoding="utf-8",
+            "WCAG: wuh-cag\n",
+            encoding="utf-8",
         )
         overrides = _narrate.load_pronunciation(post)
         assert overrides == {"WCAG": "wuh-cag"}
 
     def test_load_pronunciation_missing_file_yields_empty(
-        self, tmp_path: Path,
+        self,
+        tmp_path: Path,
     ):
         post = tmp_path / "post.md"
         post.write_text("body", encoding="utf-8")
@@ -207,18 +196,18 @@ class TestManifest:
         assert len(a) == 64
 
     def test_source_sha256_sensitive_to_edits(self):
-        assert (
-            _narrate.source_sha256("hello world")
-            != _narrate.source_sha256("hello  world")
-        )
+        assert _narrate.source_sha256("hello world") != _narrate.source_sha256("hello  world")
 
     def test_manifest_round_trip(self, tmp_path: Path):
         path = tmp_path / "manifest.json"
         entries = {
             "posts/a.md": _narrate.NarrationManifestEntry(
-                source="posts/a.md", audio="audio/a.wav",
-                engine="chatterbox", voice="default",
-                source_sha256="a" * 64, duration_seconds=12.3,
+                source="posts/a.md",
+                audio="audio/a.wav",
+                engine="chatterbox",
+                voice="default",
+                source_sha256="a" * 64,
+                duration_seconds=12.3,
             ),
         }
         _narrate.write_manifest(path, entries)
@@ -235,12 +224,20 @@ class TestManifest:
     def test_manifest_skips_malformed_rows(self, tmp_path: Path):
         path = tmp_path / "manifest.json"
         path.write_text(
-            json.dumps([
-                {"source": "ok.md", "audio": "ok.wav", "engine": "x",
-                 "voice": "v", "source_sha256": "h", "duration_seconds": 1.0},
-                {"missing": "fields"},
-                "not a dict",
-            ]),
+            json.dumps(
+                [
+                    {
+                        "source": "ok.md",
+                        "audio": "ok.wav",
+                        "engine": "x",
+                        "voice": "v",
+                        "source_sha256": "h",
+                        "duration_seconds": 1.0,
+                    },
+                    {"missing": "fields"},
+                    "not a dict",
+                ]
+            ),
             encoding="utf-8",
         )
         loaded = _narrate.read_manifest(path)
@@ -263,10 +260,13 @@ class TestMergeLLMHint:
 
     def test_clamps_out_of_range(self):
         seg = _narrate.make_segment("hi", pause_after_ms=500)
-        out = _narrate.merge_llm_hint(seg, {
-            "intensity": 99.0,
-            "pause_after_ms": 999_999,
-        })
+        out = _narrate.merge_llm_hint(
+            seg,
+            {
+                "intensity": 99.0,
+                "pause_after_ms": 999_999,
+            },
+        )
         assert out["intensity"] == _narrate.INTENSITY_MAX
         assert out["pause_after_ms"] == _narrate.PAUSE_MAX_MS
 
@@ -290,11 +290,21 @@ class TestSiteIndexesAudio:
 
     def test_load_audio_manifest_basic(self, tmp_path: Path):
         manifest = tmp_path / "manifest.json"
-        manifest.write_text(json.dumps([
-            {"source": "posts/hello.md", "audio": "audio/hello.wav",
-             "engine": "chatterbox", "voice": "default",
-             "source_sha256": "x", "duration_seconds": 10.0},
-        ]), encoding="utf-8")
+        manifest.write_text(
+            json.dumps(
+                [
+                    {
+                        "source": "posts/hello.md",
+                        "audio": "audio/hello.wav",
+                        "engine": "chatterbox",
+                        "voice": "default",
+                        "source_sha256": "x",
+                        "duration_seconds": 10.0,
+                    },
+                ]
+            ),
+            encoding="utf-8",
+        )
         out = site_indexes.load_audio_manifest(manifest)
         assert "posts/hello" in out
         entry = out["posts/hello"]
@@ -302,28 +312,42 @@ class TestSiteIndexesAudio:
         assert entry.mime_type == "audio/wav"
 
     def test_load_audio_manifest_with_root_populates_length(
-        self, tmp_path: Path,
+        self,
+        tmp_path: Path,
     ):
         # Create the audio file so the stat() call succeeds.
         audio = tmp_path / "audio" / "hello.mp3"
         audio.parent.mkdir()
         audio.write_bytes(b"\x00" * 1024)
         manifest = tmp_path / "manifest.json"
-        manifest.write_text(json.dumps([
-            {"source": "posts/hello.md", "audio": "audio/hello.mp3",
-             "engine": "chatterbox", "voice": "default",
-             "source_sha256": "x", "duration_seconds": 10.0},
-        ]), encoding="utf-8")
+        manifest.write_text(
+            json.dumps(
+                [
+                    {
+                        "source": "posts/hello.md",
+                        "audio": "audio/hello.mp3",
+                        "engine": "chatterbox",
+                        "voice": "default",
+                        "source_sha256": "x",
+                        "duration_seconds": 10.0,
+                    },
+                ]
+            ),
+            encoding="utf-8",
+        )
         out = site_indexes.load_audio_manifest(manifest, audio_root=tmp_path)
         assert out["posts/hello"].mime_type == "audio/mpeg"
         assert out["posts/hello"].length_bytes == 1024
 
     def test_render_rss_injects_enclosure_when_manifest_passed(self):
-        posts = [(Path("posts/a.html"), "Title A",
-                  "2026-06-21T00:00:00Z", "Summary A")]
-        audio = {"posts/a": site_indexes.AudioEntry(
-            path="audio/a.wav", mime_type="audio/wav", length_bytes=2048,
-        )}
+        posts = [(Path("posts/a.html"), "Title A", "2026-06-21T00:00:00Z", "Summary A")]
+        audio = {
+            "posts/a": site_indexes.AudioEntry(
+                path="audio/a.wav",
+                mime_type="audio/wav",
+                length_bytes=2048,
+            )
+        }
         xml = site_indexes.render_rss(
             "https://example.com",
             feed_title="Sprezzature",
@@ -337,8 +361,7 @@ class TestSiteIndexesAudio:
         assert 'length="2048"' in xml
 
     def test_render_rss_without_manifest_has_no_enclosure(self):
-        posts = [(Path("posts/a.html"), "Title A",
-                  "2026-06-21T00:00:00Z", "Summary A")]
+        posts = [(Path("posts/a.html"), "Title A", "2026-06-21T00:00:00Z", "Summary A")]
         xml = site_indexes.render_rss(
             "https://example.com",
             feed_title="Sprezzature",
@@ -348,11 +371,14 @@ class TestSiteIndexesAudio:
         assert "<enclosure" not in xml
 
     def test_render_atom_injects_enclosure_link(self):
-        posts = [(Path("posts/a.html"), "Title A",
-                  "2026-06-21T00:00:00Z", "Summary A")]
-        audio = {"posts/a": site_indexes.AudioEntry(
-            path="audio/a.mp3", mime_type="audio/mpeg", length_bytes=4096,
-        )}
+        posts = [(Path("posts/a.html"), "Title A", "2026-06-21T00:00:00Z", "Summary A")]
+        audio = {
+            "posts/a": site_indexes.AudioEntry(
+                path="audio/a.mp3",
+                mime_type="audio/mpeg",
+                length_bytes=4096,
+            )
+        }
         xml = site_indexes.render_atom(
             "https://example.com",
             feed_id="tag:example.com,2026:feed",
@@ -381,6 +407,7 @@ class TestNarratePostCache:
     def test_cache_hit_skips_engine(self, tmp_path: Path):
         import subprocess
         import sys
+
         # Build a fake post + its expected sha (via the same extractor
         # the orchestrator uses).
         post = tmp_path / "post.md"
@@ -392,6 +419,7 @@ class TestNarratePostCache:
         # Hard-coding "en" would pass today and fail the day the detector
         # changes its mind about three words.
         from _lang import detect_text_language
+
         tongue = detect_text_language(" ".join(seg["text"] for seg in segs))
         # Pre-populate the manifest with the matching entry, pointing at
         # an audio file we also create so the path-exists check passes.
@@ -400,36 +428,40 @@ class TestNarratePostCache:
         audio_file = out_dir / "narration.wav"
         audio_file.write_bytes(b"\x00")
         manifest_path = out_dir / "manifest.json"
-        _narrate.write_manifest(manifest_path, {
-            post.as_posix(): _narrate.NarrationManifestEntry(
-                source=post.as_posix(),
-                audio=str(audio_file),
-                engine="chatterbox",
-                voice="default",
-                source_sha256=digest,
-                duration_seconds=1.0,
-                language=tongue,
-            )
-        })
+        _narrate.write_manifest(
+            manifest_path,
+            {
+                post.as_posix(): _narrate.NarrationManifestEntry(
+                    source=post.as_posix(),
+                    audio=str(audio_file),
+                    engine="chatterbox",
+                    voice="default",
+                    source_sha256=digest,
+                    duration_seconds=1.0,
+                    language=tongue,
+                )
+            },
+        )
         # Invoke the orchestrator. Since the manifest matches, it
         # should print "cache hit" and exit 0 without calling any
         # engine wrapper.
         proc = subprocess.run(
             [
                 sys.executable,
-                str(Path(__file__).resolve().parents[1]
-                    / "scripts" / "narrate_post.py"),
-                "--engine", "chatterbox",
-                "--voice", "default",
-                "--out-dir", str(out_dir),
+                str(Path(__file__).resolve().parents[1] / "scripts" / "narrate_post.py"),
+                "--engine",
+                "chatterbox",
+                "--voice",
+                "default",
+                "--out-dir",
+                str(out_dir),
                 str(post),
             ],
             capture_output=True,
             text=True,
         )
         assert proc.returncode == 0, (
-            f"orchestrator exited {proc.returncode}\n"
-            f"stdout:\n{proc.stdout}\nstderr:\n{proc.stderr}"
+            f"orchestrator exited {proc.returncode}\nstdout:\n{proc.stdout}\nstderr:\n{proc.stderr}"
         )
         assert "cache hit" in proc.stdout
 
@@ -444,6 +476,7 @@ class TestNarratePostCache:
         """
         import subprocess
         import sys
+
         post = tmp_path / "post.md"
         post.write_text("# Hello\n\nA paragraph.\n", encoding="utf-8")
         segs = _narrate.extract_segments(post.read_text())
@@ -452,26 +485,31 @@ class TestNarratePostCache:
         out_dir.mkdir(parents=True)
         audio_file = out_dir / "narration.wav"
         audio_file.write_bytes(b"\x00")
-        _narrate.write_manifest(out_dir / "manifest.json", {
-            post.as_posix(): _narrate.NarrationManifestEntry(
-                source=post.as_posix(),
-                audio=str(audio_file),
-                engine="chatterbox",
-                voice="default",
-                source_sha256=digest,
-                duration_seconds=1.0,
-                # language left at its default: the shape of every row
-                # written before it existed.
-            )
-        })
+        _narrate.write_manifest(
+            out_dir / "manifest.json",
+            {
+                post.as_posix(): _narrate.NarrationManifestEntry(
+                    source=post.as_posix(),
+                    audio=str(audio_file),
+                    engine="chatterbox",
+                    voice="default",
+                    source_sha256=digest,
+                    duration_seconds=1.0,
+                    # language left at its default: the shape of every row
+                    # written before it existed.
+                )
+            },
+        )
         proc = subprocess.run(
             [
                 sys.executable,
-                str(Path(__file__).resolve().parents[1]
-                    / "scripts" / "narrate_post.py"),
-                "--engine", "chatterbox",
-                "--voice", "default",
-                "--out-dir", str(out_dir),
+                str(Path(__file__).resolve().parents[1] / "scripts" / "narrate_post.py"),
+                "--engine",
+                "chatterbox",
+                "--voice",
+                "default",
+                "--out-dir",
+                str(out_dir),
                 str(post),
             ],
             capture_output=True,
@@ -497,8 +535,10 @@ class TestTheRecordingTravelsUnderAVersion:
 
     def test_the_digest_follows_the_bytes(self, tmp_path: Path):
         import importlib.util
+
         spec = importlib.util.spec_from_file_location(
-            "ra_mod", Path(__file__).resolve().parents[1] / "scripts" / "readalong.py")
+            "ra_mod", Path(__file__).resolve().parents[1] / "scripts" / "readalong.py"
+        )
         ra = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(ra)
         audio, cues = tmp_path / "narration.mp3", tmp_path / "narration.vtt"
@@ -514,14 +554,15 @@ class TestTheRecordingTravelsUnderAVersion:
         assert ra._media_version(audio, cues) != first
         # And so does a cue, since the timings are what go stale.
         audio.write_bytes(b"\x00\x01")
-        cues.write_text("WEBVTT\n\n0\n00:00:00.000 --> 00:00:01.000\nHi.\n",
-                        encoding="utf-8")
+        cues.write_text("WEBVTT\n\n0\n00:00:00.000 --> 00:00:01.000\nHi.\n", encoding="utf-8")
         assert ra._media_version(audio, cues) != first
 
     def test_a_missing_recording_yields_no_version(self, tmp_path: Path):
         import importlib.util
+
         spec = importlib.util.spec_from_file_location(
-            "ra_mod2", Path(__file__).resolve().parents[1] / "scripts" / "readalong.py")
+            "ra_mod2", Path(__file__).resolve().parents[1] / "scripts" / "readalong.py"
+        )
         ra = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(ra)
         # A version nobody can compute must not become a URL nobody can
@@ -540,20 +581,22 @@ class TestLanguageFallbackIsNoticed:
 
     def test_a_language_with_no_voice_is_reported(self):
         import narrate_post
+
         # What the wrapper actually returns for a German page: the request
         # was 'de', the reading came back 'en-us'.
-        report = {"language": "en-us", "voice": "af_heart",
-                  "language_fallback": False}
+        report = {"language": "en-us", "voice": "af_heart", "language_fallback": False}
         assert narrate_post._language_fell_back("de", report) is True
 
     def test_the_language_that_was_asked_for_is_not_a_fallback(self):
         import narrate_post
+
         report = {"language": "fr-fr", "voice": "ff_siwis"}
         # Base tags: the region is the engine's business, not a disagreement.
         assert narrate_post._language_fell_back("fr", report) is False
 
     def test_an_unanswerable_question_is_not_a_fallback(self):
         import narrate_post
+
         # A wrapper that reports no language leaves the question open, and an
         # open question must not be recorded as a finding.
         assert narrate_post._language_fell_back("fr", {}) is False
@@ -654,8 +697,6 @@ class TestWebVTT:
         assert _narrate.cues_to_vtt([]).startswith("WEBVTT")
 
 
-
-
 # ── Sentences: the unit the read-along follows ────────────────────────────
 
 
@@ -688,12 +729,9 @@ class TestSplitSentences:
     @pytest.mark.parametrize(
         "text,expected",
         [
-            ("Dr. Rosling said so. Then he left.",
-             ["Dr. Rosling said so.", "Then he left."]),
-            ("M. Dupont est venu. Il est reparti.",
-             ["M. Dupont est venu.", "Il est reparti."]),
-            ("J. R. R. Tolkien a écrit. Beaucoup.",
-             ["J. R. R. Tolkien a écrit.", "Beaucoup."]),
+            ("Dr. Rosling said so. Then he left.", ["Dr. Rosling said so.", "Then he left."]),
+            ("M. Dupont est venu. Il est reparti.", ["M. Dupont est venu.", "Il est reparti."]),
+            ("J. R. R. Tolkien a écrit. Beaucoup.", ["J. R. R. Tolkien a écrit.", "Beaucoup."]),
         ],
     )
     def test_an_abbreviation_does_not_end_a_sentence(self, text, expected):
@@ -731,8 +769,7 @@ class TestSplitSentences:
         "text,expected",
         [
             ('He said "Yes." Then left.', ['He said "Yes."', "Then left."]),
-            ("Elle a dit : « Non. » Il est parti.",
-             ["Elle a dit : « Non. »", "Il est parti."]),
+            ("Elle a dit : « Non. » Il est parti.", ["Elle a dit : « Non. »", "Il est parti."]),
         ],
     )
     def test_a_closing_quote_stays_with_the_sentence_it_closes(self, text, expected):
@@ -881,8 +918,10 @@ class TestTheVoicesLiveNextDoor:
         """
         here = Path(__file__).resolve().parent.parent / "scripts"
         left_behind = sorted(
-            p.name for p in here.glob("*.py")
-            if p.stem in {"narrate_openvoice", "narrate_chatterbox", "pick_voice", "install_narrate"}
+            p.name
+            for p in here.glob("*.py")
+            if p.stem
+            in {"narrate_openvoice", "narrate_chatterbox", "pick_voice", "install_narrate"}
         )
         assert left_behind == [], (
             f"{left_behind} should have moved to sprezzature-audio with the "
@@ -905,9 +944,7 @@ class TestTheVoicesLiveNextDoor:
         assert "sprezzature-audio[narrate]" in source
         assert "sprezzature-audio-install-voice" in source
 
-    def test_a_machine_without_the_voices_gets_an_answer_not_a_crash(
-        self, monkeypatch
-    ) -> None:
+    def test_a_machine_without_the_voices_gets_an_answer_not_a_crash(self, monkeypatch) -> None:
         """
         The case this function exists for, and the one that crashed.
 

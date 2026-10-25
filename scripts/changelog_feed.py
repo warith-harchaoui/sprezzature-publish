@@ -193,11 +193,11 @@ class ChangelogEntry:
 #: each end; links before emphasis, so the label inside ``[text](url)`` is
 #: itself cleaned.
 _INLINE_MARKDOWN: tuple[tuple[str, str], ...] = (
-    (r"\[([^\]]+)\]\([^)]*\)", r"\1"),   # [label](url) -> label
-    (r"\*\*(.+?)\*\*", r"\1"),            # **bold**
-    (r"__(.+?)__", r"\1"),                 # __bold__
+    (r"\[([^\]]+)\]\([^)]*\)", r"\1"),  # [label](url) -> label
+    (r"\*\*(.+?)\*\*", r"\1"),  # **bold**
+    (r"__(.+?)__", r"\1"),  # __bold__
     (r"(?<!\w)\*(?!\s)(.+?)(?<!\s)\*", r"\1"),  # *italic*, not a bare star
-    (r"`([^`]+)`", r"\1"),                 # `code`
+    (r"`([^`]+)`", r"\1"),  # `code`
 )
 
 
@@ -353,9 +353,7 @@ def parse_changelog(path: Path, package: str) -> list[ChangelogEntry]:
 
     # Locate every heading line, then slice the body between consecutive
     # headings so each entry gets exactly the text under it.
-    heading_idx: list[int] = [
-        i for i, line in enumerate(lines) if _NEXT_HEADING_RE.match(line)
-    ]
+    heading_idx: list[int] = [i for i, line in enumerate(lines) if _NEXT_HEADING_RE.match(line)]
 
     entries: list[ChangelogEntry] = []
     for pos, idx in enumerate(heading_idx):
@@ -363,11 +361,7 @@ def parse_changelog(path: Path, package: str) -> list[ChangelogEntry]:
         if not m:
             continue
         version = (
-            m.group("bracket")
-            or m.group("vprefix")
-            or m.group("plain")
-            or m.group("bare")
-            or ""
+            m.group("bracket") or m.group("vprefix") or m.group("plain") or m.group("bare") or ""
         ).strip()
         rest = m.group("rest") or ""
         dates = _DATE_RE.findall(rest)
@@ -456,9 +450,7 @@ def build_posts(
         rel = Path("changelog") / e.package / e.version
         key = rel.as_posix()
         feed_title = (
-            f"{e.package} {e.version}: {e.title}"
-            if e.title
-            else f"{e.package} {e.version}"
+            f"{e.package} {e.version}: {e.title}" if e.title else f"{e.package} {e.version}"
         )
         updated_iso = f"{e.date_iso}T00:00:00Z"
         posts.append((rel, feed_title, updated_iso, e.summary))
@@ -480,9 +472,7 @@ def main() -> int:
         "  changelog_feed.py --repos-root .. --out ../web\n"
         "  changelog_feed.py --rss-only\n",
     )
-    default_root: Path = (
-        Path(__file__).resolve().parents[2]
-    )  # .../sprezzature (monorepo root)
+    default_root: Path = Path(__file__).resolve().parents[2]  # .../sprezzature (monorepo root)
     p.add_argument(
         "--repos-root",
         type=Path,

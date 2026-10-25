@@ -175,13 +175,15 @@ def parse(text: str) -> list[Cue]:
             body.append(line.rstrip())
             cursor += 1
 
-        cues.append(Cue(
-            start=start,
-            end=end,
-            text="\n".join(body).strip(),
-            speaker=speaker,
-            identifier=identifier,
-        ))
+        cues.append(
+            Cue(
+                start=start,
+                end=end,
+                text="\n".join(body).strip(),
+                speaker=speaker,
+                identifier=identifier,
+            )
+        )
         index = cursor + 1
 
     cues.sort(key=lambda cue: (cue.start, cue.end))
@@ -214,12 +216,9 @@ def write_vtt(cues: list[Cue], *, voices: bool = True) -> str:
             continue
         if cue.identifier:
             out.append(str(cue.identifier))
+        out.append(f"{format_timestamp(cue.start)} --> {format_timestamp(cue.end)}")
         out.append(
-            f"{format_timestamp(cue.start)} --> {format_timestamp(cue.end)}"
-        )
-        out.append(
-            VOICE_CUE.format(name=cue.speaker, text=text)
-            if voices and cue.speaker else text
+            VOICE_CUE.format(name=cue.speaker, text=text) if voices and cue.speaker else text
         )
         out.append("")
     return "\n".join(out)
@@ -240,8 +239,7 @@ def write_srt(cues: list[Cue]) -> str:
             continue
         out.append(str(number))
         out.append(
-            f"{format_timestamp(cue.start, srt=True)} --> "
-            f"{format_timestamp(cue.end, srt=True)}"
+            f"{format_timestamp(cue.start, srt=True)} --> {format_timestamp(cue.end, srt=True)}"
         )
         out.append(f"{cue.speaker}: {text}" if cue.speaker else text)
         out.append("")
@@ -337,9 +335,7 @@ class Timeline:
         start = self._samples / float(self.sample_rate_hz)
         self._samples += int(sample_count)
         end = self._samples / float(self.sample_rate_hz)
-        self._cues.append(
-            SpeechCue(index=index, text=text, start_seconds=start, end_seconds=end)
-        )
+        self._cues.append(SpeechCue(index=index, text=text, start_seconds=start, end_seconds=end))
 
     @property
     def cues(self) -> list[SpeechCue]:
@@ -361,12 +357,14 @@ def speech_to_vtt(cues: list[SpeechCue]) -> str:
     text, and the text is collapsed onto one line because a blank line ends a
     cue and a hard-wrapped payload would split one cue into two.
     """
-    return write_vtt([
-        Cue(
-            start=cue.start_seconds,
-            end=cue.end_seconds,
-            text=cue.text,
-            identifier=str(cue.index),
-        ).collapsed()
-        for cue in cues
-    ])
+    return write_vtt(
+        [
+            Cue(
+                start=cue.start_seconds,
+                end=cue.end_seconds,
+                text=cue.text,
+                identifier=str(cue.index),
+            ).collapsed()
+            for cue in cues
+        ]
+    )

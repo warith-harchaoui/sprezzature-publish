@@ -58,29 +58,34 @@ def fixtures_dir() -> Path:
 @pytest.fixture(scope="session")
 def html_fixture(fixtures_dir: Path) -> Callable[[str], Path]:
     """Return a callable mapping a basename ``foo`` to ``fixtures/html/foo.html``."""
+
     def _lookup(name: str) -> Path:
         p = fixtures_dir / "html" / f"{name}.html"
         if not p.exists():
             pytest.skip(f"HTML fixture missing: {p}")
         return p
+
     return _lookup
 
 
 @pytest.fixture(scope="session")
 def image_fixture(fixtures_dir: Path) -> Callable[[str], Path]:
     """Return a callable mapping a basename ``foo`` to ``fixtures/images/foo.png|jpg``."""
+
     def _lookup(name: str) -> Path:
         for suffix in (".png", ".jpg", ".jpeg", ".webp"):
             p = fixtures_dir / "images" / f"{name}{suffix}"
             if p.exists():
                 return p
         pytest.skip(f"Image fixture missing: tests/fixtures/images/{name}.*")
+
     return _lookup
 
 
 @pytest.fixture(scope="session")
 def audio_fixture(fixtures_dir: Path) -> Callable[[str], Path]:
     """Return a callable mapping a basename to ``fixtures/audio/<name>.wav``."""
+
     def _lookup(name: str) -> Path:
         p = fixtures_dir / "audio" / f"{name}.wav"
         if not p.exists():
@@ -89,6 +94,7 @@ def audio_fixture(fixtures_dir: Path) -> Callable[[str], Path]:
                 f"See tests/fixtures/audio/README.md for how to provision it."
             )
         return p
+
     return _lookup
 
 

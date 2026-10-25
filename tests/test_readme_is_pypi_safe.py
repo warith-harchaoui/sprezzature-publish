@@ -69,7 +69,7 @@ def test_a_relative_link_in_prose_still_fails() -> None:
     guard is exercised on every run and not only on the day somebody
     remembers to try it.
     """
-    with_fence = "```python\nhref=\"/\"\n```\n\n[docs](EXAMPLES.md)\n"
+    with_fence = '```python\nhref="/"\n```\n\n[docs](EXAMPLES.md)\n'
     prose = _prose(with_fence)
     assert 'href="/"' not in prose, "the fence should have been stripped"
     assert "EXAMPLES.md" in prose, "prose outside the fence must survive"
