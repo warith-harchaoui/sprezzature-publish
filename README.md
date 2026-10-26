@@ -28,9 +28,9 @@ Astro instead; this does not compete with them and says so.
 | `sprezzature-publish-narrate` | narrate a post with a local voice, and write the timed track beside the audio. |
 | `sprezzature-publish-readalong` | bind that narration to the page, so the sentence being spoken is highlighted. |
 
-Two front doors over all nine: `make-site <tool>` (argparse) and
-`sprezzature-publish <tool>` (click). Both read one table, so a tool cannot
-appear in one and be missing from the other.
+One front door over all nine, in click, under two names: `make-site <tool>`
+and `sprezzature-publish <tool>` resolve to the same callable, so they cannot
+drift. The argparse twin was removed on 2026-10-25.
 
 ## Install
 

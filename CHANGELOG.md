@@ -6,6 +6,41 @@ versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+
+- **`kyutai` joins the engines `--engine` accepts**, and `--lexicon` is
+  forwarded to whichever engine runs. Both arrived in `sprezzature-audio`
+  with `speaker-helper` 0.11.
+
+  Kyutai is the French answer: a Paris lab's `tts-1.6b-en_fr`, which renders
+  French natively where the other three reach it through an English-first
+  pipeline. It is not the default, and the licence bar `narrate_post` already
+  states is why — its code is MIT and its weights CC-BY-4.0, permissive but
+  not "Apache-2.0 in code *and* weights". Ask for it by name on a French page.
+
+  The lexicon is the one that changes a reading. A post about this suite is
+  full of words no engine can work out — WebVTT, RTTM, OKLCH, GMTED2010 — and
+  each engine guesses differently, so the same page narrated twice does not
+  say the same words. `--lexicon` states them once.
+
+- **A note on what `ENGINES` is not.** `speaker-helper` 0.11 ships a router
+  that ranks engines per language and condition, and for offline narration it
+  picks kyutai for French and chatterbox for English. That is its decision to
+  make about *speech*. This list is a decision about what this package is
+  willing to install by default, and the licence bar is the difference — the
+  router's answer is a recommendation a caller follows with `--engine`.
+
+### Fixed
+
+- **A cache test pinned an absence.** `test_a_row_without_a_language_is_read_again`
+  asserted `returncode == 2` because no engine was installed anywhere it ran;
+  once `speaker-helper` started shipping the backends, the same cache miss
+  reached a real synthesis and exited 0, and the test failed on a machine
+  where everything was working. What it means to assert is that the cache did
+  not answer, so that is what it asserts; what happens after the miss is a
+  fact about the machine.
+
+
 ### Fixed
 
 - **A narrated page is read in one language now, because the orchestrator

@@ -515,12 +515,23 @@ class TestNarratePostCache:
             capture_output=True,
             text=True,
         )
-        # No engine is installed here, so "went past the cache" shows up as
-        # the install refusal rather than as audio. That is the assertion:
-        # the cache did not answer.
+        # The assertion is that the cache did not answer. What happens
+        # *after* the cache misses depends on the machine -- it used to be an
+        # install refusal, because no engine was installed anywhere this test
+        # ran; since speaker-helper started shipping the backends, the same
+        # miss reaches a real synthesis and exits 0. Pinning `returncode == 2`
+        # was pinning an absence, and an absence stops being true without
+        # anybody editing the test.
+        #
+        # So: no cache hit, and it got far enough to pick an engine. Both
+        # outcomes past that point are correct; which one you get is a fact
+        # about the machine, not about the cache.
         assert "cache hit" not in proc.stdout
-        assert proc.returncode == 2
-        assert "is not installed" in proc.stderr
+        assert proc.returncode in (0, 2), proc.stderr
+        if proc.returncode == 2:
+            assert "is not installed" in proc.stderr
+        else:
+            assert "narration.wav" in proc.stdout
 
 
 class TestTheRecordingTravelsUnderAVersion:

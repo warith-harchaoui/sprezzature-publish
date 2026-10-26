@@ -26,7 +26,8 @@ Pipeline
    punchline, pacing). Defaults to off — the deterministic
    structural path stays the baseline.
 4. The chosen engine wrapper (``narrate_kokoro.py`` by default, or
-   ``narrate_openvoice.py`` / ``narrate_chatterbox.py``) runs as a
+   ``narrate_kyutai.py`` / ``narrate_openvoice.py`` /
+   ``narrate_chatterbox.py``) runs as a
    subprocess and synthesises one WAV per segment, then concatenates
    with the requested pauses.
 5. A manifest entry is written to ``out/audio/manifest.json``
@@ -72,6 +73,7 @@ Requirements
 * One of the engine wrappers installed. They live in sprezzature-audio,
   which owns the sound modality in both directions:
   - ``pip install 'sprezzature-audio[narrate-kokoro]'``
+  - ``pip install 'sprezzature-audio[narrate-kyutai]'``
   - ``pip install 'sprezzature-audio[narrate-openvoice]'``
   - ``pip install 'sprezzature-audio[narrate-chatterbox]'``
 * A running Ollama daemon if ``--ai-hints`` is passed (the same
@@ -160,10 +162,26 @@ HTML_SUFFIXES: frozenset[str] = frozenset({".html", ".htm", ".xhtml", ".php"})
 #: asks — "this article should have a voice". It is 82 M parameters,
 #: Apache-2.0 in code *and* weights, runs on ONNX Runtime with no torch at
 #: all, carries 54 voices across nine languages, and needs nothing recorded.
-#: The other two are voice-*cloning* engines: they want a reference clip and
-#: a multi-gigabyte ML stack, which is the right trade only when the point is
-#: to sound like a particular person.
-ENGINES: tuple[str, ...] = ("kokoro", "openvoice", "chatterbox")
+#:
+#: `kyutai` arrived with speaker-helper 0.11 (2026-10-26) and is the French
+#: answer: a Paris lab's `tts-1.6b-en_fr`, which renders French natively where
+#: all three others reach it through an English-first pipeline. It is not the
+#: default, and the reason is the line above — its code is MIT and its weights
+#: are CC-BY-4.0, which is permissive but is not "Apache-2.0 in code *and*
+#: weights". Ask for it by name on a French page and it is the better voice;
+#: nobody gets a different licence by surprise.
+#:
+#: `openvoice` and `chatterbox` are voice-*cloning* engines: they want a
+#: reference clip and a multi-gigabyte ML stack, which is the right trade only
+#: when the point is to sound like a particular person.
+#:
+#: Note what this list is NOT. speaker-helper 0.11 ships a router that ranks
+#: engines per language and condition, and for offline narration it would pick
+#: kyutai for French and chatterbox for English. That is its decision to make
+#: about *speech*; this is a decision about *what this package is willing to
+#: install by default*, and the licence bar is the difference. The router's
+#: answer is a recommendation a caller can follow with `--engine`.
+ENGINES: tuple[str, ...] = ("kokoro", "kyutai", "openvoice", "chatterbox")
 
 #: The default voice, per engine. Kokoro's is empty on purpose: the language
 #: picks the voice, and a hard-coded default would be a hard-coded language.
@@ -180,6 +198,10 @@ ENGINES: tuple[str, ...] = ("kokoro", "openvoice", "chatterbox")
 #: decided once, below, from the whole text.
 DEFAULT_VOICE: dict[str, str] = {
     "kokoro": "",
+    # Empty for the same reason as kokoro's: kyutai carries a female default
+    # per language (CML-TTS 10087 enhanced for French, VCTK p329 for English)
+    # and naming one here would name a language with it.
+    "kyutai": "",
     "openvoice": "base-en-default",
     "chatterbox": "default",
 }
@@ -423,6 +445,7 @@ def run_engine(
     voice_sample: Path | None,
     out_dir: Path,
     lang: str = "",
+    lexicon: Path | None = None,
     python: str = sys.executable,
 ) -> dict[str, Any]:
     """
@@ -451,6 +474,12 @@ def run_engine(
         Two-letter language tag for the whole reading. Empty leaves the
         choice to the wrapper, which then makes it *per block* and mixes
         voices inside one page; every caller here passes it.
+    lexicon : Path or None
+        A pronunciation lexicon (YAML), forwarded untouched. Technical
+        prose is full of words no engine can guess — WebVTT, RTTM, OKLCH,
+        GMTED2010 — and each engine guesses differently, so the same page
+        read twice does not sound the same. Stating a word once fixes it
+        everywhere. Needs speaker-helper 0.11 or later.
 
     Returns
     -------
@@ -498,6 +527,11 @@ def run_engine(
     # defaults to French for everybody.
     if lang:
         cmd += ["--lang", lang]
+    # Only when there is one. The flag landed in sprezzature-audio with
+    # speaker-helper 0.11, and sending it to an older wrapper would fail the
+    # whole narration over a file nobody asked for.
+    if lexicon:
+        cmd += ["--lexicon", str(lexicon)]
 
     proc = subprocess.run(cmd, capture_output=True, text=True)
     # Clean the segments scratch file regardless of outcome.
@@ -572,6 +606,14 @@ def parse_args() -> argparse.Namespace:
         "right for almost every page; set it where a page quotes "
         "another language at length and detection reads the quotes "
         "instead of the page.",
+    )
+    parser.add_argument(
+        "--lexicon",
+        type=Path,
+        default=None,
+        help="A pronunciation lexicon (YAML) for the words no engine can "
+        "guess — acronyms, product names, surnames. State a word once and "
+        "every narration says it the same way. Needs speaker-helper 0.11.",
     )
     parser.add_argument(
         "--out-dir",
@@ -770,6 +812,7 @@ def main() -> int:
         voice_sample=args.voice_sample,
         out_dir=args.out_dir,
         lang=lang,
+        lexicon=args.lexicon,
     )
     elapsed: float = time.monotonic() - started
 
