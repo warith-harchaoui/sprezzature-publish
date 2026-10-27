@@ -2074,12 +2074,15 @@ def player_html(
         '      <button class="ra-skip" type="button" data-ra-back '
         f'aria-label="{tag(words["back"])}">\n'
         f"{_SKIP_GLYPH}\n"
-        f'        <span class="ra-skip-n">{skip}</span>\n'
+        # The sign is spelled out (U+2212, not a hyphen) and the unit too:
+        # "15" alone made the reader guess the direction from the arrow,
+        # and the arrow is the dimmest thing on the button by design.
+        f'        <span class="ra-skip-n">\u2212{skip}s</span>\n'
         "      </button>\n"
         '      <button class="ra-skip ra-skip-fwd" type="button" '
         f'data-ra-forward aria-label="{tag(words["forward"])}">\n'
         f"{_SKIP_GLYPH}\n"
-        f'        <span class="ra-skip-n">{skip}</span>\n'
+        f'        <span class="ra-skip-n">+{skip}s</span>\n'
         "      </button>\n"
         '      <button class="ra-rate" type="button" data-ra-rate '
         f'aria-label="{tag(words["speed"])}">1&#215;</button>\n'

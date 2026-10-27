@@ -243,8 +243,8 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 2.25rem;
-  height: 2.25rem;
+  min-width: 2.5rem;
+  height: 2.5rem;
   padding: 0 0.375rem;
   border: 0;
   border-radius: 0.375rem;
@@ -259,8 +259,11 @@
 .ra-skip { position: relative; }
 
 .ra-skip svg {
-  width: 1.75rem;
-  height: 1.75rem;
+  /* Wider than the old 1.75rem: the label inside is now the signed
+     "\u221215s" rather than a bare "15", and at the old size the digits
+     touched the ring. Measured with the eyeball loop, not guessed. */
+  width: 2.375rem;
+  height: 2.375rem;
   /* Dimmer than the number it surrounds: the ring says "jump", the digits
      say how far, and only one of those is read. */
   color: var(--ra-dim);
@@ -279,8 +282,11 @@
   top: 50%;
   left: 50%;
   transform: translate(-50%, -42%);
-  font-size: 0.6875rem;
-  font-weight: 700;
+  /* Four glyphs now, so smaller and slightly tightened; the weight drops a
+     notch because bold at this size fills the counters of the digits. */
+  font-size: 0.5625rem;
+  font-weight: 600;
+  letter-spacing: -0.03em;
   line-height: 1;
   font-variant-numeric: tabular-nums;
   letter-spacing: -0.02em;
