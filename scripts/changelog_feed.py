@@ -139,11 +139,17 @@ _HEADING_RE = re.compile(
 #: worse-looking -- with no title the entry falls back to its body, so readers
 #: got raw markdown as a headline, asterisks and backticks included.
 #:
-#: Anchored on a closing paren *or* a date so that a colon inside the title
-#: itself cannot be mistaken for the separator. The 17 headings that match
-#: neither genuinely carry no title -- ``## [1.0.0] - 2026-07-29`` and the
+#: Anchored on a closing paren, a date *or* the start of the string so that
+#: a colon inside the title itself cannot be mistaken for the separator.
+#: This regex runs on ``rest``, the slice AFTER the version token, so
+#: ``## Unreleased: a title`` arrives here as ``: a title`` -- the start
+#: anchor is what reads it. (First attempt anchored on the word
+#: ``Unreleased``, which never appears in ``rest``; the guard test kept
+#: refusing the push until this was understood, on 2026-10-27, the day
+#: sprezzature-figures first wrote that style.) The headings that match
+#: nothing genuinely carry no title -- ``## [1.0.0] - 2026-07-29`` and the
 #: like -- and are meant to fall through.
-_TITLE_RE = re.compile(r"(?:\)|\d{4}-\d{2}-\d{2})\s*:\s*(.+)$")
+_TITLE_RE = re.compile(r"(?:\)|\d{4}-\d{2}-\d{2}|^)\s*:\s*(.+)$")
 
 #: Any subsequent ``## `` line ends the current entry's body.
 _NEXT_HEADING_RE = re.compile(r"^##\s")
