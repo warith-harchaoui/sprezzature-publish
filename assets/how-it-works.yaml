@@ -98,4 +98,4 @@ fr:
   outcome:
     label: Un site où un moteur de recherche, un modèle de langue et un lecteur trouvent chacun leur chemin
     note: "Les voix ne sont pas ici. La synthèse de narration vit dans sprezzature-audio, qui possède cette modalité dans les deux sens, et elle est appelée en sous-processus pour que ses imports lourds n'entrent jamais dans ce graphe de dépendances."
-  footer: Le linter n'a aucune dépendance, ce qui justifie de le mettre en crochet de pre-commit. Tout ce qui est plus lourd est une option nommée d'après l'outil qui en a besoin, pour qu'une installation dise à quoi elle sert.
+  footer: Le linter n'a aucune dépendance, ce qui en fait un bon crochet de pre-commit. Tout ce qui est plus lourd est une option nommée d'après l'outil qui en a besoin, pour qu'une installation dise à quoi elle sert.
