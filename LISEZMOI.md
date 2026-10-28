@@ -72,6 +72,27 @@ make-site indexes site/ --base-url https://exemple.fr
 make-site meta site/index.html       # demande un modèle local
 ```
 
+### Et pour un site qui existe déjà — le vôtre ou celui d'un autre
+
+Aucun Markdown n'est requis ici : l'auditeur lit le HTML posé, un dossier,
+une page ou une URL vivante. `--fix` ne réécrit que ce qui se **dérive** de
+ce que la page dit déjà ; le texte d'un titre, le choix d'une `og:image` ou
+le corps d'un JSON-LD se rapportent avec la commande qui les rédige, jamais
+ne s'écrivent tout seuls. Une URL distante se rapporte et ne se répare pas.
+
+```sh
+make-site audit public/ --base-url https://exemple.fr              # constat
+make-site audit public/ --base-url https://exemple.fr --dry-run    # ce que --fix changerait
+make-site audit public/ --base-url https://exemple.fr --fix --lang fr
+make-site audit https://exemple.fr/a-propos                        # une page en ligne
+```
+
+Chaque règle cite sa spécification — WHATWG HTML, RFC 6596 pour `canonical`,
+RFC 9309 pour `robots.txt`, sitemaps.org 0.9, ogp.me, les Cards de X,
+JSON-LD 1.1, le Web App Manifest du W3C, le guide d'Apple, RFC 4287 et
+RSS 2.0, llmstxt.org. Les trois règles qui n'en ont aucune le disent.
+La table complète est dans `references/audit-site.md`.
+
 ### Et, si la page doit être lue à voix haute
 
 ```sh
