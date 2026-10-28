@@ -35,7 +35,39 @@ versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   `plan_insertions`, `apply_fix`), as `POST /v1/audit`, and from there as an
   MCP tool.
 
+  Every rule cites a specification or the search engine's own documentation,
+  and the three that have none say so: `references/audit-site.md` carries the
+  table rule by rule — WHATWG HTML, [RFC 6596](https://datatracker.ietf.org/doc/html/rfc6596)
+  (canonical), [RFC 9309](https://datatracker.ietf.org/doc/html/rfc9309)
+  (robots.txt, an IETF Proposed Standard since 2022),
+  [sitemaps.org 0.9](https://www.sitemaps.org/protocol.html),
+  [ogp.me](https://ogp.me/), X Cards,
+  [JSON-LD 1.1](https://www.w3.org/TR/json-ld11/),
+  [W3C Web App Manifest](https://www.w3.org/TR/appmanifest/), Apple's
+  web-app configuration guide, RFC 4287 / RSS 2.0,
+  [llmstxt.org](https://llmstxt.org/). Two tests keep the code and the
+  citations from drifting apart in either direction.
+
+  Reading Apple's own guide changed a rule: manifest icons take precedence
+  *only* when no `apple-touch-icon` is declared in the head, so a page
+  carrying a manifest and no `apple-touch-icon` has made a supported choice.
+  That finding is a note now, not a warning.
+
 ### Fixed
+
+- **The maskable icon put artwork outside the safe zone.** The W3C Web App
+  Manifest defines that zone as "a circle with center point in the center of
+  the icon and with a radius of 2/5 (40%) of the icon size", and says a user
+  agent MAY make every pixel outside it transparent
+  ([§ icon masks](https://www.w3.org/TR/appmanifest/#icon-masks)).
+  `favicons.py` placed the artwork in a centred *square* covering 80 % of the
+  canvas — corners 56.6 % of the icon size from the centre, outside the
+  circle — under a docstring promising it stayed fully visible. Both could
+  not be true. `MASKABLE_SAFE` is now derived from the spec rather than
+  chosen: `sqrt(2) × 0.4 ≈ 0.5657`, the largest centred square that fits
+  inside the safe circle. Logos come out visibly smaller than the common
+  80 % convention; that convention is right about the usual round mask and
+  silent about the rest, which the spec is not.
 
 - **`discover_pages` read only Markdown under `docs/`.** A site whose docs
   are HTML was absent from every sitemap this package ever generated. Both

@@ -325,3 +325,37 @@ def test_discover_pages_sees_html_docs(tmp_path: Path):
     (tmp_path / "docs" / "guide.md").write_text("# G", encoding="utf-8")
     names = {p.as_posix() for p in si.discover_pages(tmp_path)}
     assert {"docs/guide.html", "docs/guide.md"} <= names
+
+
+# ── Every rule has a citation ──────────────────────────────────────────────
+
+
+def test_every_rule_is_cited_in_the_reference():
+    """A check earns its place by citing a specification, or by saying out
+    loud that none exists. A rule that appears in the code and nowhere in
+    ``references/audit-site.md`` is an opinion with a rule number."""
+    import re
+
+    root = Path(__file__).resolve().parent.parent
+    source = (root / "scripts" / "audit_site.py").read_text(encoding="utf-8")
+    reference = (root / "references" / "audit-site.md").read_text(encoding="utf-8")
+
+    emitted = set(re.findall(r'"(SITE\d{3})"', source))
+    assert emitted, "no rules found in the source — did the quoting change?"
+    uncited = sorted(r for r in emitted if r not in reference)
+    assert not uncited, f"rules with no entry in references/audit-site.md: {uncited}"
+
+
+def test_the_reference_cites_no_rule_that_no_longer_exists():
+    """The other direction: a citation outliving its rule reads as coverage
+    the tool does not have."""
+    import re
+
+    root = Path(__file__).resolve().parent.parent
+    source = (root / "scripts" / "audit_site.py").read_text(encoding="utf-8")
+    reference = (root / "references" / "audit-site.md").read_text(encoding="utf-8")
+
+    emitted = set(re.findall(r'"(SITE\d{3})"', source))
+    documented = set(re.findall(r"`(SITE\d{3})`", reference))
+    orphans = sorted(documented - emitted)
+    assert not orphans, f"cited in the reference, emitted by nothing: {orphans}"

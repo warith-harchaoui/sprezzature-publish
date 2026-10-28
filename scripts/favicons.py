@@ -66,6 +66,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 import shutil
 import sys
 from pathlib import Path as _PathHelper
@@ -94,9 +95,23 @@ APPLE_TOUCH_SIZE: int = 180
 #: Side length of the maskable icon, in pixels.
 MASKABLE_SIZE: int = 512
 
-#: Fraction of the maskable canvas that the artwork occupies. The outer 10 %
-#: on each side is bleed so the OS can apply its own clipping shape.
-MASKABLE_SAFE: float = 0.8
+#: Fraction of the maskable canvas the artwork may occupy, derived rather
+#: than chosen.
+#:
+#: The W3C Web Application Manifest defines the safe zone as *"a circle with
+#: center point in the center of the icon and with a radius of 2/5 (40%) of
+#: the icon size"*, and says the user agent *"MAY apply a mask of any size,
+#: making any pixels that are more than 2/5ths of the image size […] away
+#: from the center […] transparent"*.
+#: https://www.w3.org/TR/appmanifest/#icon-masks
+#:
+#: A centred *square* of side 0.8·S has its corners 0.566·S from the centre —
+#: outside that circle, and therefore maskable away. This was 0.8, with a
+#: docstring promising the artwork stayed "fully visible"; the two could not
+#: both be true. The largest centred square that fits *inside* the safe
+#: circle has half-diagonal equal to the radius, so its side is
+#: ``sqrt(2) · 0.4 · S``.
+MASKABLE_SAFE: float = math.sqrt(2) * 0.4  # ≈ 0.5657
 
 #: Resolutions embedded in the multi-resolution ``favicon.ico``.
 ICO_SIZES: tuple[int, ...] = (16, 32, 48)
@@ -223,9 +238,18 @@ def make_maskable(im: Image.Image, bg: tuple[int, int, int]) -> Image.Image:
     Build a maskable PWA icon at :data:`MASKABLE_SIZE` square.
 
     The artwork is placed in the central :data:`MASKABLE_SAFE` fraction of
-    the canvas; the outer ring is solid ``bg``. This satisfies the W3C
-    maskable-icon contract: the OS may clip the canvas to any shape and
-    still leave the artwork fully visible.
+    the canvas; the rest is solid ``bg``. That fraction is the largest
+    centred square fitting inside the spec's safe-zone *circle*, so the
+    claim this docstring makes is one the geometry supports: the user agent
+    may clip the canvas to any shape it likes and the artwork survives
+    whole.
+
+    The cost is a visibly smaller logo than the square-bleed convention most
+    generators use. That convention is not wrong about the common case — a
+    round mask is the usual one — but it leaves the corners of the artwork
+    at the user agent's discretion, and the spec is explicit that they are.
+
+    See https://www.w3.org/TR/appmanifest/#icon-masks.
 
     Parameters
     ----------

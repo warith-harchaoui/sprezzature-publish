@@ -176,3 +176,38 @@ class TestMain:
         head = (out_dir / "head.html").read_text(encoding="utf-8")
         assert "prefers-color-scheme: light" in head
         assert "prefers-color-scheme: dark" in head
+
+
+class TestMaskableSafeZone:
+    """The W3C safe zone is a circle, and a square is not one.
+
+    https://www.w3.org/TR/appmanifest/#icon-masks defines it as "a circle
+    with center point in the center of the icon and with a radius of 2/5
+    (40%) of the icon size", and says the user agent MAY make every pixel
+    outside it transparent. ``MASKABLE_SAFE`` was 0.8 — a centred square
+    whose corners sit 0.566 of the icon size from the centre, well outside
+    that circle — under a docstring promising the artwork stayed fully
+    visible.
+    """
+
+    def test_the_artwork_square_fits_inside_the_safe_circle(self):
+        import math
+
+        import favicons as fv
+
+        # Half-diagonal of the centred artwork square, as a fraction of the
+        # icon size. This is the farthest any artwork pixel can be from the
+        # centre.
+        half_diagonal = fv.MASKABLE_SAFE / 2 * math.sqrt(2)
+        assert half_diagonal <= 0.4 + 1e-9, (
+            f"artwork reaches {half_diagonal:.4f} of the icon size from the "
+            f"centre; the spec guarantees visibility only within 0.4"
+        )
+
+    def test_it_is_the_largest_square_that_does(self):
+        """Smaller would be safe too, and needlessly small."""
+        import math
+
+        import favicons as fv
+
+        assert fv.MASKABLE_SAFE == pytest.approx(math.sqrt(2) * 0.4)

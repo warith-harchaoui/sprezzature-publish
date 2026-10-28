@@ -79,6 +79,32 @@ A URL is **reported, never repaired**: ``--fix`` against a URL is a usage
 error, not a silent no-op. Fetching covers the page plus the origin's
 ``robots.txt``, ``sitemap.xml`` and ``llms.txt``.
 
+Specs honored
+-------------
+
+Every rule cites a specification or the search engine's own documentation;
+where no such document exists, the rule says so rather than pretending.
+``references/audit-site.md`` carries the rule-by-rule table. The short list:
+
+* HTML — WHATWG HTML Living Standard (``lang``, ``title``, metadata names,
+  ``theme-color``, ``rel=icon``): https://html.spec.whatwg.org/
+* Canonical URLs — RFC 6596: https://datatracker.ietf.org/doc/html/rfc6596
+* Open Graph — https://ogp.me/
+* Twitter Cards — https://developer.x.com/en/docs/twitter-for-websites/cards/overview/markup
+* Structured data — JSON-LD 1.1 (W3C Rec) + schema.org
+* Icons and PWA — W3C Web Application Manifest: https://www.w3.org/TR/appmanifest/
+* Apple touch icon — Apple, Configuring Web Applications
+* robots.txt — RFC 9309 (IETF Proposed Standard, 2022):
+  https://datatracker.ietf.org/doc/html/rfc9309
+* Sitemaps — https://www.sitemaps.org/protocol.html
+* llms.txt — https://llmstxt.org/ (a proposal, not a standards-body document)
+* Feeds — RFC 4287 (Atom 1.0) / RSS 2.0
+
+Three rules have no specification behind them and say so: the
+description-length window (observed rendering, hence a warning), the folk
+GEO tags (the absence of a spec *is* the finding), and ``SITE112``, a house
+rule about this package's own commonest failure.
+
 Usage
 -----
 ::
@@ -393,7 +419,28 @@ def audit_page(where: str, facts: PageFacts, *, have_base_url: bool) -> list[Fin
     if not any(r.startswith("icon") or r == "shortcut icon" for r in facts.links):
         add("SITE013", ERROR, "No favicon link of any kind in <head>.")
     if "apple-touch-icon" not in facts.links:
-        add("SITE014", WARNING, "No apple-touch-icon link — iOS will screenshot the page instead.")
+        # Apple documents two fallbacks, and a modern one that inverts the
+        # advice: the root directory is searched for `apple-touch-icon.png`
+        # when no link element names one, and the manifest icons take
+        # precedence *only* when no apple-touch-icon is declared in the head.
+        # So a page carrying a manifest has made a choice, not a mistake.
+        # https://developer.apple.com/library/archive/documentation/AppleApplications/Reference/SafariWebContent/ConfiguringWebApplications/ConfiguringWebApplications.html
+        if "manifest" in facts.links:
+            add(
+                "SITE014",
+                INFO,
+                "No apple-touch-icon link. With a manifest present this is a "
+                "choice Apple supports — its icons take precedence precisely "
+                "when no apple-touch-icon is declared here.",
+            )
+        else:
+            add(
+                "SITE014",
+                WARNING,
+                "No apple-touch-icon link and no manifest — iOS falls back to "
+                "/apple-touch-icon.png, and screenshots the page if that is "
+                "missing too.",
+            )
     if "manifest" not in facts.links:
         add("SITE015", WARNING, "No web app manifest link — the site cannot be installed.")
 

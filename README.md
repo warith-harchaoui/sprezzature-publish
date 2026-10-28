@@ -29,6 +29,21 @@ Astro instead; this does not compete with them and says so.
 | `sprezzature-publish-narrate` | narrate a post with a local voice, and write the timed track beside the audio. |
 | `sprezzature-publish-readalong` | bind that narration to the page, so the sentence being spoken is highlighted. |
 
+### Where the rules come from
+
+Every audit rule cites a specification or the search engine's own
+documentation — WHATWG HTML, [RFC 6596](https://datatracker.ietf.org/doc/html/rfc6596)
+(canonical), [RFC 9309](https://datatracker.ietf.org/doc/html/rfc9309) (robots.txt),
+[sitemaps.org 0.9](https://www.sitemaps.org/protocol.html), [ogp.me](https://ogp.me/),
+[X Cards](https://developer.x.com/en/docs/twitter-for-websites/cards/overview/markup),
+[JSON-LD 1.1](https://www.w3.org/TR/json-ld11/),
+[W3C Web App Manifest](https://www.w3.org/TR/appmanifest/),
+[Apple's web-app configuration guide](https://developer.apple.com/library/archive/documentation/AppleApplications/Reference/SafariWebContent/ConfiguringWebApplications/ConfiguringWebApplications.html),
+[RFC 4287](https://datatracker.ietf.org/doc/html/rfc4287) / [RSS 2.0](https://www.rssboard.org/rss-specification),
+[llmstxt.org](https://llmstxt.org/). Where no such document exists, the rule
+says so instead of pretending: see `references/audit-site.md`, which carries
+the table rule by rule and is the thing to cite when a finding is disputed.
+
 One front door over all nine, in click, under two names: `make-site <tool>`
 and `sprezzature-publish <tool>` resolve to the same callable, so they cannot
 drift. The argparse twin was removed on 2026-10-25.
