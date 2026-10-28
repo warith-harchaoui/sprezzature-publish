@@ -22,6 +22,7 @@ Material, Hugo ou Astro ; celui-ci ne les concurrence pas et le dit.
 | | |
 |---|---|
 | `sprezzature-publish-lint` | **audit** — lire le Markdown avant que quoi que ce soit ne le rende. Bibliothèque standard seule, quelques millisecondes, taillé pour un crochet de pré-commit. `--fix` répare ce qui a une réparation sûre. |
+| `sprezzature-publish-audit` | **audit** — lire le site *après* qu'il existe : balises du head, Open Graph, liens d'icônes, `robots.txt`, `sitemap.xml`, `llms.txt`. Prend un dossier, une page ou une URL vivante — aucune source Markdown requise. `--fix` réécrit ce qui se dérive, jamais ce qui s'invente. |
 | `sprezzature-publish-html` | Markdown → pages HTML autonomes, diagrammes Mermaid rendus. |
 | `sprezzature-publish-icons` | un logo → favicon, icônes d'application, icônes PWA, et le fragment de `<head>` qui les référence. |
 | `sprezzature-publish-indexes` | `robots.txt`, `sitemap.xml`, `llms.txt`, `llms-full.txt`, Atom, `humans.txt`. |

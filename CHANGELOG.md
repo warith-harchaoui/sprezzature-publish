@@ -8,6 +8,40 @@ versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- **`sprezzature-publish-audit`: the return trip.** Nine tools wrote
+  something; one audited, and it audited the Markdown from *before* the
+  render. Nothing read back what had been emitted — and nothing served the
+  commonest case of all: a site that already exists, in HTML, with no
+  Markdown source behind it.
+
+  It takes a directory, a single page, or a live URL, and reports what will
+  keep a search engine, a share card or a generative engine from finding the
+  page: `<head>` meta, Open Graph, Twitter Card, JSON-LD, icon and manifest
+  links, `robots.txt`, `sitemap.xml`, `llms.txt`, a feed, and the icon set on
+  disk. `--fix` writes back only what is **derived**: the canonical URL from
+  `--base-url`, `og:*` and `twitter:*` mirrored from the title and
+  description the page already carries, the icon links from the `head.html`
+  that `favicons` wrote and nobody pasted, and `robots.txt` / `sitemap.xml`
+  regenerated through `site_indexes` itself. The wording of a title, the
+  choice of an `og:image`, the body of a JSON-LD block: reported with the
+  command that drafts them, never written. A URL is reported, never
+  repaired.
+
+  Image alt text is not here and will not be: `sprezzature-accessibility`
+  already reads raw HTML and drafts the missing alt. Every report says so,
+  so that a clean one does not read as "my site is fine".
+
+  Reachable as a library (`scan_page`, `audit_page`, `audit_indexes`,
+  `plan_insertions`, `apply_fix`), as `POST /v1/audit`, and from there as an
+  MCP tool.
+
+### Fixed
+
+- **`discover_pages` read only Markdown under `docs/`.** A site whose docs
+  are HTML was absent from every sitemap this package ever generated. Both
+  suffixes now, with the directory allowlist unchanged — a stray page under
+  `logs/` is still not a page.
+
 - **`kyutai` joins the engines `--engine` accepts**, and `--lexicon` is
   forwarded to whichever engine runs. Both arrived in `sprezzature-audio`
   with `speaker-helper` 0.11.

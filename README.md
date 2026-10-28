@@ -19,6 +19,7 @@ Astro instead; this does not compete with them and says so.
 | | |
 |---|---|
 | `sprezzature-publish-lint` | **audit** — read the Markdown before anything renders it. Standard library only, milliseconds, pre-commit shaped. `--fix` repairs what has one safe repair. |
+| `sprezzature-publish-audit` | **audit** — read the site *after* it exists: head meta, Open Graph, icon links, `robots.txt`, `sitemap.xml`, `llms.txt`. Takes a directory, a page or a live URL — no Markdown source required. `--fix` writes back what can be derived rather than invented. |
 | `sprezzature-publish-html` | Markdown → standalone HTML pages, Mermaid diagrams rendered. |
 | `sprezzature-publish-icons` | one logo → favicon, app icons, PWA icons, and the `<head>` snippet that references them. |
 | `sprezzature-publish-indexes` | `robots.txt`, `sitemap.xml`, `llms.txt`, `llms-full.txt`, Atom, `humans.txt`. |
@@ -64,6 +65,12 @@ sprezzature-publish-lint docs/ --fix      # repair what has one safe repair
 sprezzature-publish-html README.md docs/ --out site/
 sprezzature-publish-icons logo.png --out site/icons/
 sprezzature-publish-indexes site/ --base-url https://example.com
+
+# Improve a site that already exists — yours, or somebody else's
+sprezzature-publish-audit public/ --base-url https://example.com            # report
+sprezzature-publish-audit public/ --base-url https://example.com --dry-run  # preview the repairs
+sprezzature-publish-audit public/ --base-url https://example.com --fix --lang en
+sprezzature-publish-audit https://example.com/about                         # a live page
 sprezzature-publish-meta site/index.html     # asks a local model
 ```
 

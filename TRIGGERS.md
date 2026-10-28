@@ -21,6 +21,14 @@ The second trigger is silent, and is the one to remember: **you just wrote
 Markdown that will be published.** A README, a docs page, a release note.
 Lint it before it renders, the same way you would lint source.
 
+The third has no Markdown anywhere in it, and it is the commonest of the
+three: **a site already exists and has to get better.** One somebody else
+built, one built here years ago, a WordPress export, a landing page a
+designer handed over. There is no source to go back to — only HTML. That is
+`sprezzature-publish-audit`, which reads what is there and repairs what can
+be derived. Never answer "I would need the Markdown" to this question: the
+tool does not want any.
+
 ---
 
 ## Which tool, and which neighbour
@@ -31,6 +39,7 @@ right place: they do not substitute for one another.
 | The question | Package | Where to start |
 |---|---|---|
 | **Can it be found?** meta tags, feeds, sitemap, llms.txt | sprezzature-publish | `sprezzature-publish-lint`, then `-indexes` |
+| **Can *this existing site* be found?** no Markdown behind it | sprezzature-publish | `sprezzature-publish-audit <dir\|url>`, then `--fix` |
 | **Is it accessible?** missing alt, unlabelled inputs, heading order | sprezzature-accessibility | `lint_html` |
 | **Is it legible?** contrast, colour-blind safety | sprezzature-colors | `check_contrast` |
 | **Is the speech already recorded?** sound in, timed text out | sprezzature-audio | `sprezzature-audio-captions` |
