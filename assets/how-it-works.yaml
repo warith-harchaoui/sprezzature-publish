@@ -1,0 +1,101 @@
+# How this brick works, as drawn in README.md and LISEZMOI.md.
+#
+# The renderer lives in the hub, at sprezzature/scripts/make_brick_diagram.py,
+# because the ten bricks share one drawing and ten generators would have become
+# ten dialects of it. The content lives here, because the brick is what knows
+# what is true about itself.
+#
+# Redraw after any edit:
+#   python ~/sprezzature/scripts/make_brick_diagram.py sprezzature-publish
+package: sprezzature-publish
+
+en:
+  title: How sprezzature-publish works
+  subtitle: A folder of Markdown becomes a site somebody can find.
+  alt: >-
+    Flow diagram. At the top, a README, a docs folder, a changelog and one logo
+    feed two lanes. The left lane makes: it renders the pages, turns the logo into
+    a full icon set, writes the indexes crawlers and language models look for, and
+    narrates the text with a local voice bound to the page. The right lane audits:
+    it lints the Markdown before anything renders it, reads the built site or a
+    live URL back, and cites a specification for every rule. Both meet in one
+    outcome, a site a search engine, a language model and a reader can each find
+    their way through.
+  input:
+    label: A README, a docs folder, a changelog, one logo
+    note: "sized for a site you can hold in your head. For a hundred versioned pages, reach for MkDocs Material, Hugo or Astro: this does not compete with them and says so."
+  lanes:
+    - title: "Make: the site"
+      steps:
+        - label: Render the pages
+          note: Markdown to standalone HTML, with Mermaid diagrams drawn rather than left as code
+        - label: One logo becomes the whole icon set
+          note: favicon, Apple touch icons, progressive-web-app icons, and the head snippet that references them
+        - label: Write what crawlers and models look for
+          note: "robots.txt, sitemap.xml, llms.txt, llms-full.txt, an Atom feed, humans.txt"
+        - label: Narrate it, and bind the reading to the page
+          note: a local voice, cues timed to the audio, and the sentence being spoken highlighted as it is read
+      result:
+        label: A folder you can deploy
+        note: pages, icons, indexes, a feed, and an MP3 beside its WebVTT
+    - title: "Audit: before it exists, and after"
+      steps:
+        - label: Lint the Markdown first
+          note: before anything renders it. Standard library, milliseconds, pre-commit shaped.
+        - label: Read the built site back
+          note: "head meta, Open Graph, icon links, robots.txt, sitemap.xml, llms.txt. A directory, a single page, or a live URL, with no Markdown source required."
+        - label: Cite a specification, or say there is none
+          note: "WHATWG HTML, RFC 6596, RFC 9309, sitemaps.org 0.9, ogp.me, JSON-LD 1.1, RFC 4287, llmstxt.org. Where no such document exists the rule says so instead of pretending."
+      result:
+        label: Findings, and the repairs that follow from the page
+        note: "--fix writes back what can be derived. Anything a model would have to invent is reported, not written, and on a remote URL nothing is repaired at all."
+  outcome:
+    label: A site a search engine, a language model and a reader can each find their way through
+    note: "The voices are not here. Narration synthesis lives in sprezzature-audio, which owns that modality in both directions, and is invoked as a subprocess so its heavy imports never enter this dependency graph."
+  footer: The lint has no dependencies at all, which is what makes it worth a pre-commit hook. Everything heavier is an extra named after the tool that needs it, so an install says what it is for.
+
+fr:
+  title: Comment fonctionne sprezzature-publish
+  subtitle: Un dossier de Markdown devient un site que l'on peut trouver.
+  alt: >-
+    Schéma de flux. En haut, un README, un dossier de documentation, un journal des
+    versions et un logo alimentent deux voies. La voie de gauche fabrique : elle
+    rend les pages, transforme le logo en jeu d'icônes complet, écrit les index que
+    cherchent les robots et les modèles de langue, et narre le texte avec une voix
+    locale liée à la page. La voie de droite contrôle : elle relit le Markdown
+    avant tout rendu, relit le site construit ou une adresse en ligne, et cite une
+    spécification pour chaque règle. Les deux se rejoignent en un seul résultat, un
+    site où un moteur de recherche, un modèle de langue et un lecteur trouvent
+    chacun leur chemin.
+  input:
+    label: Un README, un dossier de documentation, un journal des versions, un logo
+    note: "taillé pour un site qui tient dans la tête. Pour cent pages versionnées, prenez MkDocs Material, Hugo ou Astro : celui-ci ne les concurrence pas et le dit."
+  lanes:
+    - title: "Fabriquer : le site"
+      steps:
+        - label: Rendre les pages
+          note: du Markdown vers du HTML autonome, les diagrammes Mermaid dessinés plutôt que laissés sous forme de code
+        - label: Un logo devient tout le jeu d'icônes
+          note: favicon, icônes Apple, icônes d'application web progressive, et l'extrait d'en-tête qui les référence
+        - label: Écrire ce que cherchent les robots et les modèles
+          note: "robots.txt, sitemap.xml, llms.txt, llms-full.txt, un flux Atom, humans.txt"
+        - label: Le narrer, et lier la lecture à la page
+          note: une voix locale, des repères calés sur l'audio, et la phrase prononcée mise en évidence au fil de la lecture
+      result:
+        label: Un dossier prêt à déployer
+        note: les pages, les icônes, les index, le flux, et un MP3 à côté de son WebVTT
+    - title: "Contrôler : avant qu'il existe, et après"
+      steps:
+        - label: Relire le Markdown d'abord
+          note: avant tout rendu. Bibliothèque standard, quelques millisecondes, taillé pour le pre-commit.
+        - label: Relire le site construit
+          note: "métadonnées d'en-tête, Open Graph, liens d'icônes, robots.txt, sitemap.xml, llms.txt. Un dossier, une page seule, ou une adresse en ligne, sans exiger de source Markdown."
+        - label: Citer une spécification, ou dire qu'il n'y en a pas
+          note: "WHATWG HTML, RFC 6596, RFC 9309, sitemaps.org 0.9, ogp.me, JSON-LD 1.1, RFC 4287, llmstxt.org. Là où aucun document n'existe, la règle le dit au lieu de faire semblant."
+      result:
+        label: Des constats, et les réparations qui découlent de la page
+        note: "--fix réécrit ce qui se déduit. Ce qu'un modèle devrait inventer est rapporté, pas écrit, et sur une adresse distante rien n'est réparé du tout."
+  outcome:
+    label: Un site où un moteur de recherche, un modèle de langue et un lecteur trouvent chacun leur chemin
+    note: "Les voix ne sont pas ici. La synthèse de narration vit dans sprezzature-audio, qui possède cette modalité dans les deux sens, et elle est appelée en sous-processus pour que ses imports lourds n'entrent jamais dans ce graphe de dépendances."
+  footer: Le linter n'a aucune dépendance, ce qui justifie de le mettre en crochet de pre-commit. Tout ce qui est plus lourd est une option nommée d'après l'outil qui en a besoin, pour qu'une installation dise à quoi elle sert.

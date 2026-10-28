@@ -17,6 +17,10 @@ Material, Hugo ou Astro ; celui-ci ne les concurrence pas et le dit.
 
 ---
 
+## Comment ça marche
+
+![Schéma de flux. En haut, un README, un dossier de documentation, un journal des versions et un logo alimentent deux voies. La voie de gauche fabrique : elle rend les pages, transforme le logo en jeu d'icônes complet, écrit les index que cherchent les robots et les modèles de langue, et narre le texte avec une voix locale liée à la page. La voie de droite contrôle : elle relit le Markdown avant tout rendu, relit le site construit ou une adresse en ligne, et cite une spécification pour chaque règle. Les deux se rejoignent en un seul résultat, un site où un moteur de recherche, un modèle de langue et un lecteur trouvent chacun leur chemin.](https://raw.githubusercontent.com/warith-harchaoui/sprezzature-publish/main/assets/comment-ca-marche.svg)
+
 ## Ce qu'il y a dedans
 
 | | |

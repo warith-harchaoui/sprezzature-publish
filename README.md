@@ -14,6 +14,10 @@ Astro instead; this does not compete with them and says so.
 
 ---
 
+## How it works
+
+![Flow diagram. At the top, a README, a docs folder, a changelog and one logo feed two lanes. The left lane makes: it renders the pages, turns the logo into a full icon set, writes the indexes crawlers and language models look for, and narrates the text with a local voice bound to the page. The right lane audits: it lints the Markdown before anything renders it, reads the built site or a live URL back, and cites a specification for every rule. Both meet in one outcome, a site a search engine, a language model and a reader can each find their way through.](https://raw.githubusercontent.com/warith-harchaoui/sprezzature-publish/main/assets/how-it-works.svg)
+
 ## What's here
 
 | | |
