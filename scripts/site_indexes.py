@@ -335,7 +335,12 @@ def discover_pages(root: Path) -> list[Path]:
 
     Walks the project root looking for ``.html`` files at the root and in
     the conventional output directories (:data:`WEB_OUTPUT_DIRS`), plus
-    ``.md`` files at the root and under ``docs/``.
+    ``.md`` **and** ``.html`` files under ``docs/`` and ``.md`` files at the
+    root.
+
+    The directory list is an allowlist on purpose: a stray ``.html`` under
+    ``logs/`` or ``node_modules/`` is not a page, and a sitemap that says
+    otherwise invites a crawler into somebody's build junk.
 
     Parameters
     ----------
@@ -359,8 +364,13 @@ def discover_pages(root: Path) -> list[Path]:
                 found.add(p.relative_to(root))
     docs = root / "docs"
     if docs.is_dir():
-        for p in docs.rglob("*.md"):
-            found.add(p.relative_to(root))
+        # Both suffixes: a project that writes its docs in Markdown and one
+        # that was handed a folder of ready-made HTML are the same site to a
+        # crawler. Scanning only ``.md`` here left the second kind out of
+        # every sitemap it generated.
+        for pattern in ("*.md", "*.html"):
+            for p in docs.rglob(pattern):
+                found.add(p.relative_to(root))
     return sorted(found)
 
 

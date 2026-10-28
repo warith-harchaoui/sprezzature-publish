@@ -102,6 +102,7 @@ dev = [
 make-site = "sprezzature_publish.cli:main"
 sprezzature-publish = "sprezzature_publish.cli:main"
 sprezzature-publish-lint = "sprezzature_publish_scripts.lint_markdown:main"
+sprezzature-publish-audit = "sprezzature_publish_scripts.audit_site:main"
 sprezzature-publish-html = "sprezzature_publish_scripts.md_to_html:main"
 sprezzature-publish-icons = "sprezzature_publish_scripts.favicons:main"
 sprezzature-publish-indexes = "sprezzature_publish_scripts.site_indexes:main"

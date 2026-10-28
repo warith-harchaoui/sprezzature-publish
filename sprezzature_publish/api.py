@@ -88,6 +88,34 @@ class RenderRequest(BaseModel):
     description: str = Field(default="", description="Meta description for the rendered page.")
 
 
+class AuditRequest(BaseModel):
+    """An emitted page to audit, as text."""
+
+    html: str = Field(description="The page's contents.")
+    page_path: str = Field(
+        default="index.html",
+        description="Path the page will be served at, relative to the site "
+        "root. Used with base_url to derive the canonical URL.",
+    )
+    base_url: str = Field(
+        default="",
+        description="Site origin, e.g. https://example.com. Without it the "
+        "canonical URL cannot be derived, only reported as missing.",
+    )
+    lang: str = Field(
+        default="",
+        description="BCP-47 tag written into <html lang> when fix is set and "
+        "the page has none. Reported and left alone when empty.",
+    )
+    theme_color: str = Field(default="", description="theme-color to write when fix is set.")
+    og_image: str = Field(default="", description="Preview image URL to write when fix is set.")
+    fix: bool = Field(
+        default=False,
+        description="Also return the repaired page. Nothing is written to "
+        "disk — the caller decides what to do with the text.",
+    )
+
+
 class PlainRequest(BaseModel):
     """Prose to rewrite at a reading grade."""
 
@@ -162,6 +190,73 @@ def lint(request: LintRequest) -> dict:
             for f in findings
         ],
     }
+
+
+@app.post(
+    "/v1/audit",
+    tags=["actions"],
+    operation_id="audit_site",
+    summary="Find what will keep an emitted page from being found or shared",
+)
+def audit(request: AuditRequest) -> dict:
+    """Audit one page's head surfaces, and optionally return it repaired.
+
+    The counterpart of ``/v1/lint``: that one gates the Markdown before it
+    renders, this one opens what came out — or a page that never had a
+    Markdown source at all, which is the normal shape of improving somebody
+    else's site.
+
+    Two rules of the command line still hold here. Repairs are **derived,
+    never invented**: a page with no ``<title>`` gets a finding, not a
+    guessed one. And the icon and manifest checks are skipped, because they
+    read files from a site directory and this route is handed one page of
+    text — ``sprezzature-publish-audit`` on the directory covers those.
+
+    Nothing is written: with ``fix`` set, the repaired document comes back
+    in the response for the caller to store.
+    """
+    from sprezzature_publish_scripts.audit_site import (
+        apply_fix,
+        audit_page,
+        plan_insertions,
+        scan_page,
+    )
+
+    facts = scan_page(request.html)
+    findings = [
+        f
+        for f in audit_page(request.page_path, facts, have_base_url=bool(request.base_url))
+        # SITE013/014/015 ask whether the icon files exist beside the page.
+        # Over HTTP there is no beside.
+        if f.rule not in {"SITE013", "SITE014", "SITE015"}
+    ]
+
+    body: dict = {
+        "findings_total": len(findings),
+        "findings": [
+            {
+                "rule": f.rule,
+                "line": f.line,
+                "severity": f.severity,
+                "message": f.message,
+                "remedy": f.remedy,
+            }
+            for f in findings
+        ],
+    }
+    if request.fix:
+        insertions = plan_insertions(
+            facts,
+            root=None,
+            page_rel=Path(request.page_path),
+            base_url=request.base_url,
+            theme_color=request.theme_color,
+            og_image=request.og_image,
+        )
+        repaired = apply_fix(request.html, facts, insertions, request.lang)
+        body["html"] = repaired
+        body["changed"] = repaired != request.html
+    return body
 
 
 @app.post(

@@ -24,6 +24,12 @@ TOOLS: dict[str, tuple[str, str]] = {
         "Audit the Markdown before anything renders it, and fix what has one "
         "safe repair. Standard library only.",
     ),
+    "audit": (
+        "audit_site",
+        "Audit an emitted site — a directory, a page or a live URL — for the "
+        "head meta, icon links and crawler indexes, and repair with --fix "
+        "what can be derived rather than invented.",
+    ),
     "html": (
         "md_to_html",
         "Markdown → HTML pages, with the Mermaid diagrams rendered.",

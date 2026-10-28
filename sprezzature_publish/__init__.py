@@ -12,7 +12,10 @@ Two halves, as every brick in this suite has:
 * **make** — `md_to_html`, `favicons`, `site_indexes`, `changelog_feed`,
   `meta_from_ollama`, `plain_language`, `narrate_post`, `readalong`.
 * **audit** — `lint_markdown`, which gates the Markdown before any of it
-  runs, and fixes what has one safe repair.
+  runs, and fixes what has one safe repair; and `audit_site`, the return
+  trip, which opens what was actually emitted — or a site somebody else
+  built, or a live URL — and repairs the head meta, icon links and crawler
+  indexes that can be derived rather than invented.
 
 Why a library and not only commands
 -----------------------------------
@@ -60,9 +63,17 @@ from typing import Any  # noqa: E402
 #: the package to lint their Markdown, which needs nothing but the standard
 #: library.
 _EXPORTS: dict[str, str] = {
-    # audit
+    # audit — the Markdown, before anything renders it
     "lint_file": "lint_markdown",
     "fix_trailing_whitespace": "lint_markdown",
+    # audit — the site, after. These take HTML, never Markdown: improving a
+    # site somebody else built is the case that has no source to go back to.
+    "scan_page": "audit_site",
+    "audit_page": "audit_site",
+    "audit_indexes": "audit_site",
+    "audit_icon_files": "audit_site",
+    "plan_insertions": "audit_site",
+    "apply_fix": "audit_site",
     # make — pages
     "convert_one": "md_to_html",
     "gather_inputs": "md_to_html",
