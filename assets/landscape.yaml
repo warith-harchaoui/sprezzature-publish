@@ -1,0 +1,666 @@
+meta:
+  reference: sprezzature-publish
+  rotation_deg: -68.209
+  explained_variance_ratio:
+  - 0.3737
+  - 0.1783
+  cumulative_variance: 0.552
+  n_approaches: 26
+  attributes:
+  - Per-page meta tags out of the box
+  - Icon set from one logo
+  - Indexes crawlers look for
+  - Indexes language models look for
+  - Syndication feed
+  - Audio narration
+  - Sentence-synchronised read-along
+  - Plain-language rewriting
+  - Applies to HTML already published
+  - Local and offline, no account
+  - Light to install
+  - Scales past a hundred pages
+  - Themes and customisation
+  - Bilingual output and parity
+  - Maturity and ecosystem
+  lower_is_better: []
+  imputed_cells: []
+axes:
+  axis_1:
+    name: Autonomy ↔ Reach
+    pole_left: Autonomy
+    pole_right: Reach
+    loadings:
+      Per-page meta tags out of the box: 0.3828
+      Icon set from one logo: 0.1519
+      Indexes crawlers look for: 0.423
+      Indexes language models look for: 0.4892
+      Syndication feed: 0.3218
+      Audio narration: 0.1693
+      Sentence-synchronised read-along: 0.247
+      Plain-language rewriting: 0.0465
+      Applies to HTML already published: 0.1092
+      Local and offline, no account: -0.1589
+      Light to install: 0.0022
+      Scales past a hundred pages: 0.1607
+      Themes and customisation: 0.1333
+      Bilingual output and parity: 0.3669
+      Maturity and ecosystem: -0.0369
+  axis_2:
+    name: Adaptable ↔ Engaging
+    pole_bottom: Adaptable
+    pole_top: Engaging
+    loadings:
+      Per-page meta tags out of the box: -0.145
+      Icon set from one logo: 0.1089
+      Indexes crawlers look for: -0.1957
+      Indexes language models look for: 0.0406
+      Syndication feed: -0.2154
+      Audio narration: 0.4007
+      Sentence-synchronised read-along: 0.3747
+      Plain-language rewriting: 0.2493
+      Applies to HTML already published: 0.4087
+      Local and offline, no account: -0.2541
+      Light to install: 0.1948
+      Scales past a hundred pages: -0.3377
+      Themes and customisation: -0.3344
+      Bilingual output and parity: 0.0195
+      Maturity and ecosystem: -0.1477
+approaches:
+- name: sprezzature-publish
+  coordinates:
+    axis_1: 3.0109
+    axis_2: 3.6812
+  role: best
+  color: '#FF3B30'
+  attributes:
+    Per-page meta tags out of the box: 5.0
+    Icon set from one logo: 5.0
+    Indexes crawlers look for: 5.0
+    Indexes language models look for: 5.0
+    Syndication feed: 4.0
+    Audio narration: 5.0
+    Sentence-synchronised read-along: 5.0
+    Plain-language rewriting: 5.0
+    Applies to HTML already published: 5.0
+    Local and offline, no account: 5.0
+    Light to install: 4.0
+    Scales past a hundred pages: 2.0
+    Themes and customisation: 2.0
+    Bilingual output and parity: 3.0
+    Maturity and ecosystem: 1.0
+  imputed_attributes: []
+- name: MkDocs Material
+  coordinates:
+    axis_1: 1.2926
+    axis_2: -3.1319
+  role: competitor
+  color: '#82D18C'
+  attributes:
+    Per-page meta tags out of the box: 4.0
+    Icon set from one logo: 2.0
+    Indexes crawlers look for: 4.0
+    Indexes language models look for: 2.0
+    Syndication feed: 3.0
+    Audio narration: 1.0
+    Sentence-synchronised read-along: 1.0
+    Plain-language rewriting: 1.0
+    Applies to HTML already published: 1.0
+    Local and offline, no account: 4.0
+    Light to install: 3.0
+    Scales past a hundred pages: 5.0
+    Themes and customisation: 4.0
+    Bilingual output and parity: 5.0
+    Maturity and ecosystem: 5.0
+  imputed_attributes: []
+- name: Hugo
+  coordinates:
+    axis_1: 1.6644
+    axis_2: -3.6812
+  role: competitor
+  color: '#00A18C'
+  attributes:
+    Per-page meta tags out of the box: 3.0
+    Icon set from one logo: 1.0
+    Indexes crawlers look for: 5.0
+    Indexes language models look for: 2.0
+    Syndication feed: 5.0
+    Audio narration: 1.0
+    Sentence-synchronised read-along: 1.0
+    Plain-language rewriting: 1.0
+    Applies to HTML already published: 1.0
+    Local and offline, no account: 5.0
+    Light to install: 5.0
+    Scales past a hundred pages: 5.0
+    Themes and customisation: 5.0
+    Bilingual output and parity: 5.0
+    Maturity and ecosystem: 5.0
+  imputed_attributes: []
+- name: Astro
+  coordinates:
+    axis_1: 1.0718
+    axis_2: -3.6089
+  role: competitor
+  color: '#749E48'
+  attributes:
+    Per-page meta tags out of the box: 3.0
+    Icon set from one logo: 2.0
+    Indexes crawlers look for: 4.0
+    Indexes language models look for: 2.0
+    Syndication feed: 4.0
+    Audio narration: 1.0
+    Sentence-synchronised read-along: 1.0
+    Plain-language rewriting: 1.0
+    Applies to HTML already published: 1.0
+    Local and offline, no account: 4.0
+    Light to install: 2.0
+    Scales past a hundred pages: 5.0
+    Themes and customisation: 5.0
+    Bilingual output and parity: 4.0
+    Maturity and ecosystem: 5.0
+  imputed_attributes: []
+- name: Starlight
+  coordinates:
+    axis_1: 1.963
+    axis_2: -2.8344
+  role: competitor
+  color: '#1AC7C9'
+  attributes:
+    Per-page meta tags out of the box: 4.0
+    Icon set from one logo: 2.0
+    Indexes crawlers look for: 4.0
+    Indexes language models look for: 4.0
+    Syndication feed: 3.0
+    Audio narration: 1.0
+    Sentence-synchronised read-along: 1.0
+    Plain-language rewriting: 1.0
+    Applies to HTML already published: 1.0
+    Local and offline, no account: 4.0
+    Light to install: 2.0
+    Scales past a hundred pages: 5.0
+    Themes and customisation: 3.0
+    Bilingual output and parity: 5.0
+    Maturity and ecosystem: 4.0
+  imputed_attributes: []
+- name: Docusaurus
+  coordinates:
+    axis_1: 1.5369
+    axis_2: -3.4508
+  role: competitor
+  color: '#5CCE9F'
+  attributes:
+    Per-page meta tags out of the box: 4.0
+    Icon set from one logo: 2.0
+    Indexes crawlers look for: 4.0
+    Indexes language models look for: 2.0
+    Syndication feed: 4.0
+    Audio narration: 1.0
+    Sentence-synchronised read-along: 1.0
+    Plain-language rewriting: 1.0
+    Applies to HTML already published: 1.0
+    Local and offline, no account: 4.0
+    Light to install: 2.0
+    Scales past a hundred pages: 5.0
+    Themes and customisation: 4.0
+    Bilingual output and parity: 5.0
+    Maturity and ecosystem: 5.0
+  imputed_attributes: []
+- name: Eleventy
+  coordinates:
+    axis_1: -0.3306
+    axis_2: -2.9028
+  role: competitor
+  color: '#E58D5C'
+  attributes:
+    Per-page meta tags out of the box: 2.0
+    Icon set from one logo: 1.0
+    Indexes crawlers look for: 3.0
+    Indexes language models look for: 2.0
+    Syndication feed: 3.0
+    Audio narration: 1.0
+    Sentence-synchronised read-along: 1.0
+    Plain-language rewriting: 1.0
+    Applies to HTML already published: 1.0
+    Local and offline, no account: 5.0
+    Light to install: 3.0
+    Scales past a hundred pages: 4.0
+    Themes and customisation: 5.0
+    Bilingual output and parity: 3.0
+    Maturity and ecosystem: 4.0
+  imputed_attributes: []
+- name: Jekyll
+  coordinates:
+    axis_1: 0.3152
+    axis_2: -3.1495
+  role: competitor
+  color: '#909A34'
+  attributes:
+    Per-page meta tags out of the box: 4.0
+    Icon set from one logo: 1.0
+    Indexes crawlers look for: 4.0
+    Indexes language models look for: 1.0
+    Syndication feed: 4.0
+    Audio narration: 1.0
+    Sentence-synchronised read-along: 1.0
+    Plain-language rewriting: 1.0
+    Applies to HTML already published: 1.0
+    Local and offline, no account: 4.0
+    Light to install: 3.0
+    Scales past a hundred pages: 4.0
+    Themes and customisation: 4.0
+    Bilingual output and parity: 3.0
+    Maturity and ecosystem: 5.0
+  imputed_attributes: []
+- name: Zola
+  coordinates:
+    axis_1: 0.0649
+    axis_2: -2.5062
+  role: competitor
+  color: '#BF7A2B'
+  attributes:
+    Per-page meta tags out of the box: 2.0
+    Icon set from one logo: 1.0
+    Indexes crawlers look for: 4.0
+    Indexes language models look for: 1.0
+    Syndication feed: 4.0
+    Audio narration: 1.0
+    Sentence-synchronised read-along: 1.0
+    Plain-language rewriting: 1.0
+    Applies to HTML already published: 1.0
+    Local and offline, no account: 5.0
+    Light to install: 5.0
+    Scales past a hundred pages: 4.0
+    Themes and customisation: 4.0
+    Bilingual output and parity: 4.0
+    Maturity and ecosystem: 3.0
+  imputed_attributes: []
+- name: VitePress
+  coordinates:
+    axis_1: 0.1704
+    axis_2: -2.4385
+  role: competitor
+  color: '#D0A040'
+  attributes:
+    Per-page meta tags out of the box: 3.0
+    Icon set from one logo: 1.0
+    Indexes crawlers look for: 4.0
+    Indexes language models look for: 2.0
+    Syndication feed: 2.0
+    Audio narration: 1.0
+    Sentence-synchronised read-along: 1.0
+    Plain-language rewriting: 1.0
+    Applies to HTML already published: 1.0
+    Local and offline, no account: 4.0
+    Light to install: 2.0
+    Scales past a hundred pages: 4.0
+    Themes and customisation: 3.0
+    Bilingual output and parity: 4.0
+    Maturity and ecosystem: 4.0
+  imputed_attributes: []
+- name: Nextra
+  coordinates:
+    axis_1: -0.7262
+    axis_2: -2.2103
+  role: competitor
+  color: '#D6727A'
+  attributes:
+    Per-page meta tags out of the box: 3.0
+    Icon set from one logo: 1.0
+    Indexes crawlers look for: 3.0
+    Indexes language models look for: 1.0
+    Syndication feed: 2.0
+    Audio narration: 1.0
+    Sentence-synchronised read-along: 1.0
+    Plain-language rewriting: 1.0
+    Applies to HTML already published: 1.0
+    Local and offline, no account: 4.0
+    Light to install: 2.0
+    Scales past a hundred pages: 4.0
+    Themes and customisation: 3.0
+    Bilingual output and parity: 3.0
+    Maturity and ecosystem: 3.0
+  imputed_attributes: []
+- name: Quarto
+  coordinates:
+    axis_1: 0.2553
+    axis_2: -2.9126
+  role: competitor
+  color: '#AC982B'
+  attributes:
+    Per-page meta tags out of the box: 4.0
+    Icon set from one logo: 1.0
+    Indexes crawlers look for: 4.0
+    Indexes language models look for: 1.0
+    Syndication feed: 4.0
+    Audio narration: 1.0
+    Sentence-synchronised read-along: 1.0
+    Plain-language rewriting: 1.0
+    Applies to HTML already published: 1.0
+    Local and offline, no account: 4.0
+    Light to install: 2.0
+    Scales past a hundred pages: 4.0
+    Themes and customisation: 3.0
+    Bilingual output and parity: 3.0
+    Maturity and ecosystem: 4.0
+  imputed_attributes: []
+- name: Pelican
+  coordinates:
+    axis_1: -0.6018
+    axis_2: -2.3124
+  role: competitor
+  color: '#E07E6A'
+  attributes:
+    Per-page meta tags out of the box: 2.0
+    Icon set from one logo: 1.0
+    Indexes crawlers look for: 3.0
+    Indexes language models look for: 1.0
+    Syndication feed: 4.0
+    Audio narration: 1.0
+    Sentence-synchronised read-along: 1.0
+    Plain-language rewriting: 1.0
+    Applies to HTML already published: 1.0
+    Local and offline, no account: 5.0
+    Light to install: 4.0
+    Scales past a hundred pages: 4.0
+    Themes and customisation: 3.0
+    Bilingual output and parity: 3.0
+    Maturity and ecosystem: 3.0
+  imputed_attributes: []
+- name: mdBook
+  coordinates:
+    axis_1: -1.9451
+    axis_2: -1.707
+  role: worst
+  color: '#A52A2A'
+  attributes:
+    Per-page meta tags out of the box: 2.0
+    Icon set from one logo: 1.0
+    Indexes crawlers look for: 2.0
+    Indexes language models look for: 1.0
+    Syndication feed: 1.0
+    Audio narration: 1.0
+    Sentence-synchronised read-along: 1.0
+    Plain-language rewriting: 1.0
+    Applies to HTML already published: 1.0
+    Local and offline, no account: 5.0
+    Light to install: 5.0
+    Scales past a hundred pages: 4.0
+    Themes and customisation: 3.0
+    Bilingual output and parity: 2.0
+    Maturity and ecosystem: 4.0
+  imputed_attributes: []
+- name: Mintlify
+  coordinates:
+    axis_1: 3.0109
+    axis_2: -1.9593
+  role: right
+  color: '#007AFF'
+  attributes:
+    Per-page meta tags out of the box: 5.0
+    Icon set from one logo: 3.0
+    Indexes crawlers look for: 5.0
+    Indexes language models look for: 5.0
+    Syndication feed: 3.0
+    Audio narration: 1.0
+    Sentence-synchronised read-along: 1.0
+    Plain-language rewriting: 1.0
+    Applies to HTML already published: 1.0
+    Local and offline, no account: 1.0
+    Light to install: 5.0
+    Scales past a hundred pages: 5.0
+    Themes and customisation: 3.0
+    Bilingual output and parity: 4.0
+    Maturity and ecosystem: 4.0
+  imputed_attributes: []
+- name: GitBook
+  coordinates:
+    axis_1: 2.6557
+    axis_2: -1.6207
+  role: competitor
+  color: '#29A8D8'
+  attributes:
+    Per-page meta tags out of the box: 4.0
+    Icon set from one logo: 3.0
+    Indexes crawlers look for: 5.0
+    Indexes language models look for: 5.0
+    Syndication feed: 3.0
+    Audio narration: 1.0
+    Sentence-synchronised read-along: 1.0
+    Plain-language rewriting: 1.0
+    Applies to HTML already published: 1.0
+    Local and offline, no account: 1.0
+    Light to install: 5.0
+    Scales past a hundred pages: 5.0
+    Themes and customisation: 2.0
+    Bilingual output and parity: 4.0
+    Maturity and ecosystem: 4.0
+  imputed_attributes: []
+- name: next-seo
+  coordinates:
+    axis_1: -1.2515
+    axis_2: -1.1073
+  role: competitor
+  color: '#E280A0'
+  attributes:
+    Per-page meta tags out of the box: 5.0
+    Icon set from one logo: 1.0
+    Indexes crawlers look for: 1.0
+    Indexes language models look for: 1.0
+    Syndication feed: 1.0
+    Audio narration: 1.0
+    Sentence-synchronised read-along: 1.0
+    Plain-language rewriting: 1.0
+    Applies to HTML already published: 2.0
+    Local and offline, no account: 5.0
+    Light to install: 5.0
+    Scales past a hundred pages: 4.0
+    Themes and customisation: 1.0
+    Bilingual output and parity: 3.0
+    Maturity and ecosystem: 4.0
+  imputed_attributes: []
+- name: Yoast SEO
+  coordinates:
+    axis_1: 1.9822
+    axis_2: -1.5386
+  role: competitor
+  color: '#00B4CE'
+  attributes:
+    Per-page meta tags out of the box: 5.0
+    Icon set from one logo: 1.0
+    Indexes crawlers look for: 5.0
+    Indexes language models look for: 3.0
+    Syndication feed: 3.0
+    Audio narration: 1.0
+    Sentence-synchronised read-along: 1.0
+    Plain-language rewriting: 3.0
+    Applies to HTML already published: 4.0
+    Local and offline, no account: 3.0
+    Light to install: 3.0
+    Scales past a hundred pages: 5.0
+    Themes and customisation: 2.0
+    Bilingual output and parity: 4.0
+    Maturity and ecosystem: 5.0
+  imputed_attributes: []
+- name: RealFaviconGenerator
+  coordinates:
+    axis_1: -2.2703
+    axis_2: 0.5112
+  role: competitor
+  color: '#DEADFF'
+  attributes:
+    Per-page meta tags out of the box: 1.0
+    Icon set from one logo: 5.0
+    Indexes crawlers look for: 1.0
+    Indexes language models look for: 1.0
+    Syndication feed: 1.0
+    Audio narration: 1.0
+    Sentence-synchronised read-along: 1.0
+    Plain-language rewriting: 1.0
+    Applies to HTML already published: 3.0
+    Local and offline, no account: 3.0
+    Light to install: 5.0
+    Scales past a hundred pages: 3.0
+    Themes and customisation: 1.0
+    Bilingual output and parity: 1.0
+    Maturity and ecosystem: 4.0
+  imputed_attributes: []
+- name: pwa-asset-generator
+  coordinates:
+    axis_1: -2.3499
+    axis_2: 0.0203
+  role: competitor
+  color: '#FAA0D5'
+  attributes:
+    Per-page meta tags out of the box: 1.0
+    Icon set from one logo: 5.0
+    Indexes crawlers look for: 1.0
+    Indexes language models look for: 1.0
+    Syndication feed: 1.0
+    Audio narration: 1.0
+    Sentence-synchronised read-along: 1.0
+    Plain-language rewriting: 1.0
+    Applies to HTML already published: 3.0
+    Local and offline, no account: 4.0
+    Light to install: 2.0
+    Scales past a hundred pages: 3.0
+    Themes and customisation: 1.0
+    Bilingual output and parity: 1.0
+    Maturity and ecosystem: 3.0
+  imputed_attributes: []
+- name: Vale
+  coordinates:
+    axis_1: -2.1033
+    axis_2: 0.1635
+  role: competitor
+  color: '#AD69AD'
+  attributes:
+    Per-page meta tags out of the box: 1.0
+    Icon set from one logo: 1.0
+    Indexes crawlers look for: 1.0
+    Indexes language models look for: 1.0
+    Syndication feed: 1.0
+    Audio narration: 1.0
+    Sentence-synchronised read-along: 1.0
+    Plain-language rewriting: 4.0
+    Applies to HTML already published: 3.0
+    Local and offline, no account: 5.0
+    Light to install: 5.0
+    Scales past a hundred pages: 4.0
+    Themes and customisation: 1.0
+    Bilingual output and parity: 3.0
+    Maturity and ecosystem: 4.0
+  imputed_attributes: []
+- name: Hemingway Editor
+  coordinates:
+    axis_1: -3.0109
+    axis_2: 0.8668
+  role: competitor
+  color: '#C3AEFF'
+  attributes:
+    Per-page meta tags out of the box: 1.0
+    Icon set from one logo: 1.0
+    Indexes crawlers look for: 1.0
+    Indexes language models look for: 1.0
+    Syndication feed: 1.0
+    Audio narration: 1.0
+    Sentence-synchronised read-along: 1.0
+    Plain-language rewriting: 5.0
+    Applies to HTML already published: 1.0
+    Local and offline, no account: 3.0
+    Light to install: 4.0
+    Scales past a hundred pages: 1.0
+    Themes and customisation: 1.0
+    Bilingual output and parity: 1.0
+    Maturity and ecosystem: 4.0
+  imputed_attributes: []
+- name: ElevenReader
+  coordinates:
+    axis_1: -0.0946
+    axis_2: 3.6307
+  role: competitor
+  color: '#6FC0FF'
+  attributes:
+    Per-page meta tags out of the box: 1.0
+    Icon set from one logo: 1.0
+    Indexes crawlers look for: 1.0
+    Indexes language models look for: 1.0
+    Syndication feed: 1.0
+    Audio narration: 5.0
+    Sentence-synchronised read-along: 5.0
+    Plain-language rewriting: 1.0
+    Applies to HTML already published: 5.0
+    Local and offline, no account: 1.0
+    Light to install: 5.0
+    Scales past a hundred pages: 2.0
+    Themes and customisation: 1.0
+    Bilingual output and parity: 5.0
+    Maturity and ecosystem: 4.0
+  imputed_attributes: []
+- name: Speechify
+  coordinates:
+    axis_1: -0.0947
+    axis_2: 3.6812
+  role: top
+  color: '#AF52DE'
+  attributes:
+    Per-page meta tags out of the box: 1.0
+    Icon set from one logo: 1.0
+    Indexes crawlers look for: 1.0
+    Indexes language models look for: 1.0
+    Syndication feed: 1.0
+    Audio narration: 5.0
+    Sentence-synchronised read-along: 5.0
+    Plain-language rewriting: 2.0
+    Applies to HTML already published: 5.0
+    Local and offline, no account: 1.0
+    Light to install: 5.0
+    Scales past a hundred pages: 2.0
+    Themes and customisation: 1.0
+    Bilingual output and parity: 5.0
+    Maturity and ecosystem: 5.0
+  imputed_attributes: []
+- name: NotebookLM
+  coordinates:
+    axis_1: -0.8724
+    axis_2: 2.4205
+  role: competitor
+  color: '#86B2FF'
+  attributes:
+    Per-page meta tags out of the box: 1.0
+    Icon set from one logo: 1.0
+    Indexes crawlers look for: 1.0
+    Indexes language models look for: 1.0
+    Syndication feed: 1.0
+    Audio narration: 5.0
+    Sentence-synchronised read-along: 2.0
+    Plain-language rewriting: 3.0
+    Applies to HTML already published: 4.0
+    Local and offline, no account: 1.0
+    Light to install: 5.0
+    Scales past a hundred pages: 3.0
+    Themes and customisation: 1.0
+    Bilingual output and parity: 4.0
+    Maturity and ecosystem: 5.0
+  imputed_attributes: []
+- name: Podcastfy
+  coordinates:
+    axis_1: -1.1107
+    axis_2: 1.8398
+  role: competitor
+  color: '#9AA3FA'
+  attributes:
+    Per-page meta tags out of the box: 1.0
+    Icon set from one logo: 1.0
+    Indexes crawlers look for: 1.0
+    Indexes language models look for: 1.0
+    Syndication feed: 2.0
+    Audio narration: 5.0
+    Sentence-synchronised read-along: 1.0
+    Plain-language rewriting: 2.0
+    Applies to HTML already published: 4.0
+    Local and offline, no account: 3.0
+    Light to install: 3.0
+    Scales past a hundred pages: 2.0
+    Themes and customisation: 1.0
+    Bilingual output and parity: 4.0
+    Maturity and ecosystem: 2.0
+  imputed_attributes: []

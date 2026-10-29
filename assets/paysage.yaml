@@ -1,0 +1,666 @@
+meta:
+  reference: sprezzature-publish
+  rotation_deg: -68.209
+  explained_variance_ratio:
+  - 0.3737
+  - 0.1783
+  cumulative_variance: 0.552
+  n_approaches: 26
+  attributes:
+  - Balises méta par page, sans extension
+  - Jeu d'icônes depuis un seul logo
+  - Index que cherchent les robots
+  - Index que lisent les modèles de langue
+  - Flux de syndication
+  - Narration audio
+  - Lecture suivie phrase à phrase
+  - Réécriture en langue claire
+  - S'applique à du HTML déjà publié
+  - Local et hors ligne, sans compte
+  - Installation légère
+  - Tient au-delà de cent pages
+  - Thèmes et personnalisation
+  - Bilingue et parité
+  - Maturité et écosystème
+  lower_is_better: []
+  imputed_cells: []
+axes:
+  axis_1:
+    name: Autonomie ↔ Accessibilité
+    pole_left: Autonomie
+    pole_right: Accessibilité
+    loadings:
+      Balises méta par page, sans extension: 0.3828
+      Jeu d'icônes depuis un seul logo: 0.1519
+      Index que cherchent les robots: 0.423
+      Index que lisent les modèles de langue: 0.4892
+      Flux de syndication: 0.3218
+      Narration audio: 0.1693
+      Lecture suivie phrase à phrase: 0.247
+      Réécriture en langue claire: 0.0465
+      S'applique à du HTML déjà publié: 0.1092
+      Local et hors ligne, sans compte: -0.1589
+      Installation légère: 0.0022
+      Tient au-delà de cent pages: 0.1607
+      Thèmes et personnalisation: 0.1333
+      Bilingue et parité: 0.3669
+      Maturité et écosystème: -0.0369
+  axis_2:
+    name: Solidité ↔ Fluidité
+    pole_bottom: Solidité
+    pole_top: Fluidité
+    loadings:
+      Balises méta par page, sans extension: -0.145
+      Jeu d'icônes depuis un seul logo: 0.1089
+      Index que cherchent les robots: -0.1957
+      Index que lisent les modèles de langue: 0.0406
+      Flux de syndication: -0.2154
+      Narration audio: 0.4007
+      Lecture suivie phrase à phrase: 0.3747
+      Réécriture en langue claire: 0.2493
+      S'applique à du HTML déjà publié: 0.4087
+      Local et hors ligne, sans compte: -0.2541
+      Installation légère: 0.1948
+      Tient au-delà de cent pages: -0.3377
+      Thèmes et personnalisation: -0.3344
+      Bilingue et parité: 0.0195
+      Maturité et écosystème: -0.1477
+approaches:
+- name: sprezzature-publish
+  coordinates:
+    axis_1: 3.0109
+    axis_2: 3.6812
+  role: best
+  color: '#FF3B30'
+  attributes:
+    Balises méta par page, sans extension: 5.0
+    Jeu d'icônes depuis un seul logo: 5.0
+    Index que cherchent les robots: 5.0
+    Index que lisent les modèles de langue: 5.0
+    Flux de syndication: 4.0
+    Narration audio: 5.0
+    Lecture suivie phrase à phrase: 5.0
+    Réécriture en langue claire: 5.0
+    S'applique à du HTML déjà publié: 5.0
+    Local et hors ligne, sans compte: 5.0
+    Installation légère: 4.0
+    Tient au-delà de cent pages: 2.0
+    Thèmes et personnalisation: 2.0
+    Bilingue et parité: 3.0
+    Maturité et écosystème: 1.0
+  imputed_attributes: []
+- name: MkDocs Material
+  coordinates:
+    axis_1: 1.2926
+    axis_2: -3.1319
+  role: competitor
+  color: '#82D18C'
+  attributes:
+    Balises méta par page, sans extension: 4.0
+    Jeu d'icônes depuis un seul logo: 2.0
+    Index que cherchent les robots: 4.0
+    Index que lisent les modèles de langue: 2.0
+    Flux de syndication: 3.0
+    Narration audio: 1.0
+    Lecture suivie phrase à phrase: 1.0
+    Réécriture en langue claire: 1.0
+    S'applique à du HTML déjà publié: 1.0
+    Local et hors ligne, sans compte: 4.0
+    Installation légère: 3.0
+    Tient au-delà de cent pages: 5.0
+    Thèmes et personnalisation: 4.0
+    Bilingue et parité: 5.0
+    Maturité et écosystème: 5.0
+  imputed_attributes: []
+- name: Hugo
+  coordinates:
+    axis_1: 1.6644
+    axis_2: -3.6812
+  role: competitor
+  color: '#00A18C'
+  attributes:
+    Balises méta par page, sans extension: 3.0
+    Jeu d'icônes depuis un seul logo: 1.0
+    Index que cherchent les robots: 5.0
+    Index que lisent les modèles de langue: 2.0
+    Flux de syndication: 5.0
+    Narration audio: 1.0
+    Lecture suivie phrase à phrase: 1.0
+    Réécriture en langue claire: 1.0
+    S'applique à du HTML déjà publié: 1.0
+    Local et hors ligne, sans compte: 5.0
+    Installation légère: 5.0
+    Tient au-delà de cent pages: 5.0
+    Thèmes et personnalisation: 5.0
+    Bilingue et parité: 5.0
+    Maturité et écosystème: 5.0
+  imputed_attributes: []
+- name: Astro
+  coordinates:
+    axis_1: 1.0718
+    axis_2: -3.6089
+  role: competitor
+  color: '#749E48'
+  attributes:
+    Balises méta par page, sans extension: 3.0
+    Jeu d'icônes depuis un seul logo: 2.0
+    Index que cherchent les robots: 4.0
+    Index que lisent les modèles de langue: 2.0
+    Flux de syndication: 4.0
+    Narration audio: 1.0
+    Lecture suivie phrase à phrase: 1.0
+    Réécriture en langue claire: 1.0
+    S'applique à du HTML déjà publié: 1.0
+    Local et hors ligne, sans compte: 4.0
+    Installation légère: 2.0
+    Tient au-delà de cent pages: 5.0
+    Thèmes et personnalisation: 5.0
+    Bilingue et parité: 4.0
+    Maturité et écosystème: 5.0
+  imputed_attributes: []
+- name: Starlight
+  coordinates:
+    axis_1: 1.963
+    axis_2: -2.8344
+  role: competitor
+  color: '#1AC7C9'
+  attributes:
+    Balises méta par page, sans extension: 4.0
+    Jeu d'icônes depuis un seul logo: 2.0
+    Index que cherchent les robots: 4.0
+    Index que lisent les modèles de langue: 4.0
+    Flux de syndication: 3.0
+    Narration audio: 1.0
+    Lecture suivie phrase à phrase: 1.0
+    Réécriture en langue claire: 1.0
+    S'applique à du HTML déjà publié: 1.0
+    Local et hors ligne, sans compte: 4.0
+    Installation légère: 2.0
+    Tient au-delà de cent pages: 5.0
+    Thèmes et personnalisation: 3.0
+    Bilingue et parité: 5.0
+    Maturité et écosystème: 4.0
+  imputed_attributes: []
+- name: Docusaurus
+  coordinates:
+    axis_1: 1.5369
+    axis_2: -3.4508
+  role: competitor
+  color: '#5CCE9F'
+  attributes:
+    Balises méta par page, sans extension: 4.0
+    Jeu d'icônes depuis un seul logo: 2.0
+    Index que cherchent les robots: 4.0
+    Index que lisent les modèles de langue: 2.0
+    Flux de syndication: 4.0
+    Narration audio: 1.0
+    Lecture suivie phrase à phrase: 1.0
+    Réécriture en langue claire: 1.0
+    S'applique à du HTML déjà publié: 1.0
+    Local et hors ligne, sans compte: 4.0
+    Installation légère: 2.0
+    Tient au-delà de cent pages: 5.0
+    Thèmes et personnalisation: 4.0
+    Bilingue et parité: 5.0
+    Maturité et écosystème: 5.0
+  imputed_attributes: []
+- name: Eleventy
+  coordinates:
+    axis_1: -0.3306
+    axis_2: -2.9028
+  role: competitor
+  color: '#E58D5C'
+  attributes:
+    Balises méta par page, sans extension: 2.0
+    Jeu d'icônes depuis un seul logo: 1.0
+    Index que cherchent les robots: 3.0
+    Index que lisent les modèles de langue: 2.0
+    Flux de syndication: 3.0
+    Narration audio: 1.0
+    Lecture suivie phrase à phrase: 1.0
+    Réécriture en langue claire: 1.0
+    S'applique à du HTML déjà publié: 1.0
+    Local et hors ligne, sans compte: 5.0
+    Installation légère: 3.0
+    Tient au-delà de cent pages: 4.0
+    Thèmes et personnalisation: 5.0
+    Bilingue et parité: 3.0
+    Maturité et écosystème: 4.0
+  imputed_attributes: []
+- name: Jekyll
+  coordinates:
+    axis_1: 0.3152
+    axis_2: -3.1495
+  role: competitor
+  color: '#909A34'
+  attributes:
+    Balises méta par page, sans extension: 4.0
+    Jeu d'icônes depuis un seul logo: 1.0
+    Index que cherchent les robots: 4.0
+    Index que lisent les modèles de langue: 1.0
+    Flux de syndication: 4.0
+    Narration audio: 1.0
+    Lecture suivie phrase à phrase: 1.0
+    Réécriture en langue claire: 1.0
+    S'applique à du HTML déjà publié: 1.0
+    Local et hors ligne, sans compte: 4.0
+    Installation légère: 3.0
+    Tient au-delà de cent pages: 4.0
+    Thèmes et personnalisation: 4.0
+    Bilingue et parité: 3.0
+    Maturité et écosystème: 5.0
+  imputed_attributes: []
+- name: Zola
+  coordinates:
+    axis_1: 0.0649
+    axis_2: -2.5062
+  role: competitor
+  color: '#BF7A2B'
+  attributes:
+    Balises méta par page, sans extension: 2.0
+    Jeu d'icônes depuis un seul logo: 1.0
+    Index que cherchent les robots: 4.0
+    Index que lisent les modèles de langue: 1.0
+    Flux de syndication: 4.0
+    Narration audio: 1.0
+    Lecture suivie phrase à phrase: 1.0
+    Réécriture en langue claire: 1.0
+    S'applique à du HTML déjà publié: 1.0
+    Local et hors ligne, sans compte: 5.0
+    Installation légère: 5.0
+    Tient au-delà de cent pages: 4.0
+    Thèmes et personnalisation: 4.0
+    Bilingue et parité: 4.0
+    Maturité et écosystème: 3.0
+  imputed_attributes: []
+- name: VitePress
+  coordinates:
+    axis_1: 0.1704
+    axis_2: -2.4385
+  role: competitor
+  color: '#D0A040'
+  attributes:
+    Balises méta par page, sans extension: 3.0
+    Jeu d'icônes depuis un seul logo: 1.0
+    Index que cherchent les robots: 4.0
+    Index que lisent les modèles de langue: 2.0
+    Flux de syndication: 2.0
+    Narration audio: 1.0
+    Lecture suivie phrase à phrase: 1.0
+    Réécriture en langue claire: 1.0
+    S'applique à du HTML déjà publié: 1.0
+    Local et hors ligne, sans compte: 4.0
+    Installation légère: 2.0
+    Tient au-delà de cent pages: 4.0
+    Thèmes et personnalisation: 3.0
+    Bilingue et parité: 4.0
+    Maturité et écosystème: 4.0
+  imputed_attributes: []
+- name: Nextra
+  coordinates:
+    axis_1: -0.7262
+    axis_2: -2.2103
+  role: competitor
+  color: '#D6727A'
+  attributes:
+    Balises méta par page, sans extension: 3.0
+    Jeu d'icônes depuis un seul logo: 1.0
+    Index que cherchent les robots: 3.0
+    Index que lisent les modèles de langue: 1.0
+    Flux de syndication: 2.0
+    Narration audio: 1.0
+    Lecture suivie phrase à phrase: 1.0
+    Réécriture en langue claire: 1.0
+    S'applique à du HTML déjà publié: 1.0
+    Local et hors ligne, sans compte: 4.0
+    Installation légère: 2.0
+    Tient au-delà de cent pages: 4.0
+    Thèmes et personnalisation: 3.0
+    Bilingue et parité: 3.0
+    Maturité et écosystème: 3.0
+  imputed_attributes: []
+- name: Quarto
+  coordinates:
+    axis_1: 0.2553
+    axis_2: -2.9126
+  role: competitor
+  color: '#AC982B'
+  attributes:
+    Balises méta par page, sans extension: 4.0
+    Jeu d'icônes depuis un seul logo: 1.0
+    Index que cherchent les robots: 4.0
+    Index que lisent les modèles de langue: 1.0
+    Flux de syndication: 4.0
+    Narration audio: 1.0
+    Lecture suivie phrase à phrase: 1.0
+    Réécriture en langue claire: 1.0
+    S'applique à du HTML déjà publié: 1.0
+    Local et hors ligne, sans compte: 4.0
+    Installation légère: 2.0
+    Tient au-delà de cent pages: 4.0
+    Thèmes et personnalisation: 3.0
+    Bilingue et parité: 3.0
+    Maturité et écosystème: 4.0
+  imputed_attributes: []
+- name: Pelican
+  coordinates:
+    axis_1: -0.6018
+    axis_2: -2.3124
+  role: competitor
+  color: '#E07E6A'
+  attributes:
+    Balises méta par page, sans extension: 2.0
+    Jeu d'icônes depuis un seul logo: 1.0
+    Index que cherchent les robots: 3.0
+    Index que lisent les modèles de langue: 1.0
+    Flux de syndication: 4.0
+    Narration audio: 1.0
+    Lecture suivie phrase à phrase: 1.0
+    Réécriture en langue claire: 1.0
+    S'applique à du HTML déjà publié: 1.0
+    Local et hors ligne, sans compte: 5.0
+    Installation légère: 4.0
+    Tient au-delà de cent pages: 4.0
+    Thèmes et personnalisation: 3.0
+    Bilingue et parité: 3.0
+    Maturité et écosystème: 3.0
+  imputed_attributes: []
+- name: mdBook
+  coordinates:
+    axis_1: -1.9451
+    axis_2: -1.707
+  role: worst
+  color: '#A52A2A'
+  attributes:
+    Balises méta par page, sans extension: 2.0
+    Jeu d'icônes depuis un seul logo: 1.0
+    Index que cherchent les robots: 2.0
+    Index que lisent les modèles de langue: 1.0
+    Flux de syndication: 1.0
+    Narration audio: 1.0
+    Lecture suivie phrase à phrase: 1.0
+    Réécriture en langue claire: 1.0
+    S'applique à du HTML déjà publié: 1.0
+    Local et hors ligne, sans compte: 5.0
+    Installation légère: 5.0
+    Tient au-delà de cent pages: 4.0
+    Thèmes et personnalisation: 3.0
+    Bilingue et parité: 2.0
+    Maturité et écosystème: 4.0
+  imputed_attributes: []
+- name: Mintlify
+  coordinates:
+    axis_1: 3.0109
+    axis_2: -1.9593
+  role: right
+  color: '#007AFF'
+  attributes:
+    Balises méta par page, sans extension: 5.0
+    Jeu d'icônes depuis un seul logo: 3.0
+    Index que cherchent les robots: 5.0
+    Index que lisent les modèles de langue: 5.0
+    Flux de syndication: 3.0
+    Narration audio: 1.0
+    Lecture suivie phrase à phrase: 1.0
+    Réécriture en langue claire: 1.0
+    S'applique à du HTML déjà publié: 1.0
+    Local et hors ligne, sans compte: 1.0
+    Installation légère: 5.0
+    Tient au-delà de cent pages: 5.0
+    Thèmes et personnalisation: 3.0
+    Bilingue et parité: 4.0
+    Maturité et écosystème: 4.0
+  imputed_attributes: []
+- name: GitBook
+  coordinates:
+    axis_1: 2.6557
+    axis_2: -1.6207
+  role: competitor
+  color: '#29A8D8'
+  attributes:
+    Balises méta par page, sans extension: 4.0
+    Jeu d'icônes depuis un seul logo: 3.0
+    Index que cherchent les robots: 5.0
+    Index que lisent les modèles de langue: 5.0
+    Flux de syndication: 3.0
+    Narration audio: 1.0
+    Lecture suivie phrase à phrase: 1.0
+    Réécriture en langue claire: 1.0
+    S'applique à du HTML déjà publié: 1.0
+    Local et hors ligne, sans compte: 1.0
+    Installation légère: 5.0
+    Tient au-delà de cent pages: 5.0
+    Thèmes et personnalisation: 2.0
+    Bilingue et parité: 4.0
+    Maturité et écosystème: 4.0
+  imputed_attributes: []
+- name: next-seo
+  coordinates:
+    axis_1: -1.2515
+    axis_2: -1.1073
+  role: competitor
+  color: '#E280A0'
+  attributes:
+    Balises méta par page, sans extension: 5.0
+    Jeu d'icônes depuis un seul logo: 1.0
+    Index que cherchent les robots: 1.0
+    Index que lisent les modèles de langue: 1.0
+    Flux de syndication: 1.0
+    Narration audio: 1.0
+    Lecture suivie phrase à phrase: 1.0
+    Réécriture en langue claire: 1.0
+    S'applique à du HTML déjà publié: 2.0
+    Local et hors ligne, sans compte: 5.0
+    Installation légère: 5.0
+    Tient au-delà de cent pages: 4.0
+    Thèmes et personnalisation: 1.0
+    Bilingue et parité: 3.0
+    Maturité et écosystème: 4.0
+  imputed_attributes: []
+- name: Yoast SEO
+  coordinates:
+    axis_1: 1.9822
+    axis_2: -1.5386
+  role: competitor
+  color: '#00B4CE'
+  attributes:
+    Balises méta par page, sans extension: 5.0
+    Jeu d'icônes depuis un seul logo: 1.0
+    Index que cherchent les robots: 5.0
+    Index que lisent les modèles de langue: 3.0
+    Flux de syndication: 3.0
+    Narration audio: 1.0
+    Lecture suivie phrase à phrase: 1.0
+    Réécriture en langue claire: 3.0
+    S'applique à du HTML déjà publié: 4.0
+    Local et hors ligne, sans compte: 3.0
+    Installation légère: 3.0
+    Tient au-delà de cent pages: 5.0
+    Thèmes et personnalisation: 2.0
+    Bilingue et parité: 4.0
+    Maturité et écosystème: 5.0
+  imputed_attributes: []
+- name: RealFaviconGenerator
+  coordinates:
+    axis_1: -2.2703
+    axis_2: 0.5112
+  role: competitor
+  color: '#DEADFF'
+  attributes:
+    Balises méta par page, sans extension: 1.0
+    Jeu d'icônes depuis un seul logo: 5.0
+    Index que cherchent les robots: 1.0
+    Index que lisent les modèles de langue: 1.0
+    Flux de syndication: 1.0
+    Narration audio: 1.0
+    Lecture suivie phrase à phrase: 1.0
+    Réécriture en langue claire: 1.0
+    S'applique à du HTML déjà publié: 3.0
+    Local et hors ligne, sans compte: 3.0
+    Installation légère: 5.0
+    Tient au-delà de cent pages: 3.0
+    Thèmes et personnalisation: 1.0
+    Bilingue et parité: 1.0
+    Maturité et écosystème: 4.0
+  imputed_attributes: []
+- name: pwa-asset-generator
+  coordinates:
+    axis_1: -2.3499
+    axis_2: 0.0203
+  role: competitor
+  color: '#FAA0D5'
+  attributes:
+    Balises méta par page, sans extension: 1.0
+    Jeu d'icônes depuis un seul logo: 5.0
+    Index que cherchent les robots: 1.0
+    Index que lisent les modèles de langue: 1.0
+    Flux de syndication: 1.0
+    Narration audio: 1.0
+    Lecture suivie phrase à phrase: 1.0
+    Réécriture en langue claire: 1.0
+    S'applique à du HTML déjà publié: 3.0
+    Local et hors ligne, sans compte: 4.0
+    Installation légère: 2.0
+    Tient au-delà de cent pages: 3.0
+    Thèmes et personnalisation: 1.0
+    Bilingue et parité: 1.0
+    Maturité et écosystème: 3.0
+  imputed_attributes: []
+- name: Vale
+  coordinates:
+    axis_1: -2.1033
+    axis_2: 0.1635
+  role: competitor
+  color: '#AD69AD'
+  attributes:
+    Balises méta par page, sans extension: 1.0
+    Jeu d'icônes depuis un seul logo: 1.0
+    Index que cherchent les robots: 1.0
+    Index que lisent les modèles de langue: 1.0
+    Flux de syndication: 1.0
+    Narration audio: 1.0
+    Lecture suivie phrase à phrase: 1.0
+    Réécriture en langue claire: 4.0
+    S'applique à du HTML déjà publié: 3.0
+    Local et hors ligne, sans compte: 5.0
+    Installation légère: 5.0
+    Tient au-delà de cent pages: 4.0
+    Thèmes et personnalisation: 1.0
+    Bilingue et parité: 3.0
+    Maturité et écosystème: 4.0
+  imputed_attributes: []
+- name: Hemingway Editor
+  coordinates:
+    axis_1: -3.0109
+    axis_2: 0.8668
+  role: competitor
+  color: '#C3AEFF'
+  attributes:
+    Balises méta par page, sans extension: 1.0
+    Jeu d'icônes depuis un seul logo: 1.0
+    Index que cherchent les robots: 1.0
+    Index que lisent les modèles de langue: 1.0
+    Flux de syndication: 1.0
+    Narration audio: 1.0
+    Lecture suivie phrase à phrase: 1.0
+    Réécriture en langue claire: 5.0
+    S'applique à du HTML déjà publié: 1.0
+    Local et hors ligne, sans compte: 3.0
+    Installation légère: 4.0
+    Tient au-delà de cent pages: 1.0
+    Thèmes et personnalisation: 1.0
+    Bilingue et parité: 1.0
+    Maturité et écosystème: 4.0
+  imputed_attributes: []
+- name: ElevenReader
+  coordinates:
+    axis_1: -0.0946
+    axis_2: 3.6307
+  role: competitor
+  color: '#6FC0FF'
+  attributes:
+    Balises méta par page, sans extension: 1.0
+    Jeu d'icônes depuis un seul logo: 1.0
+    Index que cherchent les robots: 1.0
+    Index que lisent les modèles de langue: 1.0
+    Flux de syndication: 1.0
+    Narration audio: 5.0
+    Lecture suivie phrase à phrase: 5.0
+    Réécriture en langue claire: 1.0
+    S'applique à du HTML déjà publié: 5.0
+    Local et hors ligne, sans compte: 1.0
+    Installation légère: 5.0
+    Tient au-delà de cent pages: 2.0
+    Thèmes et personnalisation: 1.0
+    Bilingue et parité: 5.0
+    Maturité et écosystème: 4.0
+  imputed_attributes: []
+- name: Speechify
+  coordinates:
+    axis_1: -0.0947
+    axis_2: 3.6812
+  role: top
+  color: '#AF52DE'
+  attributes:
+    Balises méta par page, sans extension: 1.0
+    Jeu d'icônes depuis un seul logo: 1.0
+    Index que cherchent les robots: 1.0
+    Index que lisent les modèles de langue: 1.0
+    Flux de syndication: 1.0
+    Narration audio: 5.0
+    Lecture suivie phrase à phrase: 5.0
+    Réécriture en langue claire: 2.0
+    S'applique à du HTML déjà publié: 5.0
+    Local et hors ligne, sans compte: 1.0
+    Installation légère: 5.0
+    Tient au-delà de cent pages: 2.0
+    Thèmes et personnalisation: 1.0
+    Bilingue et parité: 5.0
+    Maturité et écosystème: 5.0
+  imputed_attributes: []
+- name: NotebookLM
+  coordinates:
+    axis_1: -0.8724
+    axis_2: 2.4205
+  role: competitor
+  color: '#86B2FF'
+  attributes:
+    Balises méta par page, sans extension: 1.0
+    Jeu d'icônes depuis un seul logo: 1.0
+    Index que cherchent les robots: 1.0
+    Index que lisent les modèles de langue: 1.0
+    Flux de syndication: 1.0
+    Narration audio: 5.0
+    Lecture suivie phrase à phrase: 2.0
+    Réécriture en langue claire: 3.0
+    S'applique à du HTML déjà publié: 4.0
+    Local et hors ligne, sans compte: 1.0
+    Installation légère: 5.0
+    Tient au-delà de cent pages: 3.0
+    Thèmes et personnalisation: 1.0
+    Bilingue et parité: 4.0
+    Maturité et écosystème: 5.0
+  imputed_attributes: []
+- name: Podcastfy
+  coordinates:
+    axis_1: -1.1107
+    axis_2: 1.8398
+  role: competitor
+  color: '#9AA3FA'
+  attributes:
+    Balises méta par page, sans extension: 1.0
+    Jeu d'icônes depuis un seul logo: 1.0
+    Index que cherchent les robots: 1.0
+    Index que lisent les modèles de langue: 1.0
+    Flux de syndication: 2.0
+    Narration audio: 5.0
+    Lecture suivie phrase à phrase: 1.0
+    Réécriture en langue claire: 2.0
+    S'applique à du HTML déjà publié: 4.0
+    Local et hors ligne, sans compte: 3.0
+    Installation légère: 3.0
+    Tient au-delà de cent pages: 2.0
+    Thèmes et personnalisation: 1.0
+    Bilingue et parité: 4.0
+    Maturité et écosystème: 2.0
+  imputed_attributes: []
