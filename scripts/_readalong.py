@@ -84,7 +84,7 @@ from collections.abc import Callable, Sequence
 from dataclasses import dataclass, field
 from html.parser import HTMLParser
 from pathlib import Path
-from typing import TypeAlias
+from typing import Any, TypeAlias, TypeVar
 
 #: How a block of prose becomes sentences. Threaded through every
 #: read-along entry point rather than imported, so the page and the
@@ -601,7 +601,21 @@ NOTE_SECTION_HEADINGS: frozenset[str] = frozenset(
         "further reading",
         "works cited",
         "citations",
-        "see also",
+        # "see also" / "voir aussi" is deliberately NOT here, and the reason
+        # is the corroboration below rather than taste. Every name in this
+        # table points at *sources*; "See also" points at *siblings*, and a
+        # listener who reaches the end of a page wants to be told where to
+        # go next. It is three glossed links and seventeen seconds, not the
+        # ten minutes of author names and arXiv numbers this rule exists to
+        # spare them.
+        #
+        # And `_CITED_SHARE` cannot arbitrate it. The guard that makes a
+        # by-name rule safe is that the section must also *look* like
+        # apparatus, which for "Notes" separates an essay's asides from a
+        # bibliography. A "See also" section is a list of links by
+        # definition, so `_LOOKS_CITED` matches every one of them and the
+        # name fires unconditionally: the corroboration is vacuous for this
+        # one name and only for this one.
         # French
         "references",
         "bibliographie",
@@ -674,6 +688,69 @@ def _mark_named_sections(blocks: list[_Block]) -> bool:
             b.narrated = False
         found = True
     return found
+
+
+#: Any mapping shaped like a narration segment. Named by variable rather
+#: than by `dict` so :func:`drop_note_sections` hands the caller back the
+#: very type it passed in -- ``list[Segment]`` in, ``list[Segment]`` out.
+_SegmentT = TypeVar("_SegmentT", bound="dict[str, Any]")
+
+
+def drop_note_sections(segments: list[_SegmentT]) -> list[_SegmentT]:
+    """The same silencing, for a narration read straight from Markdown.
+
+    Two routes reach the voice. A page already in HTML goes through
+    :func:`page_blocks`, which marks its apparatus and is where this rule
+    has always lived. A Markdown post goes through
+    ``_narrate.extract_segments``, which knew nothing about it -- so the
+    narrator read the bibliography and the binder, later, refused to wrap
+    it, with ``md_to_html --readalong`` reporting a page and a narration
+    that "disagree at sentence 40".
+
+    That is not a disagreement about the page. It is one rule living on one
+    side of a pair, which is why this takes the vocabulary and the
+    corroboration from the module that already owns them rather than
+    restating either. The alternative -- a second table in ``_narrate`` --
+    agrees with this one right up to the day somebody edits one of them.
+
+    Only the by-name half is portable. The structural half reads footnote
+    markers to their targets, and a Markdown source has no targets yet:
+    they are anchors, and anchors are made by rendering.
+
+    Parameters
+    ----------
+    segments : list of mapping
+        ``_narrate.Segment`` mappings, in reading order. Typed by variable
+        so the caller gets its own element type back and needs no cast.
+
+    Returns
+    -------
+    list of mapping
+        The same list, minus any section whose heading names an apparatus
+        and whose body looks like one.
+    """
+    keep: list[bool] = [True] * len(segments)
+    for index, segment in enumerate(segments):
+        if segment.get("kind") != "heading":
+            continue
+        if _fold(segment.get("text", "")) not in NOTE_SECTION_HEADINGS:
+            continue
+        end = index + 1
+        while end < len(segments) and segments[end].get("kind") != "heading":
+            end += 1
+        body = segments[index + 1 : end]
+        if not body:
+            continue
+        cited = sum(
+            1
+            for item in body
+            if item.get("kind") == "list_item" or _LOOKS_CITED.search(item.get("text", ""))
+        )
+        if cited / len(body) < _CITED_SHARE:
+            continue
+        for position in range(index, end):
+            keep[position] = False
+    return [segment for segment, kept in zip(segments, keep) if kept]
 
 
 #: How far back from the first note to look for the heading that opens the

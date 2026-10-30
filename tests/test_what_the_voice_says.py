@@ -485,3 +485,77 @@ def test_a_page_can_have_both_kinds_of_section() -> None:
     )
     blocks = _readalong.page_blocks(html, scope="article")
     assert len(blocks) == 1 and blocks[0].tag == "p"
+
+
+# ── The two routes to the voice, and the rule they have to share ───────────
+
+
+def _markdown_sections(*headings: str) -> str:
+    """A post whose every named section is a list of glossed links."""
+    body = "# A post\n\nBody text here.\n"
+    for heading in headings:
+        body += (
+            f"\n## {heading}\n\n"
+            "- [first](https://example.com/a) — one line about it.\n"
+            "- [second](https://example.com/b) — another line.\n"
+        )
+    return body + "\n## License\n\nBSD.\n"
+
+
+@pytest.mark.parametrize(
+    "heading",
+    ["References", "Bibliography", "Références", "Further reading", "Sources", "Works cited"],
+)
+def test_the_markdown_route_silences_what_the_page_route_silences(heading: str) -> None:
+    """
+    One rule, on both sides of a pair that has to agree.
+
+    A narration reaches the voice two ways: an HTML page through
+    ``page_blocks``, a Markdown post through ``extract_segments``. Only the
+    first knew about reference apparatus, so the voice read the
+    bibliography and the binder — which does apply the rule — then refused
+    the page it was handed, reporting that the two "disagree at sentence
+    40". The disagreement was never about the page.
+    """
+    from _narrate import extract_segments
+
+    kept = _readalong.drop_note_sections(extract_segments(_markdown_sections(heading)))
+    spoken = [segment["text"] for segment in kept]
+    assert heading not in spoken, spoken
+    assert "first — one line about it." not in spoken, spoken
+    # And the prose on either side of it is untouched.
+    assert spoken[-2:] == ["License", "BSD."], spoken
+
+
+@pytest.mark.parametrize("heading", ["See also", "Voir aussi", "SEE ALSO"])
+def test_a_see_also_section_is_still_read_aloud(heading: str) -> None:
+    """
+    "See also" names siblings, not sources, and the listener wants it.
+
+    It is also the one name the corroboration cannot arbitrate: a section
+    of links matches ``_LOOKS_CITED`` by definition, so putting the name in
+    the table fires it unconditionally. English had it and French did not,
+    which left the same page silent in one language and spoken in the
+    other.
+    """
+    from _narrate import extract_segments
+
+    kept = _readalong.drop_note_sections(extract_segments(_markdown_sections(heading)))
+    spoken = [segment["text"] for segment in kept]
+    assert heading in spoken, spoken
+    assert "first — one line about it." in spoken, spoken
+
+
+def test_a_prose_section_called_sources_is_still_read_from_markdown() -> None:
+    """The corroboration survives the port: the name proposes, the shape decides."""
+    from _narrate import extract_segments
+
+    markdown = (
+        "# A post\n\nBody.\n\n## Sources\n\n"
+        "Where this came from, in prose.\n\n"
+        "And a second paragraph of it.\n\n"
+        "And a third, still prose.\n"
+    )
+    spoken = [s["text"] for s in _readalong.drop_note_sections(extract_segments(markdown))]
+    assert "Sources" in spoken, spoken
+    assert "Where this came from, in prose." in spoken, spoken

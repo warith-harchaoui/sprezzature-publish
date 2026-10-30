@@ -664,7 +664,12 @@ def main() -> int:
         spoken_blocks = [(block.tag, block.spoken, block.in_quote) for block in page]
         spoken_segments: list[Segment] | None = segments_from_blocks(spoken_blocks)
     else:
-        segments = extract_segments(source)
+        # The same silencing the HTML route gets for free from
+        # `page_blocks`. Without it the two halves of this package disagree
+        # about what belongs to the reading: the voice says the
+        # bibliography and the read-along binder, which does apply the
+        # rule, then refuses the page it was handed.
+        segments = _readalong.drop_note_sections(extract_segments(source))
         spoken_segments = None
     if not segments:
         print(f"FAIL post is empty (no narrate-able segments): {args.post}", file=sys.stderr)
