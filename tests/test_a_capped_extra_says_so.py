@@ -300,9 +300,13 @@ def test_a_measured_floor_is_still_the_floor_the_manifest_names(name: str, versi
 
     assert (name, version) in named, (
         f"MEASURED_AT_THEIR_FLOOR records {name} {version}, which no extra in "
-        f"pyproject.toml names any more. Re-read "
-        f"https://pypi.org/pypi/{name}/<the new floor>/json and update the "
-        "table with what it says."
+        "pyproject.toml names any more. Re-read the simple index — "
+        f"https://pypi.org/simple/{name}/ with "
+        "Accept: application/vnd.pypi.simple.v1+json, and take the "
+        "requires-python off the files of the *new* floor — then update the "
+        "table with what it says. Not importlib.metadata, and not the JSON "
+        "API: a floor is not a pin, and the installed copy answers a "
+        "different question."
     )
 
 
