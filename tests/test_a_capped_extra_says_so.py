@@ -85,20 +85,22 @@ EXTRAS: dict[str, list[str]] = PROJECT.get("optional-dependencies", {})
 #:
 #: The uncapped readings are kept rather than omitted, because an absence that
 #: was measured and an absence that was never looked at are different facts.
-#: Not one entry here carries the ceiling, which is this package's whole
-#: shape: its extras are light third-party libraries, and the cap arrives only
-#: through the two sibling-suite dependencies in the table below.
+#: Until ``wallet-helper`` arrived, not one entry here carried the ceiling, and
+#: that was this package's whole shape: its extras were light third-party
+#: libraries and the cap always came one hop down, through the table below.
+#: ``wallet-helper`` is the first direct one, which changes nothing about which
+#: extras are capped — ``[prose]`` already was — and does change what a reader
+#: of the manifest can see without following a dependency's dependencies.
 MEASURED_AT_THEIR_FLOOR: dict[tuple[str, str], str] = {
-    # Every floor this manifest names whose dependency declares a window at
-    # all. None of them carries the ceiling directly — which is the finding,
-    # not an empty result: in this package the cap always arrives one hop
-    # down, through the table below.
     ("markdown", "3.5"): ">=3.8",
     ("Pillow", "10.0.0"): ">=3.8",
     ("requests", "2.31"): ">=3.7",
     ("mmdc", "0.3"): ">=3.4",
     ("langdetect", "1.0.9"): "",
     ("sprezzature-audio", "1.5.0"): ">=3.10",
+    # `>=1.3` resolves to 1.3.0, the lowest published; 1.3.0 and 1.3.1 are the
+    # only 1.3.x files on the index and both read the same.
+    ("wallet-helper", "1.3"): "<3.14,>=3.10",
 }
 
 #: The ceiling one hop further down, for a dependency whose *own* window is

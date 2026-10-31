@@ -13,8 +13,14 @@
 #                            generated <meta> tags match the page language.
 #   - best-engine-ai-helper: routes the actual LLM call (Ollama by default;
 #                            see SPREZZATURE_LLM_* env vars).
+#   - wallet-helper        : the result cache (scripts/_wallet.py). Not just
+#                            "don't ask twice" but "don't ask twice at the
+#                            same time": three concurrent runs asking for one
+#                            rewrite got three different answers from the
+#                            model and kept whichever was written last.
 
 click>=8.1
 requests>=2.31.0
 langdetect>=1.0.9
 best-engine-ai-helper>=1.4
+wallet-helper>=1.3,<2

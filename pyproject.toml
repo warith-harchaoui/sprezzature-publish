@@ -47,13 +47,16 @@ icons = ["Pillow>=10.0.0"]
 lint = ["mmdc>=0.3", "requests>=2.31"]
 # Meta tags and the plain-language rewrite both ask a local model.
 #
-# **Not installable on Python 3.14.** Not visible in this list, which is the
-# reason for writing it down: `best-engine-ai-helper>=1.4` -- resolving to
-# 1.4.0, the lowest published -- declares `>=3.10` on the PyPI simple index
-# and looks clean. Its own base dependency is `os-helper<3,>=2.3.0`, and **no
-# os-helper release on PyPI has ever shipped without `<3.14`** (checked across
-# its whole simple index, not sampled), so the ceiling arrives one hop down
-# and arrives unavoidably. Read off the index rather than off the installed
+# **Not installable on Python 3.14**, and as of `wallet-helper` joining this
+# list the ceiling is finally visible *in* it -- `wallet-helper>=1.3`
+# resolving to 1.3.0 declares `<3.14,>=3.10` on the simple index, read there
+# on 2026-10-31. It was not visible before, which is the reason the rest of
+# this paragraph was written: `best-engine-ai-helper>=1.4` -- resolving to
+# 1.4.0, the lowest published -- declares `>=3.10` and looks clean. Its own
+# base dependency is `os-helper<3,>=2.3.0`, and **no os-helper release on
+# PyPI has ever shipped without `<3.14`** (checked across its whole simple
+# index, not sampled), so the ceiling arrived one hop down and arrived
+# unavoidably even then. Read off the index rather than off the installed
 # copy: a floor is not a pin, and the resolved version answers a different
 # question. `requires-python` above keeps no ceiling on purpose -- the base
 # install is `click`, it resolves on 3.14, and capping the package would
@@ -64,6 +67,17 @@ prose = [
     # Every LLM call across sprezzature-* routes through this one function,
     # so no script here talks to Ollama directly.
     "best-engine-ai-helper>=1.4",
+    # The result cache behind both tools (scripts/_wallet.py). It is here for
+    # the one property the hand-rolled cache could not have: three processes
+    # asking for the same rewrite on a cold cache made three model calls
+    # 0.2 ms apart and got three *different* answers, and the entry that
+    # survived was whichever wrote last. Measured in a clean venv on top of
+    # this very list: **one new distribution, 272 kB**, no new transitive
+    # package at all, because `os-helper` and `click` arrive through
+    # `best-engine-ai-helper` already. The major is capped because an
+    # unbounded ceiling on a tool is a red suite waiting for somebody else's
+    # release day -- the same reason `mypy>=1.11,<3` is bounded below.
+    "wallet-helper>=1.3,<2",
 ]
 # Narration and the read-along. The *voices* are not here: synthesis lives in
 # sprezzature-audio, which owns the sound modality in both directions, and is

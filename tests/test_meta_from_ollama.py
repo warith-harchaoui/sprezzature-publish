@@ -16,6 +16,7 @@ from unittest.mock import MagicMock, patch
 
 import meta_from_ollama as meta
 import pytest
+from _wallet import memoized
 
 
 @pytest.fixture
@@ -136,17 +137,55 @@ class TestCache:
         assert meta._cache_key("g", "p", "s", "en", "OTHER") != base
 
     def test_round_trip(self, fresh_cache):
-        meta._cache_set("k1", {"title": "Hi"})
-        assert meta._cache_get("k1") == {"title": "Hi"}
+        # The read/write pair became one joint, so what a round trip means is
+        # now "the second ask does not run the work again".
+        runs: list[int] = []
 
-    def test_corrupt_cache_file_returns_none(self, fresh_cache):
-        # A corrupt JSON entry is treated as a miss so the model can refresh.
+        def work() -> dict:
+            runs.append(1)
+            return {"title": "Hi"}
+
+        first = memoized("meta", "k1", work, cache_dir=fresh_cache)
+        second = memoized("meta", "k1", work, cache_dir=fresh_cache)
+        assert first == second == {"title": "Hi"}
+        assert len(runs) == 1
+
+    def test_corrupt_store_recomputes_instead_of_raising(self, fresh_cache):
+        # The pair this replaced read a corrupt entry as a miss. Keeping that
+        # is the point: a cache that crashes is worse than no cache, and a
+        # ledger file can be truncated by a full disk or an interrupted write.
         fresh_cache.mkdir(parents=True)
-        (fresh_cache / "abc.json").write_text("not valid json", encoding="utf-8")
-        assert meta._cache_get("abc") is None
+        (fresh_cache / "ledger.db").write_text("not a database", encoding="utf-8")
+        assert memoized("meta", "abc", lambda: {"title": "Fresh"},
+                        cache_dir=fresh_cache) == {"title": "Fresh"}
 
-    def test_miss_returns_none(self, fresh_cache):
-        assert meta._cache_get("never-set") is None
+    def test_a_miss_runs_the_work(self, fresh_cache):
+        runs: list[int] = []
+
+        def work() -> dict:
+            runs.append(1)
+            return {"title": "Computed"}
+
+        assert memoized("meta", "never-set", work, cache_dir=fresh_cache) == {
+            "title": "Computed"
+        }
+        assert len(runs) == 1
+
+    def test_no_cache_neither_reads_nor_writes(self, fresh_cache):
+        # ``--no-cache`` / ``SPREZZATURE_NO_CACHE`` has to bypass both halves.
+        # Reading only would still poison the next run with this one's answer.
+        runs: list[int] = []
+
+        def work() -> dict:
+            runs.append(1)
+            return {"title": "Hi"}
+
+        memoized("meta", "k2", work, cache_dir=fresh_cache, enabled=False)
+        memoized("meta", "k2", work, cache_dir=fresh_cache, enabled=False)
+        assert len(runs) == 2
+        # And nothing was stored, so a later cached run is still a miss.
+        memoized("meta", "k2", work, cache_dir=fresh_cache)
+        assert len(runs) == 3
 
 
 # ── End-to-end main() ──────────────────────────────────────────────────────

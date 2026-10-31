@@ -24,6 +24,12 @@ Behavior
   verbatim (proper nouns, code identifiers, API names).
 * Output is cached on disk so the same input never hits the model twice;
   cache key includes target grade, language, preserve list, and model.
+  "Never twice" now also covers *at the same time*: the cache is a
+  `wallet-helper`_ ledger (see :mod:`_wallet`), so two runs that ask for the
+  same sentence at the same moment make one model call and the second waits
+  on the first. Before that, three concurrent runs asking for one sentence
+  came back with three different rewrites of it — 126, 100 and 96 characters
+  — and the one kept was whichever process wrote last.
 
 Usage
 -----
@@ -49,6 +55,8 @@ Notes
   disable with ``SPREZZATURE_NO_CACHE=1`` or ``--no-cache``.
 * The rewriter refuses to invent facts. If the input is already plain
   language, the model returns it unchanged.
+
+.. _wallet-helper: https://github.com/warith-harchaoui/wallet-helper
 
 Author
 ------
@@ -90,6 +98,7 @@ from _ollama import (  # noqa: E402
     detect_lang,
     pick_default_model,
 )
+from _wallet import memoized  # noqa: E402
 
 # ── Module-level configuration ────────────────────────────────────────────────
 
@@ -145,27 +154,12 @@ def _cache_key(text: str, grade: int, lang: str, preserve: list[str], model: str
     return h.hexdigest()[:32]
 
 
-def _cache_get(key: str) -> str | None:
-    """Return the cached rewrite for ``key``, or ``None`` on a miss."""
-    if NO_CACHE:
-        return None
-    path = CACHE_DIR / f"{key}.txt"
-    if path.is_file():
-        # Strip the trailing newline written by ``_cache_set``.
-        return path.read_text(encoding="utf-8").rstrip("\n")
-    return None
-
-
-def _cache_set(key: str, text: str) -> None:
-    """Store ``text`` in the cache under ``key``. Failures are swallowed."""
-    if NO_CACHE:
-        return
-    try:
-        CACHE_DIR.mkdir(parents=True, exist_ok=True)
-        (CACHE_DIR / f"{key}.txt").write_text(text + "\n", encoding="utf-8")
-    except OSError:
-        # Caching is opportunistic; never fatal.
-        pass
+# The read/write pair is gone; :func:`_cache_key` above is what remains of it,
+# unchanged, because the key was never the part that was wrong. What the pair
+# could not do is stop two processes from both deciding the entry was missing:
+# three of them, started together, made three model calls 0.2 ms apart and got
+# three different rewrites of one sentence. :mod:`_wallet` puts the model call
+# inside a claim so the second and third wait for the first instead.
 
 
 # ── Prompt construction ─────────────────────────────────────────────────────
@@ -291,40 +285,50 @@ def rewrite(
     model = model or pick_default_model()
 
     key = _cache_key(text, target_grade, lang, preserve, model)
-    cached = _cache_get(key)
-    if cached is not None:
-        return cached
 
-    prompt = build_prompt(text, target_grade, lang, preserve)
-    try:
-        out: str = str(_llm_chat(prompt, model=model)).strip()
-    except RuntimeError as e:
-        # best_engine_ai_helper.llm.chat wraps both connection failures and
-        # HTTP error responses into RuntimeError (not requests.exceptions.*)
-        # regardless of backend, so both cases are one except clause now.
-        sys.stderr.write(
-            f"Cannot reach Ollama at {OLLAMA_URL}, or it returned an error: {e}\n"
-            f"Run `python sprezzature-accessibility/scripts/install_alt_ai.py` or `ollama serve`.\n"
-        )
-        sys.exit(2)
-
-    # Length sanity check — if the model overshot, re-ask once with a tighter
-    # instruction. We do not loop; one retry is the right balance between
-    # correctness and predictable latency.
-    if len(out) > len(text) * MAX_LENGTH_FACTOR:
-        tighter: str = prompt + (
-            f"\nThe previous rewrite was too long. "
-            f"Keep it to AT MOST {int(len(text) * MAX_LENGTH_FACTOR)} characters.\n"
-        )
+    # Both model calls — the rewrite and the one retry — live inside the
+    # closure, because that is the whole point: a single-flight that the heavy
+    # work sits *outside* of has nothing for the second caller to wait on, and
+    # the length retry is a second trip to the model, not an afterthought.
+    def ask_the_model() -> str:
+        """Rewrite ``text`` through the model, retrying once if it overshoots."""
+        prompt = build_prompt(text, target_grade, lang, preserve)
         try:
-            out = str(_llm_chat(tighter, model=model)).strip()
-        except RuntimeError:
-            # If the retry fails, keep the over-long rewrite — it is still
-            # better than the original marketing copy in most cases.
-            pass
+            out: str = str(_llm_chat(prompt, model=model)).strip()
+        except RuntimeError as e:
+            # best_engine_ai_helper.llm.chat wraps both connection failures and
+            # HTTP error responses into RuntimeError (not requests.exceptions.*)
+            # regardless of backend, so both cases are one except clause now.
+            sys.stderr.write(
+                f"Cannot reach Ollama at {OLLAMA_URL}, or it returned an error: {e}\n"
+                f"Run `python sprezzature-accessibility/scripts/install_alt_ai.py` or `ollama serve`.\n"
+            )
+            sys.exit(2)
 
-    _cache_set(key, out)
-    return out
+        # Length sanity check — if the model overshot, re-ask once with a tighter
+        # instruction. We do not loop; one retry is the right balance between
+        # correctness and predictable latency.
+        if len(out) > len(text) * MAX_LENGTH_FACTOR:
+            tighter: str = prompt + (
+                f"\nThe previous rewrite was too long. "
+                f"Keep it to AT MOST {int(len(text) * MAX_LENGTH_FACTOR)} characters.\n"
+            )
+            try:
+                out = str(_llm_chat(tighter, model=model)).strip()
+            except RuntimeError:
+                # If the retry fails, keep the over-long rewrite — it is still
+                # better than the original marketing copy in most cases.
+                pass
+        return out
+
+    result: str = memoized(
+        "plain",
+        key,
+        ask_the_model,
+        cache_dir=CACHE_DIR,
+        enabled=not NO_CACHE,
+    )
+    return result
 
 
 # ── CLI ─────────────────────────────────────────────────────────────────────

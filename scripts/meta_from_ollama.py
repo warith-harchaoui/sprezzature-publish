@@ -60,7 +60,11 @@ Notes
   (``OLLAMA_URL``, ``OLLAMA_MODEL`` — the one model is qwen3-vl:8b).
 * On-disk cache lives under ``~/.cache/sprezzature-skill/meta/`` by default.
   Override with ``SPREZZATURE_CACHE_DIR``; disable with ``SPREZZATURE_NO_CACHE=1`` or
-  ``--no-cache``.
+  ``--no-cache``. It is a `wallet-helper`_ ledger (see :mod:`_wallet`), so two
+  runs asking for the same page at the same moment make **one** model call and
+  the second waits on the first, rather than both asking and disagreeing.
+
+.. _wallet-helper: https://github.com/warith-harchaoui/wallet-helper
 
 Author
 ------
@@ -106,6 +110,7 @@ from _ollama import (  # noqa: E402
     detect_lang,
     pick_default_model,
 )
+from _wallet import memoized  # noqa: E402
 
 # ── Module-level configuration ────────────────────────────────────────────────
 
@@ -187,41 +192,32 @@ def _cache_key(goal: str, page_text: str, site_name: str, lang: str, model: str)
     return h.hexdigest()[:32]
 
 
-def _cache_get(key: str) -> dict | None:
-    """
-    Return the cached JSON object for ``key``, or ``None`` on a miss.
-
-    A corrupt cache file is treated as a miss; the model call runs and
-    rewrites the entry.
-    """
-    if NO_CACHE:
-        return None
-    path = CACHE_DIR / f"{key}.json"
-    if path.is_file():
-        try:
-            return json.loads(path.read_text(encoding="utf-8"))
-        except json.JSONDecodeError:
-            return None
-    return None
+# The read/write pair that used to live here is gone, and :func:`_cache_key`
+# above is all that remains of it. The pair held two of the four properties a
+# result cache can have — content addressing and survival across a restart —
+# and missed the one that matters when a site is built by more than one
+# process: three processes asking for the same rewrite on a cold cache made
+# three real model calls 0.2 ms apart, got three *different* answers to one
+# question, and the entry that survived was whichever happened to be written
+# last. :mod:`_wallet` closes that gap; the key did not need replacing.
 
 
-def _cache_set(key: str, value: dict) -> None:
-    """
-    Store ``value`` in the cache under ``key``. Failures are swallowed.
+# ── Errors the memoized closure raises ──────────────────────────────────────
+#
+# The heavy call has to sit *inside* the closure for the single-flight to mean
+# anything, and a closure cannot `return 2`. These two carry the exit codes
+# `main` used to produce inline, and they are two classes rather than one so
+# the handler stays as narrow as the code it replaced: an unreachable model is
+# still exit 2, unparseable JSON is still exit 1, and a failure in the cache
+# layer itself is neither and propagates.
 
-    Cache writes are opportunistic — a read-only filesystem or a quota
-    exhaustion must not break the primary action.
-    """
-    if NO_CACHE:
-        return
-    try:
-        CACHE_DIR.mkdir(parents=True, exist_ok=True)
-        (CACHE_DIR / f"{key}.json").write_text(
-            json.dumps(value, ensure_ascii=False), encoding="utf-8"
-        )
-    except OSError:
-        # Intentional silent fail.
-        pass
+
+class _ModelUnreachable(RuntimeError):
+    """The LLM backend could not be reached, or answered with an error."""
+
+
+class _UnparseableAnswer(RuntimeError):
+    """The model answered, but not with the JSON object the prompt asked for."""
 
 
 # ── HTML fetching + cheap text extraction ───────────────────────────────────
@@ -457,41 +453,46 @@ def _cli(
     # The model is fixed (qwen3-vl:8b, the one authorized LLM); not a CLI knob.
     resolved_model: str = pick_default_model()
 
-    # Cache check — fast path returns immediately when the inputs match a
-    # previous run.
     cache_k = _cache_key(goal, page_text, site_name, resolved_lang, resolved_model)
-    cached = _cache_get(cache_k)
-    if cached is not None:
-        # The canonical URL is *not* part of the cache key (it does not affect
-        # the model's output), so it is layered on at print time.
-        if canonical:
-            cached["canonical"] = canonical
-        json.dump(cached, sys.stdout, indent=2, ensure_ascii=False)
-        sys.stdout.write("\n")
-        return 0
 
-    prompt = build_prompt(goal, page_text, site_name, resolved_lang)
+    def ask_the_model() -> dict:
+        """The whole expensive call, so the single-flight actually encloses it."""
+        prompt = build_prompt(goal, page_text, site_name, resolved_lang)
+        try:
+            raw: str = str(_llm_chat(prompt, model=resolved_model))
+        except RuntimeError as exc:
+            # best_engine_ai_helper.llm.chat wraps connection/HTTP failures into
+            # RuntimeError (not requests.exceptions.*) regardless of backend.
+            raise _ModelUnreachable(str(exc)) from exc
+        try:
+            return extract_json(raw)
+        except Exception as exc:
+            # The model failed to produce parseable JSON. Surface the raw output
+            # so the user can debug the prompt instead of getting a cryptic trace.
+            raise _UnparseableAnswer(str(exc)) from exc
 
     try:
-        raw: str = str(_llm_chat(prompt, model=resolved_model))
-    except RuntimeError:
-        # best_engine_ai_helper.llm.chat wraps connection/HTTP failures into
-        # RuntimeError (not requests.exceptions.*) regardless of backend.
+        parsed: dict = memoized(
+            "meta",
+            cache_k,
+            ask_the_model,
+            cache_dir=CACHE_DIR,
+            enabled=not NO_CACHE,
+        )
+    except _ModelUnreachable:
         click.echo(
             f"Cannot reach Ollama at {OLLAMA_URL}. "
             f"Run `python sprezzature-accessibility/scripts/install_alt_ai.py` or `ollama serve`.",
             err=True,
         )
         return 2
-    try:
-        parsed = extract_json(raw)
-    except Exception as e:
-        # The model failed to produce parseable JSON. Surface the raw output
-        # so the user can debug the prompt instead of getting a cryptic trace.
+    except _UnparseableAnswer as e:
         click.echo(str(e), err=True)
         return 1
 
-    _cache_set(cache_k, parsed)
+    # The canonical URL is *not* part of the cache key (it does not affect the
+    # model's output), so it is layered on at print time — on a hit and on a
+    # miss alike, which used to be two branches that had to agree.
     if canonical:
         parsed["canonical"] = canonical
     json.dump(parsed, sys.stdout, indent=2, ensure_ascii=False)
