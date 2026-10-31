@@ -118,9 +118,9 @@ make-site html README.md --out site/
 sprezzature-publish lint docs/
 ```
 
-`make-site <tool>` reads its flags with argparse, `sprezzature-publish
-<tool>` with click, and both resolve against one table. A tool cannot
-appear in one and be missing from the other.
+`make-site <tool>` and `sprezzature-publish <tool>` are one click command
+under two names, resolving against one table. A tool cannot appear in one and
+be missing from the other.
 
 ## Over HTTP
 

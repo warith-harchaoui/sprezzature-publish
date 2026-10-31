@@ -1,12 +1,18 @@
 """
 The five surfaces must describe the same nine tools.
 
-This package publishes one toolkit through a library, two front doors plus a
-command per tool, an HTTP API, an MCP server, and a `SKILL.md` that lives in
-the monorepo. The risk is never that a surface is missing; it is that they
-quietly stop agreeing — a tool reachable from one front door and not the
-other, an exported name no module defines, a command whose ``--help`` names
-something ``pip install`` never created.
+This package publishes one toolkit through a library, one front door under two
+spellings plus a command per tool, an HTTP API, an MCP server, and a
+`SKILL.md` that lives in the monorepo. The risk is never that a surface is
+missing; it is that they quietly stop agreeing — an exported name no module
+defines, a command whose ``--help`` names something ``pip install`` never
+created.
+
+One drift is no longer possible and that is deliberate: a tool reachable from
+one front door and not the other is what the argparse/click pair used to
+allow, and both names have pointed at one callable since 2026-10-25. The two
+cases that hold that are ``test_the_two_spellings_are_one_callable`` and
+``test_click_is_a_base_dependency_and_no_second_parser_grows_back``.
 
 None of that is hypothetical. Packaging this turned up five commands
 announcing a different name from the one installed, one of them announcing a
@@ -152,19 +158,6 @@ def test_every_tool_in_the_catalogue_resolves() -> None:
             f"{tool}'s one-line summary is the only thing a reader sees in "
             f"`make-site --help`; {summary!r} does not earn its place"
         )
-
-
-def test_the_command_line_offers_both_parsers() -> None:
-    """
-    argparse *and* click, which is the house contract (``SURFACES.md``).
-
-    Not one or the other: argparse is in the standard library, so the front
-    door works anywhere Python does; click carries the richer validation.
-    """
-    argparse_door = _source_of(CONSOLE_SCRIPTS["make-site"])
-    click_door = _source_of(CONSOLE_SCRIPTS["sprezzature-publish"])
-    assert "make_parser" in argparse_door or "argparse" in argparse_door
-    assert "import click" in click_door
 
 
 # ── The library is a library ───────────────────────────────────────────────

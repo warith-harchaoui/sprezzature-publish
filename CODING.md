@@ -24,10 +24,11 @@ it (`[html]`, `[icons]`, `[prose]`), so that an install says what it is for.
 A new import in either of those two files is a review question, not a
 detail.
 
-## The two front doors share one table
+## The two names share one table
 
-`make-site` reads its flags with argparse, `sprezzature-publish` with
-click, and both resolve against one table of tools. A tool added to one and
+`make-site` and `sprezzature-publish` are two spellings of one click front
+door — the argparse twin was dropped on 2026-10-25 — and both resolve
+against one table of tools. A tool added to one and
 not the other is a half-shipped tool, and
 `tests/test_the_surfaces_agree.py` fails on it. Add the entry point in
 `pyproject.toml` and the table picks it up.

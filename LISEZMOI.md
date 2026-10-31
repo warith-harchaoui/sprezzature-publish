@@ -36,9 +36,10 @@ Material, Hugo ou Astro ; celui-ci ne les concurrence pas et le dit.
 | `sprezzature-publish-narrate` | narrer un billet avec une voix locale, et écrire la piste temporisée à côté de l'audio. |
 | `sprezzature-publish-readalong` | lier cette narration à la page, pour que la phrase prononcée soit surlignée. |
 
-Deux portes d'entrée sur les neuf : `make-site <outil>` (argparse) et
-`sprezzature-publish <outil>` (click). Les deux lisent **une seule** table,
-donc un outil ne peut pas apparaître dans l'une et manquer dans l'autre.
+Une seule porte d'entrée sur les neuf, en click, sous deux noms :
+`make-site <outil>` et `sprezzature-publish <outil>` résolvent vers le même
+appelable, donc ils ne peuvent pas diverger. Le jumeau argparse a été retiré
+le 2026-10-25.
 
 ## Installation
 
