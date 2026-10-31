@@ -483,6 +483,8 @@ def run_engine(
     out_dir: Path,
     lang: str = "",
     lexicon: Path | None = None,
+    audio_format: str = "wav",
+    bitrate: str = "",
     python: str = sys.executable,
 ) -> dict[str, Any]:
     """
@@ -490,8 +492,10 @@ def run_engine(
 
     Communication is by JSON: orchestrator writes
     ``segments.json`` + invocation flags; wrapper writes
-    ``out_dir/<slug>.wav`` (or .mp3) and prints a JSON summary on
-    stdout (``{"audio": "...", "duration_seconds": ...}``).
+    ``out_dir/narration.<audio_format>`` beside its ``.vtt`` and prints a
+    JSON summary on stdout (``{"audio": "...", "duration_seconds": ...}``).
+    The report names the file that was written, so the manifest records the
+    container that exists rather than the one this docstring assumes.
 
     Parameters
     ----------
@@ -517,6 +521,16 @@ def run_engine(
         GMTED2010 — and each engine guesses differently, so the same page
         read twice does not sound the same. Stating a word once fixes it
         everywhere. Needs speaker-helper 0.11 or later.
+    audio_format : str
+        Container for the narration: ``"wav"`` (the default, lossless) or a
+        lossy one such as ``"mp3"``. A forty-minute reading is over a hundred
+        megabytes as WAV and under twenty as a 64 kb/s MP3, and the page that
+        plays it downloads whichever was written. Encoding is nobody's craft
+        here: the flag reaches speaker-helper, which reaches audio-helper.
+        Needs sprezzature-audio 1.7.0 and speaker-helper 0.14.0.
+    bitrate : str
+        Bitrate for a lossy ``audio_format``, e.g. ``"64k"``. Empty leaves the
+        choice to speaker-helper, which holds the default for speech.
 
     Returns
     -------
@@ -569,6 +583,17 @@ def run_engine(
     # whole narration over a file nobody asked for.
     if lexicon:
         cmd += ["--lexicon", str(lexicon)]
+    # Same restraint, same reason: `--audio-format` and `--bitrate` landed in
+    # sprezzature-audio 1.7.0, and argparse rejects an unknown flag outright,
+    # so an older wrapper would fail the whole narration over a default that
+    # matches what it already does. The WAV default is therefore sent as
+    # silence, and only a real request crosses the boundary.
+    if audio_format and audio_format.lower().lstrip(".") != "wav":
+        cmd += ["--audio-format", audio_format.lstrip(".")]
+        # Pointless without a lossy container, and the default for speech
+        # belongs to speaker-helper, which is two layers down and owns it.
+        if bitrate:
+            cmd += ["--bitrate", bitrate]
 
     proc = subprocess.run(cmd, capture_output=True, text=True)
     # Clean the segments scratch file regardless of outcome.
@@ -659,6 +684,19 @@ def parse_args() -> argparse.Namespace:
         type=Path,
         default=Path("out/audio"),
         help="Where to write the audio file + manifest (default: out/audio/).",
+    )
+    parser.add_argument(
+        "--audio-format",
+        default="wav",
+        help="Container for the narration: wav (default) or a lossy one such "
+        "as mp3. A forty-minute reading is over a hundred megabytes as WAV "
+        "and under twenty as a 64 kb/s mp3. Needs sprezzature-audio 1.7.",
+    )
+    parser.add_argument(
+        "--bitrate",
+        default="",
+        help="Bitrate for a lossy --audio-format, e.g. 64k. Empty leaves the "
+        "choice to speaker-helper, which holds the default for speech.",
     )
     parser.add_argument(
         "--ai-hints",
@@ -912,6 +950,8 @@ def main() -> int:
         out_dir=args.out_dir,
         lang=lang,
         lexicon=args.lexicon,
+        audio_format=args.audio_format,
+        bitrate=args.bitrate,
     )
     elapsed: float = time.monotonic() - started
 

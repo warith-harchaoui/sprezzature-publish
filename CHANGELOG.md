@@ -8,6 +8,24 @@ versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- **`narrate_post.py` can ask for the container it wants**, as
+  `--audio-format` (default `wav`, unchanged) and `--bitrate`. Its docstring
+  promised `out_dir/<slug>.wav` "(or .mp3)" and no code path produced the
+  second, so every caller re-encoded downstream with its own ffmpeg flags.
+  Sixteen narrations on the deraison site did exactly that, carrying
+  `-codec:a libmp3lame -b:a 64k -ar 24000 -ac 1` in a shell script, which is
+  knowledge that belongs in the audio packages and nowhere else.
+
+  Nothing is encoded here. The flag reaches `sprezzature-audio`, which asks
+  `speaker-helper` for the container, which asks `audio-helper` for the codec.
+  The report the wrapper prints names the file that was actually written, so
+  the manifest records the container that exists.
+
+  Both flags are forwarded **only when asked for**: argparse rejects an
+  unknown flag outright, so sending a WAV default to a wrapper older than
+  sprezzature-audio 1.7.0 would fail a whole narration over a request that
+  matches what it already does. Same restraint as `--lexicon`, same reason.
+
 - **`sprezzature-publish-audit`: the return trip.** Nine tools wrote
   something; one audited, and it audited the Markdown from *before* the
   render. Nothing read back what had been emitted — and nothing served the
