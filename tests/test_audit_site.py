@@ -359,3 +359,25 @@ def test_the_reference_cites_no_rule_that_no_longer_exists():
     documented = set(re.findall(r"`(SITE\d{3})`", reference))
     orphans = sorted(documented - emitted)
     assert not orphans, f"cited in the reference, emitted by nothing: {orphans}"
+
+
+@pytest.mark.parametrize(
+    "target",
+    [
+        "https://[",       # ValueError: Invalid IPv6 URL
+        "http://a b/",     # http.client.InvalidURL — not a ValueError
+        "https://",        # no host at all
+    ],
+)
+def test_a_typed_url_that_is_not_a_url_comes_back_as_a_failed_fetch(target: str) -> None:
+    """``fetch`` promises ``(0, "")`` on failure, and a typo is a failure.
+
+    All three pass ``is_url`` — they start with a scheme — so all three reach
+    ``fetch``, and all three used to raise out of it: ``Request(...)`` was
+    built on the line *above* the ``try``. The caller is already holding the
+    message for this case ("could not fetch … (HTTP no response)"), so what a
+    reader got instead was a traceback for a mistyped argument.
+
+    No network: every one of these dies in URL parsing, before a socket.
+    """
+    assert au.fetch(target) == (0, "")

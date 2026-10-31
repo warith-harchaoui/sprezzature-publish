@@ -142,6 +142,7 @@ Author
 
 from __future__ import annotations
 
+import http.client
 import json
 import re
 import sys
@@ -848,15 +849,25 @@ def site_root(target: Path, pages: list[Path]) -> Path:
 
 
 def fetch(url: str) -> tuple[int, str]:
-    """GET a URL. Returns ``(status, body)``; status 0 means the fetch failed."""
-    req = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
+    """GET a URL. Returns ``(status, body)``; status 0 means the fetch failed.
+
+    Every failure comes back as ``(0, "")`` — including a URL that is not a
+    URL. ``Request(...)`` used to be built on the line above the ``try``,
+    which meant two reachable typos escaped as tracebacks from a tool whose
+    caller is ready with a message for them: ``https://[`` raises
+    ``ValueError: Invalid IPv6 URL`` (and ``ValueError`` is in the clause
+    below, so catching it was always the intent), and ``http://a b/`` raises
+    ``http.client.InvalidURL``, which is *not* a ``ValueError`` and needs
+    naming. Both pass :func:`is_url`, so both reach here.
+    """
     try:
+        req = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
         with urllib.request.urlopen(req, timeout=FETCH_TIMEOUT) as resp:  # noqa: S310
             charset = resp.headers.get_content_charset() or "utf-8"
             return resp.status, resp.read().decode(charset, errors="replace")
     except urllib.error.HTTPError as exc:
         return exc.code, ""
-    except (urllib.error.URLError, OSError, ValueError):
+    except (urllib.error.URLError, OSError, ValueError, http.client.InvalidURL):
         return 0, ""
 
 
