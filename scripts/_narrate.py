@@ -938,6 +938,16 @@ _ABBREVIATIONS: frozenset[str] = frozenset(
     }
 )
 
+#: ``space`` accepts the end of the block as well as whitespace, and that
+#: alternative is load-bearing rather than tidy. ``closers`` is greedy, so on
+#: "« Une question ? »" it first takes " »" -- and then ``\s+`` had nothing
+#: left to match, the engine backtracked to ZERO closers, " " satisfied
+#: ``\s+``, and the quote was stranded as a sentence of its own. The same
+#: sentence with text after it split correctly, which is why this survived:
+#: the bug only fires when the quote closes the block. It put four cues of a
+#: lone "»" into the French narrations -- 120 ms each under kokoro, a crash
+#: under chatterbox's multilingual model, whose alignment watchdog dies on
+#: anything near three tokens.
 #: A sentence ends at one of these, possibly followed by a closing quote or
 #: bracket, and then whitespace. The lookahead for an opening character is
 #: what keeps "...end.  Next" together with its following capital rather
@@ -948,7 +958,7 @@ _SENTENCE_END = re.compile(
     (?P<closers>
         (?:[ \u00a0\u202f]*["'”’»\)\]])*   # closing marks that belong to it
     )
-    (?P<space>\s+)                       # the gap before whatever follows
+    (?P<space>\s+|\Z)                    # the gap before whatever follows
     """,
     re.VERBOSE,
 )
@@ -1035,7 +1045,49 @@ def split_sentences(text: str) -> list[str]:
     tail = collapsed[start:].strip()
     if tail:
         sentences.append(tail)
-    return sentences
+    return _merge_orphans(sentences)
+
+
+#: A fragment with no letter and no digit anywhere in it. Punctuation, a lone
+#: closing quote, a dash, a bracket: nothing a voice can read.
+_HAS_SPEECH = re.compile(r"[^\W_]", re.UNICODE)
+
+
+def _merge_orphans(sentences: list[str]) -> list[str]:
+    """Fold fragments that carry no speakable character into their neighbour.
+
+    A belt to the regex's braces. The stranded closing quote had one cause and
+    it is fixed above, but the failure mode is worth refusing outright rather
+    than refusing one route to it: a "sentence" of pure punctuation is a cue
+    the reader cannot follow, a segment the voice cannot say, and -- on
+    chatterbox's multilingual model -- a crash rather than a short clip.
+
+    Backwards by preference, because a closing mark belongs to what it closes;
+    forwards only for a fragment that opens the block and has nothing behind
+    it.
+
+    Examples
+    --------
+    >>> _merge_orphans(['« Une question ?', '»'])
+    ['« Une question ? »']
+    >>> _merge_orphans(['»', 'Et la suite.'])
+    ['» Et la suite.']
+    >>> _merge_orphans(['»'])
+    ['»']
+    """
+    if len(sentences) < 2:
+        return sentences
+    out: list[str] = []
+    for piece in sentences:
+        if out and not _HAS_SPEECH.search(piece):
+            out[-1] = f"{out[-1]} {piece}"
+        else:
+            out.append(piece)
+    # A leading orphan has nothing behind it to join, so it joins forwards.
+    if len(out) > 1 and not _HAS_SPEECH.search(out[0]):
+        out[1] = f"{out[0]} {out[1]}"
+        out.pop(0)
+    return out
 
 
 #: HTML tags that carry narrated text, mapped to what they are. Headings

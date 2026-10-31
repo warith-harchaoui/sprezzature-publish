@@ -89,12 +89,70 @@ versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   each engine guesses differently, so the same page narrated twice does not
   say the same words. `--lexicon` states them once.
 
-- **A note on what `ENGINES` is not.** `speaker-helper` 0.11 ships a router
-  that ranks engines per language and condition, and for offline narration it
-  picks kyutai for French and chatterbox for English. That is its decision to
-  make about *speech*. This list is a decision about what this package is
-  willing to install by default, and the licence bar is the difference — the
-  router's answer is a recommendation a caller follows with `--engine`.
+- **`ENGINES` is the list of wrappers that resolve, and nothing more.** An
+  earlier note in this section argued the opposite: that the router decides
+  about *speech* while this list decides what the package is willing to
+  install by default, the licence bar being the difference. The argument was
+  coherent, and superseded below — the list is no longer a ranking and no
+  longer carries a default, because the choice is not made here.
+
+### Fixed
+
+- **A probe whose deadline was shorter than the thing it probed.**
+  `_engine_is_available` runs a wrapper's `--check` as a subprocess and gave
+  it 30 seconds — the number chosen when kokoro was the only engine, whose
+  probe answers in 0.4 s warm. `narrate_chatterbox --check` measures 11 s warm
+  on the same machine, importing torch, torchaudio, transformers and perth
+  before it can answer at all, and has been seen past two minutes under load.
+  So the probe was killed, sometimes, and `narrate_post` printed
+  `engine 'chatterbox' is not installed` above an install command the reader
+  had just finished running.
+
+  A 30-second deadline there measured the machine's load and reported it as a
+  missing installation. `ENGINE_PROBE_TIMEOUT_S` is 600 s now and
+  `SPREZZATURE_ENGINE_PROBE_TIMEOUT` moves it; the cost of being generous is
+  nil, since the subprocess being timed is about to be asked to synthesise
+  several thousand words.
+
+  And a deadline reached anyway is reported as **available**, not absent. The
+  two are not symmetric: a wrapper still importing is a wrapper that is
+  there, and if something really is wrong the honest report is the one the
+  real run prints with the wrapper's own stderr attached — not a verdict
+  reached by a stopwatch. Failure to *launch* (`OSError`) still means absent,
+  which is a different observation and stays one.
+
+- **`--engine` decided what it should have been asking.** It defaulted to
+  `kokoro`; it defaults to nothing, and `speaker-helper`'s router answers from
+  the language and the offline condition. The old default was defensible right
+  up to the moment it differed from the router, and then the disagreement was
+  silent: the page is narrated, the cues line up, nothing fails, and the voice
+  is simply not the one the suite chose. Naming `--engine` still overrides,
+  which is the difference between a default and a decision.
+
+  Two honest limits are written down where they live. Without `--lang` the
+  page's language is not known when the question is asked — it is detected
+  further down, from the assembled segments — so the router is asked about
+  English; harmless while offline routing answers the same engine in every
+  language, and `--lang` makes the question exact. And the router's catalogue
+  lives in another package and grows there, so an answer this orchestrator has
+  no wrapper for now gets named as such instead of falling through to an
+  install hint for an extra that was never published.
+
+- **A lone `»` was narrated as a sentence.** `_SENTENCE_END` required
+  whitespace after the closing mark, and `closers` is greedy: on
+  "« Une question ? »" it took " »" first, found nothing for `\s+`, backtracked
+  to *zero* closers, matched the space before the quote, and left the quote
+  standing alone. The same sentence with text after it split correctly, which
+  is why it survived — it only fires when the quote closes the block. The gap
+  now accepts the end of the block as well as whitespace.
+
+  Four cues of a bare "»" had reached the French narrations: 120 ms of nothing
+  under kokoro, and under chatterbox's multilingual model an alignment
+  watchdog that dies on anything near three tokens. `_merge_orphans` is the
+  belt to that brace — any fragment carrying no letter and no digit folds into
+  its neighbour, backwards by preference, since a closing mark belongs to what
+  it closes. Each of the two is pinned by its own test, because each one alone
+  is enough to make the other's removal invisible.
 
 ### Fixed
 

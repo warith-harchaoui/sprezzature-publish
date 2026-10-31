@@ -789,6 +789,91 @@ class TestSplitSentences:
         handled English and orphaned the French one onto the next sentence."""
         assert _narrate.split_sentences(text) == expected
 
+    @pytest.mark.parametrize(
+        "text",
+        [
+            "« Une question ? »",
+            "Elle a dit : « Non. »",
+            'He said "Yes."',
+            "Et alors ? »",
+        ],
+    )
+    def test_a_closing_quote_at_the_end_of_a_block_is_not_a_sentence(self, text):
+        """The same rule, at the one position where it stopped holding.
+
+        `closers` is greedy, so on "« Une question ? »" it took " »" first --
+        and then `\\s+` had nothing left to match, the engine backtracked to
+        zero closers, the space satisfied `\\s+`, and the quote was left
+        standing as a sentence of its own. With text after it the split was
+        right, which is why this lasted: it fires only when the quote closes
+        the block, and most quotes do not.
+
+        What it costs is not cosmetic. A lone "»" is a cue the eye cannot
+        follow and a segment the voice cannot read -- 120 ms of nothing under
+        kokoro, and under chatterbox's multilingual model an alignment
+        watchdog that dies on anything near three tokens.
+        """
+        assert _narrate.split_sentences(text) == [text]
+
+    def test_the_pattern_itself_takes_the_end_of_the_block_as_the_gap(self):
+        """Why this asks the regex and not ``split_sentences``.
+
+        There are two rules standing between a stranded "»" and a reader:
+        the end-of-block alternative in `_SENTENCE_END`, and `_merge_orphans`
+        downstream. Each one is enough on its own, which means the *outcome*
+        test above stays green when either is removed -- it cannot tell a
+        belt from braces, and a repository where both can be deleted one at a
+        time with the suite green has no guard on either.
+
+        So each is pinned where it lives. Here: the closer has to land inside
+        the match, as `closers`, with `space` empty because the block ended.
+        Without `\\Z` the engine backtracks to zero closers and `space` takes
+        the space before the quote -- the exact state that orphaned it.
+        """
+        match = _narrate._SENTENCE_END.search("« Une question ? »")
+        assert match is not None
+        assert match.group("closers").strip() == "»"
+        assert match.group("space") == ""
+        assert match.end() == len("« Une question ? »")
+
+    @pytest.mark.parametrize(
+        "text,expected",
+        [
+            # Trailing marks the regex never claimed: they arrive as the
+            # stripped tail, so only the merge can account for them. These
+            # inputs isolate it -- they split wrong whether or not `\Z` is
+            # there.
+            ("Bonjour. —", ["Bonjour. —"]),
+            ("Il a dit : « Oui. » —", ["Il a dit : « Oui. » —"]),
+            ("Fini. ***", ["Fini. ***"]),
+        ],
+    )
+    def test_a_fragment_with_nothing_to_say_joins_its_neighbour(self, text, expected):
+        """A belt to the regex's braces, aimed at the class not the route.
+
+        The stranded closer had one cause and it is fixed above. This refuses
+        the *shape* -- a "sentence" carrying no letter and no digit -- however
+        it arrives, because every route to it ends in the same place: a cue
+        the page cannot highlight and an engine asked to read punctuation.
+
+        Through `split_sentences` rather than against `_merge_orphans`
+        directly, which is the difference between a rule that applies and a
+        function that exists. Called directly it passes with nothing wired to
+        it, and "the tool is there, nothing invokes it" is this codebase's
+        most common way of being wrong.
+        """
+        assert _narrate.split_sentences(text) == expected
+
+    def test_merging_backwards_is_the_preference_not_the_only_direction(self):
+        """A closing mark belongs to what it closes -- unless nothing precedes.
+
+        A fragment that opens the block has nothing behind it to join, so it
+        joins forwards; alone, it is returned as it stands rather than
+        dropped, because silence is not an improvement on a stray mark.
+        """
+        assert _narrate._merge_orphans(["»", "Et la suite."]) == ["» Et la suite."]
+        assert _narrate._merge_orphans(["»"]) == ["»"]
+
     def test_an_ellipsis_is_one_terminator_not_three(self):
         assert _narrate.split_sentences("Attends... Vraiment ?") == [
             "Attends...",
@@ -984,3 +1069,201 @@ class TestTheVoicesLiveNextDoor:
         monkeypatch.setattr(Path, "is_file", lambda self: False)
 
         assert narrate_post._engine_command("openvoice") is None
+
+
+# ── The probe that decides whether an engine is there ──────────────────────
+
+
+class TestTheProbeDoesNotManufactureAnAbsence:
+    """A deadline shorter than the thing it times does not measure it.
+
+    ``_engine_is_available`` asks a wrapper's ``--check`` whether its imports
+    resolve. The deadline was 30 seconds, written when kokoro was the only
+    engine: that probe loads ONNX Runtime and answers in 0.4 s warm, so 30
+    left it a factor of seventy. The torch engines do not get that --
+    ``narrate_chatterbox --check`` was measured at 11 s warm on the same
+    machine, importing torch, torchaudio, transformers and perth before it is
+    in a position to say yes, and was observed past two minutes under load.
+    So the probe was killed, sometimes, and the caller printed "engine is not
+    installed" above an install command the reader had just finished running.
+    Nothing was absent: a 30-second deadline measured the machine's load and
+    reported it as an absence, which is the worst shape of wrong answer --
+    confident, and about the reader's installation rather than the clock.
+
+    Two properties keep that from coming back, and they are not the same
+    property:
+
+    * the deadline has to be longer than the slowest import it is pointed at,
+      **and** it has to be the one that reaches ``subprocess.run``. A
+      constant no call site passes is a limit nothing applies, which looks
+      exactly like a limit that works;
+    * a deadline reached anyway must not be read as "absent". A wrapper still
+      importing is a wrapper that is there. If something really is wrong, the
+      honest report is the one the real run prints, with the wrapper's own
+      stderr attached -- not a guess made by a stopwatch.
+
+    The asymmetry is deliberate and is worth stating, because it looks like
+    sloppiness: a timeout answers "available", a failure to launch answers
+    "absent". They are different observations. One says the wrapper is busy;
+    the other says there is no wrapper.
+    """
+
+    @staticmethod
+    def _probe_reachable(monkeypatch) -> None:
+        """Make ``_engine_command`` resolve, whatever this machine has.
+
+        Without this the probe never runs here: CI installs no voices, so
+        ``_engine_command`` answers ``None`` and ``_engine_is_available``
+        returns before it reaches a subprocess at all. The test would then
+        pass by not testing anything, and only on the machines that matter
+        least.
+        """
+        import sys as _sys
+
+        import narrate_post
+
+        monkeypatch.setattr(
+            narrate_post,
+            "_engine_command",
+            lambda engine, python=_sys.executable: [python, "-c", "pass"],
+        )
+
+    def test_a_probe_that_runs_out_of_time_is_still_there(self, monkeypatch, capsys):
+        """The bug, in one assertion: a slow import is not a missing one."""
+        import subprocess
+
+        import narrate_post
+
+        self._probe_reachable(monkeypatch)
+
+        def too_slow(*args, **kwargs):
+            raise subprocess.TimeoutExpired(cmd=args[0], timeout=kwargs.get("timeout", 0))
+
+        monkeypatch.setattr(subprocess, "run", too_slow)
+
+        assert narrate_post._engine_is_available("chatterbox") is True
+        # And it says so, rather than carrying on in silence: the reader has
+        # just waited several minutes and is owed an account of them.
+        assert "chatterbox" in capsys.readouterr().err
+
+    def test_a_wrapper_that_cannot_be_launched_is_absent(self, monkeypatch):
+        """The other half of the asymmetry, so it cannot be flattened back.
+
+        ``OSError`` here means the command could not be started at all --
+        no such file, not executable. That is an absence, and answering
+        "available" to it would push a certain failure one step later for no
+        gain.
+        """
+        import subprocess
+
+        import narrate_post
+
+        self._probe_reachable(monkeypatch)
+
+        def cannot_start(*args, **kwargs):
+            raise OSError("no such file")
+
+        monkeypatch.setattr(subprocess, "run", cannot_start)
+
+        assert narrate_post._engine_is_available("chatterbox") is False
+
+    def test_the_deadline_is_longer_than_a_torch_import(self):
+        """The floor, placed against a measurement rather than a feeling.
+
+        ``narrate_chatterbox --check`` measured 11 s warm here and has been
+        seen past two minutes under load; a cold cache is worse again, and a
+        shared CI runner worse than that. What the floor has to refuse is a
+        deadline in the same order of magnitude as the thing it times, since
+        that is a deadline that answers differently depending on how busy the
+        machine is. 300 sits an order of magnitude above the worst observed
+        probe and below the default, so lowering the default stays possible
+        without editing this test, and restoring the kokoro-era 30 does not.
+        """
+        import narrate_post
+
+        assert narrate_post.ENGINE_PROBE_TIMEOUT_S >= 300
+
+    def test_the_deadline_reaches_the_subprocess(self, monkeypatch):
+        """A constant nobody passes is not a limit, it is a comment.
+
+        The old literal `30` was written at the call site. Moving it to a
+        module constant is only an improvement if the call site reads the
+        constant, and the shape of that mistake -- a named value sitting
+        beside the hard-coded one it was meant to replace -- survives review
+        easily, because both numbers look right.
+        """
+        import subprocess
+
+        import narrate_post
+
+        self._probe_reachable(monkeypatch)
+        seen: dict[str, object] = {}
+
+        def record(*args, **kwargs):
+            seen.update(kwargs)
+            raise OSError("stop here; the deadline is what we came for")
+
+        monkeypatch.setattr(subprocess, "run", record)
+        narrate_post._engine_is_available("chatterbox")
+
+        assert seen.get("timeout") == narrate_post.ENGINE_PROBE_TIMEOUT_S
+
+    def test_the_deadline_can_be_moved_from_the_environment(self, monkeypatch):
+        """A machine slower than this one must not need a code change."""
+        import importlib
+
+        import narrate_post
+
+        monkeypatch.setenv("SPREZZATURE_ENGINE_PROBE_TIMEOUT", "7")
+        try:
+            assert importlib.reload(narrate_post).ENGINE_PROBE_TIMEOUT_S == 7.0
+        finally:
+            # Reload again under the restored environment: the module is
+            # shared with every other test in this session, and a reloaded
+            # constant outlives the fixture that set it.
+            monkeypatch.delenv("SPREZZATURE_ENGINE_PROBE_TIMEOUT", raising=False)
+            importlib.reload(narrate_post)
+
+
+class TestTheEngineIsAskedForRatherThanAssumed:
+    """Which voice reads a page is ``speaker-helper``'s call, not this one's.
+
+    ``--engine`` defaulted to kokoro, and the default was defensible right up
+    to the moment it differed from the router: then the page is narrated, the
+    cues line up, nothing fails, and the voice is simply not the one the
+    suite chose. A disagreement that produces no error produces no report
+    either.
+    """
+
+    def test_the_flag_has_no_default_so_the_router_is_asked(self, monkeypatch):
+        """``None`` is what sends the question next door."""
+        import sys
+
+        import narrate_post
+
+        monkeypatch.setattr(sys, "argv", ["sprezzature-publish-narrate", "post.md"])
+        assert narrate_post.parse_args().engine is None
+
+    def test_every_engine_the_router_can_answer_is_one_this_package_can_invoke(self):
+        """The invariant that makes asking next door safe.
+
+        The router ranks a catalogue that lives in ``speaker-helper``, and it
+        grows there -- kyutai arrived in 0.11 without this repository being
+        touched. An answer with no wrapper here does not fail loudly: it
+        reaches the install refusal, which prints
+        ``pip install 'sprezzature-audio[narrate-<name>]'`` for an extra that
+        was never published. ``main`` now refuses that case by name, and this
+        is the check that notices the catalogue moved at all.
+        """
+        pytest.importorskip("speaker_helper")
+        import narrate_post
+        from speaker_helper import default_operating_points
+
+        catalogue = sorted({point.engine for point in default_operating_points()})
+        assert catalogue, "an empty catalogue would make this assertion vacuous"
+        unknown = [engine for engine in catalogue if engine not in narrate_post.ENGINES]
+        assert unknown == [], (
+            f"speaker-helper can route to {unknown}, which narrate_post has no "
+            f"wrapper for; add it to ENGINES once sprezzature-audio ships the "
+            f"wrapper, or the router hands back a name this module cannot run"
+        )

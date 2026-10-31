@@ -25,11 +25,11 @@ Pipeline
    the structure alone cannot see (sarcasm, build-up before a
    punchline, pacing). Defaults to off — the deterministic
    structural path stays the baseline.
-4. The chosen engine wrapper (``narrate_kokoro.py`` by default, or
-   ``narrate_kyutai.py`` / ``narrate_openvoice.py`` /
-   ``narrate_chatterbox.py``) runs as a
+4. The engine wrapper (``narrate_kokoro.py`` / ``narrate_kyutai.py`` /
+   ``narrate_openvoice.py`` / ``narrate_chatterbox.py``) runs as a
    subprocess and synthesises one WAV per segment, then concatenates
-   with the requested pauses.
+   with the requested pauses. Which one runs is ``speaker-helper``'s
+   answer unless ``--engine`` names one; see :data:`ENGINES`.
 5. A manifest entry is written to ``out/audio/manifest.json``
    recording source path, audio path, engine, voice, language, the
    voice that actually spoke, sha256, and measured duration, so
@@ -41,8 +41,8 @@ Usage
 -----
 ::
 
-    # Default engine (kokoro): the language of the whole text, detected
-    # once, picks the voice that reads all of it
+    # No --engine: speaker-helper's router picks the voice, and the
+    # language of the whole text, detected once, reads all of it
     python3 sprezzature-publish/scripts/sprezzature-publish-narrate.py posts/hello.md
 
     # A page that quotes another language at length, where detection would
@@ -154,33 +154,30 @@ from _speech_text import MathNarrator, speakable  # noqa: E402
 #: its structure in its elements, so it needs no Markdown twin to be narrated.
 HTML_SUFFIXES: frozenset[str] = frozenset({".html", ".htm", ".xhtml", ".php"})
 
-#: Engines we know how to dispatch to, best first. The wrappers ship in
+#: Engines this orchestrator knows how to dispatch to. The wrappers ship in
 #: sprezzature-audio and are invoked as subprocesses so their heavy ML
 #: imports never leak into the orchestrator's import graph.
 #:
-#: `kokoro` leads because it is the one that answers the question this tool
-#: asks — "this article should have a voice". It is 82 M parameters,
-#: Apache-2.0 in code *and* weights, runs on ONNX Runtime with no torch at
-#: all, carries 54 voices across nine languages, and needs nothing recorded.
+#: Read this as a list of *wrappers that resolve*, not as a ranking. There is
+#: no "best first" here any more, because the choice is not made here: see
+#: `main`, which asks speaker-helper's router. What the names are for is
+#: `--engine`, which overrides the router on purpose, and `_engine_command`,
+#: which turns one into something to run.
 #:
-#: `kyutai` arrived with speaker-helper 0.11 (2026-10-26) and is the French
-#: answer: a Paris lab's `tts-1.6b-en_fr`, which renders French natively where
-#: all three others reach it through an English-first pipeline. It is not the
-#: default, and the reason is the line above — its code is MIT and its weights
-#: are CC-BY-4.0, which is permissive but is not "Apache-2.0 in code *and*
-#: weights". Ask for it by name on a French page and it is the better voice;
-#: nobody gets a different licence by surprise.
+#: `kokoro` is 82 M parameters, Apache-2.0 in code *and* weights, runs on ONNX
+#: Runtime with no torch at all, carries 54 voices across nine languages, and
+#: needs nothing recorded. `kyutai` is the French answer: a Paris lab's
+#: `tts-1.6b-en_fr`, which renders French natively where the other three reach
+#: it through an English-first pipeline; its code is MIT and its weights
+#: CC-BY-4.0. `openvoice` and `chatterbox` are voice-*cloning* engines: they
+#: want a reference clip and a multi-gigabyte ML stack, which is the right
+#: trade when the point is to sound like a particular person.
 #:
-#: `openvoice` and `chatterbox` are voice-*cloning* engines: they want a
-#: reference clip and a multi-gigabyte ML stack, which is the right trade only
-#: when the point is to sound like a particular person.
-#:
-#: Note what this list is NOT. speaker-helper 0.11 ships a router that ranks
-#: engines per language and condition, and for offline narration it would pick
-#: kyutai for French and chatterbox for English. That is its decision to make
-#: about *speech*; this is a decision about *what this package is willing to
-#: install by default*, and the licence bar is the difference. The router's
-#: answer is a recommendation a caller can follow with `--engine`.
+#: Every engine the router can answer has to appear here, or the router hands
+#: back a name this module cannot invoke and the refusal below names an extra
+#: that does not exist. Nothing in this process can check that — the router's
+#: catalogue is sprezzature-audio's — so a test in this repository does, and
+#: `main` says so honestly rather than printing an install command.
 ENGINES: tuple[str, ...] = ("kokoro", "kyutai", "openvoice", "chatterbox")
 
 #: The default voice, per engine. Kokoro's is empty on purpose: the language
@@ -375,6 +372,31 @@ def _engine_command(engine: str, python: str = sys.executable) -> list[str] | No
     return None
 
 
+#: How long to let an engine's ``--check`` run before giving up on it.
+#:
+#: This was 30 seconds, chosen when the only engine was kokoro: that probe
+#: loads ONNX Runtime and answers in 0.4 s warm, so 30 left it a factor of
+#: seventy. The torch engines do not get that. Measured on an Apple Silicon
+#: machine with everything installed and the caches warm,
+#: ``narrate_chatterbox --check`` spends 11 s importing torch, torchaudio,
+#: transformers and perth before it is in a position to say yes -- a factor of
+#: three, cold cache and whatever else the machine is doing not included, and
+#: it was observed taking past two minutes under load. Three is not a margin,
+#: it is a coin toss, and the caller printed the result of the toss as
+#: "engine is not installed" above an install command the reader had already
+#: run.
+#:
+#: Which is the sharper way to say what was wrong: a 30-second deadline here
+#: measured the machine's load, not whether the engine was installed, and then
+#: reported the load as an absence. A probe whose deadline is shorter than the
+#: thing it probes does not measure absence; it manufactures it.
+#:
+#: Generous on purpose: this runs once per narration, against a subprocess
+#: that is about to be asked to synthesise several thousand words anyway.
+#: Override it on a slower machine rather than editing this line.
+ENGINE_PROBE_TIMEOUT_S: float = float(os.environ.get("SPREZZATURE_ENGINE_PROBE_TIMEOUT", "600"))
+
+
 def _engine_is_available(engine: str, python: str = sys.executable) -> bool:
     """
     Probe whether the engine's Python dependencies are importable.
@@ -382,6 +404,13 @@ def _engine_is_available(engine: str, python: str = sys.executable) -> bool:
     Each wrapper exposes a ``--check`` flag that imports the heavy
     module and exits 0 / 1 accordingly. We invoke it as a subprocess
     so the import never enters the orchestrator's address space.
+
+    A probe that times out is reported as *available*, not absent. The two
+    outcomes are not symmetric: a wrapper that is still importing is a
+    wrapper that is there, and the honest error for it -- if there is one --
+    is the one the real run prints, with the wrapper's own stderr attached.
+    Answering "not installed" to a slow import is a confident wrong answer,
+    which is the expensive kind.
     """
     command = _engine_command(engine, python)
     if command is None:
@@ -391,10 +420,18 @@ def _engine_is_available(engine: str, python: str = sys.executable) -> bool:
             command + ["--check"],
             capture_output=True,
             text=True,
-            timeout=30,
+            timeout=ENGINE_PROBE_TIMEOUT_S,
         )
         return proc.returncode == 0
-    except (subprocess.TimeoutExpired, OSError):
+    except subprocess.TimeoutExpired:
+        print(
+            f"note: the {engine} probe did not answer in "
+            f"{ENGINE_PROBE_TIMEOUT_S:.0f}s; going ahead, the run will say "
+            f"if the engine is really missing.",
+            file=sys.stderr,
+        )
+        return True
+    except OSError:
         return False
 
 
@@ -581,8 +618,10 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--engine",
         choices=ENGINES,
-        default="kokoro",
-        help="TTS engine wrapper (default: kokoro).",
+        default=None,
+        help="TTS engine wrapper. Left unset, speaker-helper's router picks "
+        "it from the language and the offline condition, which is where that "
+        "decision belongs. Name one to override the router on purpose.",
     )
     parser.add_argument(
         "--voice",
@@ -646,6 +685,61 @@ def main() -> int:
     if not args.post.is_file():
         print(f"FAIL post not found: {args.post}", file=sys.stderr)
         return 1
+
+    # Which engine reads this page is `speaker-helper`'s decision, asked here
+    # rather than answered here.
+    #
+    # It was answered here until 2026-10-29: `--engine` defaulted to kokoro,
+    # and the comment above `ENGINES` argued the case, that the router decides
+    # about *speech* while this package decides what it is willing to install.
+    # The argument is coherent and it is still the wrong shape. A caller that
+    # keeps its own answer agrees with the router right up to the moment the
+    # two differ, and then the disagreement is silent: the page is narrated,
+    # the cues line up, nothing fails, and the voice is simply not the one the
+    # suite chose. The licence bar the comment defended belongs in the
+    # router's catalogue, where every caller gets it, not in one caller.
+    #
+    # Naming `--engine` still overrides, which is the difference between a
+    # default and a decision.
+    #
+    # One honest limit: without `--lang` the page's language is not known yet
+    # (it is detected further down, from the assembled segments), so the
+    # router is asked about English. That is harmless today, because offline
+    # routing answers the same engine in every language, and it would stop
+    # being harmless the day it does not. Pass `--lang` and the question is
+    # exact.
+    if args.engine is None:
+        try:
+            from speaker_helper import RouteRequest, route
+
+            args.engine = route(
+                RouteRequest(condition="offline", language=args.lang or "en")
+            ).engine
+        except ImportError:
+            print(
+                "FAIL speaker-helper is not installed, so there is nothing to "
+                "ask which voice should read this.\n"
+                "  Install: pip install 'sprezzature-audio[narrate]'\n"
+                "  Or name one yourself: --engine chatterbox",
+                file=sys.stderr,
+            )
+            return 1
+        if args.engine not in ENGINES:
+            # The router's catalogue lives in another package and can grow
+            # without this one being touched. Left unchecked, an engine this
+            # module has no wrapper for falls through to the refusal below,
+            # which would then name an extra that does not exist -- a reader
+            # following `pip install 'sprezzature-audio[narrate-<new>]'` to a
+            # dead end, told nothing about where the name came from.
+            print(
+                f"FAIL speaker-helper routed to '{args.engine}', which this "
+                f"orchestrator has no wrapper for.\n"
+                f"  It dispatches to: {', '.join(ENGINES)}\n"
+                f"  Name one yourself: --engine {ENGINES[0]}",
+                file=sys.stderr,
+            )
+            return 1
+        print(f"engine: {args.engine} (speaker-helper, offline)", file=sys.stderr)
 
     source: str = args.post.read_text(encoding="utf-8")
     if args.post.suffix.lower() in HTML_SUFFIXES:
