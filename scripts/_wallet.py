@@ -69,17 +69,36 @@ set on the shared ledger would throw away other packages' entries. So the
 ledger here lives at ``<the caller's cache dir>/ledger.db`` and is this
 package's alone.
 
-The creation race, reproduced
------------------------------
-:class:`~wallet_helper.sqlite_ledger.SqliteLedger` can collide with itself at
-construction: six processes released from a barrier onto the same missing
+The creation race, reproduced — and then fixed upstream
+------------------------------------------------------
+:class:`~wallet_helper.sqlite_ledger.SqliteLedger` used to collide with itself
+at construction: six processes released from a barrier onto the same missing
 database file raised ``sqlite3.OperationalError: database is locked`` in
 **two of six rounds**, from inside its own ``PRAGMA journal_mode=WAL`` — the
-statement that makes concurrent use possible is itself not concurrency-safe
-on a file nobody has created yet. Hence :func:`_ledger`'s bounded retry with
-jittered backoff, and hence its last resort: the JSON
-:class:`~wallet_helper.ledger.Ledger`, which keeps the two properties the
-hand-rolled cache already had rather than failing the call outright.
+statement that makes concurrent use possible is itself not concurrency-safe on
+a file nobody has created yet. SQLite answers a journal-mode change with
+``SQLITE_BUSY`` *without consulting the busy handler*, so the connection's
+timeout never covered it.
+
+``wallet-helper`` **1.3.2** reads the mode before writing it, and this
+package's floor now names 1.3.2, so that cause is out of reach here.
+
+What the retry is for now
+-------------------------
+It stays, and the reason is narrower than the one that prompted it — which is
+worth writing down, because a defence whose stated cause has been removed is a
+defence the next reader deletes or, worse, keeps for the wrong reason.
+
+The live branch is ``sqlite3.DatabaseError``: **a file that is not a
+database**, which is a disk and not a release. A ledger truncated by a crash,
+or a path that collided with something else, degrades immediately to the JSON
+:class:`~wallet_helper.ledger.Ledger` instead of taking the whole command down
+— and each repository holding this file has its own test for exactly that.
+Trading a cache for a crash was the defect the pair this replaced had.
+
+``OperationalError`` keeps its retry for genuine contention beyond the busy
+timeout, which is far rarer and which no floor can rule out. The numbers are
+unchanged: raising the floor changed what this code is *for*, not what it does.
 
 .. _wallet-helper: https://github.com/warith-harchaoui/wallet-helper
 
@@ -100,8 +119,9 @@ from typing import Any
 
 #: How many times :func:`_ledger` re-opens the SQLite store before giving up
 #: on it. Six attempts with the backoff below span roughly 1.3 s in the worst
-#: case, which is far longer than the creation race measured above lasts, and
-#: far shorter than the work being guarded.
+#: case, which was far longer than the creation race measured above lasted, and
+#: far shorter than the work being guarded. Unchanged when the floor moved past
+#: that race: a number nobody re-measured is a number to leave alone.
 OPEN_ATTEMPTS: int = 6
 
 #: First backoff step, in seconds; doubled each attempt and jittered, so two
@@ -190,9 +210,11 @@ def _ledger(cache_dir: Path) -> Any:
         try:
             return SqliteLedger(db)
         except sqlite3.OperationalError:
-            # The measured race: another process is creating the same file and
-            # holds the write lock inside its own WAL pragma. Jittered, so the
-            # retry does not recreate the collision it is recovering from.
+            # Genuine contention: another process holds the write lock past the
+            # busy timeout. The WAL-pragma race that first prompted this is
+            # fixed in wallet-helper 1.3.2, which the floor now names — see the
+            # module docstring. Jittered, so the retry does not recreate the
+            # collision it is recovering from.
             # (`OperationalError` first: it is a subclass of the clause below.)
             time.sleep(OPEN_BACKOFF * (2**attempt) * (0.5 + random.random()))
         except sqlite3.DatabaseError as exc:

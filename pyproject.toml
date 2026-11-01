@@ -70,7 +70,18 @@ dependencies = [
     "sprezzature-audio[narrate]>=1.3.0",
     "langdetect>=1.0.9",
     "best-engine-ai-helper>=1.4",
-    "wallet-helper>=1.3,<2",
+    # The floor is 1.3.2 and it is load-bearing. Up to and including 1.3.1,
+    # `SqliteLedger.__init__` ran `PRAGMA journal_mode=WAL`, which needs
+    # exclusive access to the file, and SQLite answers a journal-mode change
+    # with SQLITE_BUSY *without consulting the busy handler* -- so the
+    # connection's timeout did not cover it. Six processes onto one missing
+    # database file collided in two of six rounds, which is the shape
+    # `scripts/_wallet.py` documents.
+    #
+    # `scripts/_wallet.py`'s retry stays, and this floor is what lets its prose
+    # say what it is really for: a file that is not a database, which is a disk
+    # and not a release. Raising the floor removed the cause, not the defence.
+    "wallet-helper>=1.3.2,<2",
 ]
 
 [project.optional-dependencies]
