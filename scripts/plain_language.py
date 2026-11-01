@@ -85,7 +85,7 @@ try:
 except ImportError as _exc:  # pragma: no cover - dependency guard
     raise SystemExit(
         "this tool asks a local model, which is the [prose] extra: "
-        "pip install 'sprezzature-publish[prose]'"
+        "pip install 'sprezzature-publish'"
     ) from _exc
 
 # Shared Ollama helpers live in _ollama.py inside this skill folder so

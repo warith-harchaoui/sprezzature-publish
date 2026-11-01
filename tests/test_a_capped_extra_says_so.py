@@ -12,7 +12,7 @@ file does not repeat it.
 
 What that one deliberately leaves alone is the extras, because an extra only
 breaks itself: the base install staying good on 3.14 while ``pip install
-"sprezzature-publish[prose]"`` does not resolve there is a legitimate
+"sprezzature-publish"`` does not resolve there is a legitimate
 arrangement — the base is ``click`` and nothing else on purpose, and the
 weight is opt-in. The defect is not the narrowing. The defect is that nobody
 knows about it: before this file, ``grep -c 3.14 pyproject.toml`` returned
@@ -73,6 +73,14 @@ PYPROJECT_TEXT = (ROOT / "pyproject.toml").read_text(encoding="utf-8")
 PROJECT = tomllib.loads(PYPROJECT_TEXT)["project"]
 DISTRIBUTION: str = PROJECT["name"]
 EXTRAS: dict[str, list[str]] = PROJECT.get("optional-dependencies", {})
+
+#: The base install, read as if it were an extra with no name. Added on
+#: 2026-11-01, when every feature extra was folded into the base: before that
+#: this file scanned ``EXTRAS`` only, so the moment the floors moved there the
+#: eight parametrised cases went red saying "no extra names this any more" --
+#: true, and exactly the wrong conclusion. The question this file asks is about
+#: requirements the manifest states, and the base states them now.
+_BASE = ""
 
 #: ``Requires-Python`` as the PyPI index declares it **for the exact version
 #: each line below names**, which is the floor this manifest asks for.
@@ -159,7 +167,8 @@ def _direct_requirements(extra: str, seen: set[str] | None = None) -> list[Requi
     """
     seen = set() if seen is None else seen
     out: list[Requirement] = []
-    for raw in EXTRAS.get(extra, []):
+    source = PROJECT.get("dependencies", []) if extra == _BASE else EXTRAS.get(extra, [])
+    for raw in source:
         req = Requirement(raw)
         if _canonical(req.name) != _canonical(DISTRIBUTION):
             out.append(req)
@@ -229,7 +238,7 @@ def _comment_for(extra: str) -> str:
 def _capped_extras() -> dict[str, tuple[str, ...]]:
     """Every extra reaching a measured-capped floor, and the versions it loses."""
     out: dict[str, tuple[str, ...]] = {}
-    for extra in EXTRAS:
+    for extra in (_BASE, *EXTRAS):
         windows: list[str] = []
         for req in _direct_requirements(extra):
             key = (req.name, _floor(req.specifier))
@@ -297,7 +306,9 @@ def test_a_measured_floor_is_still_the_floor_the_manifest_names(name: str, versi
     whole file exists to refuse.
     """
     named = {
-        (req.name, _floor(req.specifier)) for extra in EXTRAS for req in _direct_requirements(extra)
+        (req.name, _floor(req.specifier))
+        for extra in (_BASE, *EXTRAS)
+        for req in _direct_requirements(extra)
     }
 
     assert (name, version) in named, (
@@ -321,8 +332,27 @@ def test_every_capped_extra_names_its_ceiling() -> None:
         "assuming. Check MEASURED_AT_THEIR_FLOOR against the manifest."
     )
 
+    promised = SpecifierSet(PROJECT["requires-python"])
     silent: dict[str, tuple[str, ...]] = {}
     for extra, lost in sorted(capped.items()):
+        if extra == _BASE:
+            # A base ceiling belongs in the promise itself, not in a comment:
+            # every version the graph excludes must already be outside
+            # requires-python, so pip refuses the interpreter with a sentence
+            # instead of a resolver dump, before anything downloads. The hub
+            # asserts the same cross from the other side, in
+            # test_no_brick_promises_a_python_its_dependencies_exclude.py.
+            still_promised = tuple(v for v in lost if promised.contains(v))
+            if still_promised:
+                pytest.fail(
+                    f"{DISTRIBUTION} promises requires-python = "
+                    f"{PROJECT['requires-python']!r}, and its **base** install "
+                    f"cannot be installed on " + ", ".join(still_promised) + ".\n"
+                    "  This is not a comment to write, it is a ceiling to "
+                    "declare: put it in requires-python. Folding an extra into "
+                    "the base moves its ceiling with it."
+                )
+            continue
         comment = _comment_for(extra)
         if not all(version in comment for version in boundaries(lost)):
             silent[extra] = lost

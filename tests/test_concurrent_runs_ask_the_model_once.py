@@ -77,7 +77,7 @@ pytest.importorskip(
     reason=(
         "wallet-helper is declared in the [prose] extra, which this "
         "package's CI installs through [all]. If this skips, the manifest "
-        "and the install have come apart: pip install 'sprezzature-publish[prose]'"
+        "and the install have come apart: pip install 'sprezzature-publish'"
     ),
 )
 

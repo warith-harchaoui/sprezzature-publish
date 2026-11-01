@@ -6,6 +6,41 @@ versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Changed — one `pip install`
+
+**Everything this package does now installs with it.** 9 extras became
+**one**, and it is not a feature: `[dev]` is the test toolchain.
+
+  The lint, the renderer, the icon set, the local-model tools, the narration and
+  both surfaces. The base was **one** dependency, so `pip install
+  sprezzature-publish` gave a lint and nothing else — and `[all]` named four of
+  the eight, so even "install everything" did not.
+
+  `requires-python` becomes `>=3.10,<3.14`: `sprezzature-audio`, now a base
+  dependency, declares `<3.14` at the version named here. The hub's own guard
+  dictated that edit by name.
+
+Measured across the suite before touching anything: **59 extras over eleven
+repositories**, and **six bricks whose base was a single dependency** — so
+`pip install <brick>` installed almost nothing and did almost nothing, and
+choosing the right extra was a thing a reader had to know *before* the package
+could do its job. Here the base goes from **1** to **14**
+dependencies.
+
+All eleven unions were dry-run resolved in a clean venv before any manifest was
+edited, so this is a measured feasibility and not an optimistic one.
+
+### Fixed — the places that encoded the extras
+
+Install lines, error messages, docstrings, the `Dockerfile`, the CI workflow and
+the README/LISEZMOI install sections all named extras that no longer exist. pip
+treats an unknown extra as a **warning and exits 0**, so none of these would
+have failed loudly: they would have quietly installed nothing.
+
+The hub's `test_no_document_promises_an_extra_that_does_not_exist` found the
+cross-repository ones — a document in one brick naming another brick's extra —
+which no per-repository pass would have caught.
+
 ### Removed
 
 - **`kyutai` leaves `ENGINES` and `DEFAULT_VOICE`.** `sprezzature-audio` 1.8.0

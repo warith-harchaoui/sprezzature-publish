@@ -7,7 +7,7 @@ COPY . .
 # Everything the image is worth running. The lint alone needs no extras at
 # all — that is its point — but an image exists to serve the API, and the
 # API is only interesting with the renderer and the prose tools behind it.
-RUN pip install --no-cache-dir ".[all,api,mcp]"
+RUN pip install --no-cache-dir "."
 
 EXPOSE 8000
 

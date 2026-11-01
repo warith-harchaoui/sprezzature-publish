@@ -104,7 +104,7 @@ def _attach(name: str, module_name: str, summary: str) -> None:
             raise SystemExit(
                 f"{_name}: its dependencies are an optional extra so the lint "
                 f"stays dependency-free. Install them with: "
-                f"pip install 'sprezzature-publish[all]'\n  ({exc})"
+                f"pip install 'sprezzature-publish'\n  ({exc})"
             ) from exc
 
         # The tools read sys.argv themselves — they were commands before they

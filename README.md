@@ -55,13 +55,20 @@ drift. The argparse twin was removed on 2026-10-25.
 ## Install
 
 ```sh
-pip install sprezzature-publish              # the lint: zero dependencies
-pip install "sprezzature-publish[html]"      # + the renderer
-pip install "sprezzature-publish[icons]"     # + Pillow, for the icon set
-pip install "sprezzature-publish[prose]"     # + the local-model tools
-pip install "sprezzature-publish[all]"       # everything above
-pip install "sprezzature-publish[api,mcp]"   # + the HTTP and agent surfaces
+pip install sprezzature-publish
 ```
+
+One line, and it is everything: the lint, the renderer, the icon set, the
+local-model tools, the narration, the HTTP surface and the MCP server.
+
+Until 2026-11-01 this block was six lines and you had to pick — the base was a
+single dependency, so `pip install sprezzature-publish` gave you a lint and
+nothing else, and knowing which extra you wanted was a prerequisite for the
+package being useful. The extras are gone; `[dev]` is the test toolchain and
+is not one of them.
+
+Requires **Python 3.10–3.13**: `sprezzature-audio`, now a base dependency,
+declares `<3.14` at the version named in the manifest.
 
 The lint having **no dependencies at all** is deliberate, and it is the
 reason this package is worth putting in a pre-commit hook: it runs in
@@ -117,7 +124,7 @@ caller should import rather than shell out and parse stdout.
 ### Over HTTP
 
 ```sh
-pip install "sprezzature-publish[api]"
+pip install "sprezzature-publish"
 uvicorn sprezzature_publish.api:app --port 8000
 curl -s localhost:8000/health
 ```

@@ -32,7 +32,7 @@ jobs:
       - name: Install
         run: |
           python -m pip install --upgrade pip
-          pip install -e ".[dev,all,api,mcp]"
+          pip install -e ".[dev]"
 
       - name: Lint
         # Une fois, pas trois. ruff est un analyseur statique : son verdict ne

@@ -36,8 +36,10 @@ try:
     from fastapi.responses import RedirectResponse
 except ImportError as exc:  # pragma: no cover - dependency guard
     raise ImportError(
-        "The FastAPI HTTP surface requires the [api] extra. "
-        "Install with: pip install 'sprezzature-publish[api]'"
+        "The FastAPI HTTP surface could not import fastapi, which is a base "
+        "dependency since 2026-11-01 -- so this is a broken install rather "
+        "than a missing extra. Reinstall with: "
+        "pip install 'sprezzature-publish'"
     ) from exc
 
 from pydantic import BaseModel, Field
@@ -270,7 +272,7 @@ def render(request: RenderRequest) -> dict:
     if not _installed("markdown"):
         raise HTTPException(
             status_code=503,
-            detail="rendering needs the [html] extra: pip install 'sprezzature-publish[html]'",
+            detail="rendering needs the [html] extra: pip install 'sprezzature-publish'",
         )
     from sprezzature_publish_scripts.md_to_html import convert_one
 
@@ -319,7 +321,7 @@ def plain(request: PlainRequest) -> dict:
         raise HTTPException(
             status_code=503,
             detail="the plain-language rewrite needs the [prose] extra: "
-            "pip install 'sprezzature-publish[prose]'",
+            "pip install 'sprezzature-publish'",
         )
     from sprezzature_publish_scripts.plain_language import rewrite
 

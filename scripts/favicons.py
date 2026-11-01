@@ -81,7 +81,7 @@ try:
 except ImportError as _exc:  # pragma: no cover - dependency guard
     raise SystemExit(
         "the icon set needs Pillow, which is the [icons] extra: "
-        "pip install 'sprezzature-publish[icons]'"
+        "pip install 'sprezzature-publish'"
     ) from _exc
 
 # ── Module-level configuration ────────────────────────────────────────────────

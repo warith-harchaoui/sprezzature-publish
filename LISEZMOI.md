@@ -44,13 +44,20 @@ le 2026-10-25.
 ## Installation
 
 ```sh
-pip install sprezzature-publish              # le lint : aucune dépendance
-pip install "sprezzature-publish[html]"      # + le moteur de rendu
-pip install "sprezzature-publish[icons]"     # + Pillow, pour le jeu d'icônes
-pip install "sprezzature-publish[prose]"     # + les outils à modèle local
-pip install "sprezzature-publish[all]"       # tout ce qui précède
-pip install "sprezzature-publish[api,mcp]"   # + les surfaces HTTP et agent
+pip install sprezzature-publish
 ```
+
+Une ligne, et c'est tout : le lint, le rendu, le jeu d'icônes, les outils à
+modèle local, la narration, la surface HTTP et le serveur MCP.
+
+Jusqu'au 2026-11-01 ce bloc faisait six lignes et il fallait choisir — la base
+était une seule dépendance, donc `pip install sprezzature-publish` donnait un
+lint et rien d'autre, et savoir quel extra on voulait était un prérequis pour
+que le paquet serve. Les extras sont partis ; `[dev]` est l'outillage de test
+et n'en est pas un.
+
+Demande **Python 3.10–3.13** : `sprezzature-audio`, désormais en base,
+déclare `<3.14` à la version que nomme le manifeste.
 
 Que le lint n'ait **aucune dépendance** est délibéré, et c'est la raison pour
 laquelle ce paquet vaut la peine d'être mis dans un crochet de pré-commit : il

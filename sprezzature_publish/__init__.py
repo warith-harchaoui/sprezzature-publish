@@ -127,7 +127,7 @@ def __getattr__(name: str) -> Any:
         raise ImportError(
             f"`{name}` lives in {module_name}, whose dependencies are an "
             f"optional extra so the lint stays dependency-free. Install them "
-            f"with: pip install 'sprezzature-publish[all]'"
+            f"with: pip install 'sprezzature-publish'"
         ) from exc
     return getattr(module, name)
 

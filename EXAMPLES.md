@@ -125,7 +125,7 @@ be missing from the other.
 ## Over HTTP
 
 ```bash
-pip install "sprezzature-publish[api]"
+pip install "sprezzature-publish"
 uvicorn sprezzature_publish.api:app --port 8000
 curl -s localhost:8000/health
 ```

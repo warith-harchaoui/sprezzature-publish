@@ -26,9 +26,10 @@ An assistant asked "is this palette accessible?" can now answer with a
 number it computed instead of an impression it formed — and be wrong in a
 way that is checkable.
 
-Install the extra to pull in ``fastapi-mcp``::
+``fastapi-mcp`` is a base dependency since 2026-11-01, so there is no
+extra to ask for::
 
-    pip install 'sprezzature-publish[api,mcp]'
+    pip install 'sprezzature-publish'
 
 Then run the MCP server::
 
@@ -69,8 +70,10 @@ except ImportError:  # pragma: no cover - dependency guard
         not a stack trace.
         """
         print(
-            "sprezzature-publish MCP surface requires fastapi-mcp. "
-            "Install with: pip install 'sprezzature-publish[api,mcp]'",
+            "sprezzature-publish MCP surface could not import fastapi-mcp, which is a "
+            "base dependency since 2026-11-01 -- a broken install rather than "
+            "a missing extra. Reinstall with: "
+            "pip install 'sprezzature-publish'",
             file=sys.stderr,
         )
         sys.exit(1)

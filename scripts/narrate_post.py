@@ -72,9 +72,9 @@ Requirements
   parsing degrade silently when missing).
 * One of the engine wrappers installed. They live in sprezzature-audio,
   which owns the sound modality in both directions:
-  - ``pip install 'sprezzature-audio[narrate-kokoro]'``
-  - ``pip install 'sprezzature-audio[narrate-openvoice]'``
-  - ``pip install 'sprezzature-audio[narrate-chatterbox]'``
+  - ``pip install 'sprezzature-audio'``
+  - ``pip install 'sprezzature-audio'``
+  - ``pip install 'sprezzature-audio'``
 * A running Ollama daemon if ``--ai-hints`` is passed (the same
   daemon ``alt_from_ollama.py`` and ``meta_from_ollama.py`` use).
 
@@ -109,7 +109,7 @@ def _llm_chat(*args: Any, **kwargs: Any) -> Any:
     written and which made the whole command depend on an extra it uses only
     when asked to. `--ai-hints` is off by default: the structural path is the
     baseline and the model only ever enriches it. But the import ran
-    regardless, so `pip install 'sprezzature-publish[narrate]'` — the extra
+    regardless, so `pip install 'sprezzature-publish'` — the extra
     whose entire purpose is this command — produced a command that exited on
     `--help` with a message about a *different* extra. The one shape of
     install the feature is named after was the one that could not run it.
@@ -119,7 +119,7 @@ def _llm_chat(*args: Any, **kwargs: Any) -> Any:
     except ImportError as exc:  # pragma: no cover - dependency guard
         raise SystemExit(
             "--ai-hints asks a local model, which is the [prose] extra: "
-            "pip install 'sprezzature-publish[prose]'. Without it the "
+            "pip install 'sprezzature-publish'. Without it the "
             "narration still works — the structural hints are the baseline."
         ) from exc
     return chat(*args, **kwargs)
