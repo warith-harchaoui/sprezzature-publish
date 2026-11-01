@@ -6,6 +6,59 @@ versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Removed
+
+- **`kyutai` leaves `ENGINES` and `DEFAULT_VOICE`.** `sprezzature-audio` 1.8.0
+  dropped the wrapper, the console script and the `[narrate-kyutai]` extra, so
+  offering the name here would have printed an install line for an extra that
+  no longer exists.
+
+  The engine itself stays in `speaker-helper`'s catalogue, which is where the
+  engine list belongs. Measured before removing the wrapper: kyutai has
+  exactly one operating point (French), and swept over five conditions and
+  five languages the router answered **chatterbox** everywhere it answered at
+  all — never kyutai. Not wrapping it costs nothing.
+
+### Changed
+
+- **`test_every_engine_the_router_can_answer_is_one_this_package_can_invoke`
+  gains `NOT_WRAPPED_ON_PURPOSE`.** Its invariant was "every catalogue engine
+  has a wrapper here", so dropping the kyutai wrapper broke it — correctly,
+  because an unwrapped engine the router could answer is a real hazard.
+
+  Rather than weaken the check, the exemption is **enumerated**: the engine by
+  name, with the reason and the measurement. A new catalogue entry still
+  fails. A stale exemption fails too — a second assertion requires every
+  exempted name to still be in the catalogue, because an exemption for an
+  engine that no longer exists hides the next real one. Sabotage-checked:
+  removing `kokoro` from `ENGINES` fails with the name in the message.
+
+### Fixed
+
+- **Three stale or wrong statements in the `[narrate]` dependency comment**,
+  all measured against the index on 2026-11-01 and none of them visible from
+  inside this repository.
+
+  It said `sprezzature-audio[narrate]>=1.3.0` "resolves to 1.4.0". It resolves
+  to **1.5.0** — the highest version satisfying the floor, not the lowest.
+
+  It did not say that **the index is two releases behind this checkout**:
+  `sprezzature-audio` is 1.8.0 in its working tree and stops at 1.5.0 on PyPI,
+  because 1.6.0 and 1.7.0 were never uploaded. So anything verified by running
+  the siblings side by side describes the checkouts, not what `pip install`
+  gets.
+
+  And it did not say why the `speaker-helper` floor **cannot** be raised here.
+  Audio raised its own to `>=0.14.1,<1` the same day, because the offline
+  ratification table that pins chatterbox for French only exists from 0.12.0
+  and an older router routes differently while importing fine. That floor
+  reaches this package transitively and only once audio is published: every
+  audio version on the index today names `speaker-helper>=0.8.0`, so no floor
+  writable here can reach 0.14.1, and pointing at `>=1.8.0` would make
+  `[narrate]` unresolvable. The comment is now the handle for that decision
+  rather than silence about it.
+
+
 ### Added
 
 - **`narrate_post.py` can ask for the container it wants**, as

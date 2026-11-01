@@ -1244,6 +1244,22 @@ class TestTheEngineIsAskedForRatherThanAssumed:
         monkeypatch.setattr(sys, "argv", ["sprezzature-publish-narrate", "post.md"])
         assert narrate_post.parse_args().engine is None
 
+    #: Catalogue engines this suite deliberately does not wrap, and why.
+    #: Enumerated rather than skipped: an unwrapped engine is a real hazard
+    #: and the only safe version of "we chose not to" is one that names the
+    #: engine, so a *new* catalogue entry still fails the test below.
+    NOT_WRAPPED_ON_PURPOSE = {
+        "kyutai": (
+            "dropped on 2026-11-01 with sprezzature-audio 1.8.0, which removed "
+            "the [narrate-kyutai] extra, the console script and the wrapper. "
+            "It stays in speaker-helper's catalogue, where the engine list "
+            "belongs, with exactly one operating point (French). Swept over "
+            "five conditions and five languages the router answered chatterbox "
+            "everywhere it answered at all and kyutai in no case, which is why "
+            "not wrapping it costs nothing"
+        ),
+    }
+
     def test_every_engine_the_router_can_answer_is_one_this_package_can_invoke(self):
         """The invariant that makes asking next door safe.
 
@@ -1254,6 +1270,12 @@ class TestTheEngineIsAskedForRatherThanAssumed:
         ``pip install 'sprezzature-audio[narrate-<name>]'`` for an extra that
         was never published. ``main`` now refuses that case by name, and this
         is the check that notices the catalogue moved at all.
+
+        Since 2026-11-01 it also allows the other direction -- an engine the
+        catalogue carries and this suite chose not to wrap -- but only through
+        :data:`NOT_WRAPPED_ON_PURPOSE`, by name and with a reason. A bare
+        "ignore what we don't wrap" would have made the test vacuous, which is
+        the same as deleting it.
         """
         pytest.importorskip("speaker_helper")
         import narrate_post
@@ -1261,9 +1283,23 @@ class TestTheEngineIsAskedForRatherThanAssumed:
 
         catalogue = sorted({point.engine for point in default_operating_points()})
         assert catalogue, "an empty catalogue would make this assertion vacuous"
-        unknown = [engine for engine in catalogue if engine not in narrate_post.ENGINES]
+
+        stale = sorted(set(self.NOT_WRAPPED_ON_PURPOSE) - set(catalogue))
+        assert stale == [], (
+            f"NOT_WRAPPED_ON_PURPOSE exempts {stale}, which speaker-helper's "
+            f"catalogue no longer carries. Drop the entry: an exemption for an "
+            f"engine that does not exist hides the next real one"
+        )
+
+        unknown = [
+            engine
+            for engine in catalogue
+            if engine not in narrate_post.ENGINES
+            and engine not in self.NOT_WRAPPED_ON_PURPOSE
+        ]
         assert unknown == [], (
             f"speaker-helper can route to {unknown}, which narrate_post has no "
             f"wrapper for; add it to ENGINES once sprezzature-audio ships the "
-            f"wrapper, or the router hands back a name this module cannot run"
+            f"wrapper, or name it in NOT_WRAPPED_ON_PURPOSE with the reason -- "
+            f"otherwise the router hands back a name this module cannot run"
         )

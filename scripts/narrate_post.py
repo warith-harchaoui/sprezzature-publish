@@ -25,8 +25,8 @@ Pipeline
    the structure alone cannot see (sarcasm, build-up before a
    punchline, pacing). Defaults to off — the deterministic
    structural path stays the baseline.
-4. The engine wrapper (``narrate_kokoro.py`` / ``narrate_kyutai.py`` /
-   ``narrate_openvoice.py`` / ``narrate_chatterbox.py``) runs as a
+4. The engine wrapper (``narrate_kokoro.py`` / ``narrate_openvoice.py`` /
+   ``narrate_chatterbox.py``) runs as a
    subprocess and synthesises one WAV per segment, then concatenates
    with the requested pauses. Which one runs is ``speaker-helper``'s
    answer unless ``--engine`` names one; see :data:`ENGINES`.
@@ -73,7 +73,6 @@ Requirements
 * One of the engine wrappers installed. They live in sprezzature-audio,
   which owns the sound modality in both directions:
   - ``pip install 'sprezzature-audio[narrate-kokoro]'``
-  - ``pip install 'sprezzature-audio[narrate-kyutai]'``
   - ``pip install 'sprezzature-audio[narrate-openvoice]'``
   - ``pip install 'sprezzature-audio[narrate-chatterbox]'``
 * A running Ollama daemon if ``--ai-hints`` is passed (the same
@@ -166,10 +165,8 @@ HTML_SUFFIXES: frozenset[str] = frozenset({".html", ".htm", ".xhtml", ".php"})
 #:
 #: `kokoro` is 82 M parameters, Apache-2.0 in code *and* weights, runs on ONNX
 #: Runtime with no torch at all, carries 54 voices across nine languages, and
-#: needs nothing recorded. `kyutai` is the French answer: a Paris lab's
-#: `tts-1.6b-en_fr`, which renders French natively where the other three reach
-#: it through an English-first pipeline; its code is MIT and its weights
-#: CC-BY-4.0. `openvoice` and `chatterbox` are voice-*cloning* engines: they
+#: needs nothing recorded. `openvoice` and `chatterbox` are voice-*cloning*
+#: engines: they
 #: want a reference clip and a multi-gigabyte ML stack, which is the right
 #: trade when the point is to sound like a particular person.
 #:
@@ -178,7 +175,7 @@ HTML_SUFFIXES: frozenset[str] = frozenset({".html", ".htm", ".xhtml", ".php"})
 #: that does not exist. Nothing in this process can check that — the router's
 #: catalogue is sprezzature-audio's — so a test in this repository does, and
 #: `main` says so honestly rather than printing an install command.
-ENGINES: tuple[str, ...] = ("kokoro", "kyutai", "openvoice", "chatterbox")
+ENGINES: tuple[str, ...] = ("kokoro", "openvoice", "chatterbox")
 
 #: The default voice, per engine. Kokoro's is empty on purpose: the language
 #: picks the voice, and a hard-coded default would be a hard-coded language.
@@ -195,10 +192,6 @@ ENGINES: tuple[str, ...] = ("kokoro", "kyutai", "openvoice", "chatterbox")
 #: decided once, below, from the whole text.
 DEFAULT_VOICE: dict[str, str] = {
     "kokoro": "",
-    # Empty for the same reason as kokoro's: kyutai carries a female default
-    # per language (CML-TTS 10087 enhanced for French, VCTK p329 for English)
-    # and naming one here would name a language with it.
-    "kyutai": "",
     "openvoice": "base-en-default",
     "chatterbox": "default",
 }
