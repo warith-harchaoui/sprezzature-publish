@@ -67,7 +67,17 @@ dependencies = [
     "requests>=2.31",
     "fastapi-mcp>=0.3",
     "mcp<2.0",
-    "sprezzature-audio[narrate]>=1.3.0",
+    # Plain, and 1.9.0, since 2026-11-01. It asked for
+    # `sprezzature-audio[narrate]` while the index served 1.5.0, where
+    # `[narrate]` was the real thing and the base had no voice. 1.9.0 folded
+    # every extra into the base, so the name is now an empty deprecated shim
+    # kept alive only for this line and its twin in the other sibling.
+    #
+    # The floor is load-bearing in the exact way a floor should be: on 1.5.0
+    # this plain requirement would install a package that cannot speak, and
+    # pip would say nothing — an unknown extra is a warning and exit 0,
+    # measured, so neither spelling fails loudly on the wrong version.
+    "sprezzature-audio>=1.9.0",
     "langdetect>=1.0.9",
     "best-engine-ai-helper>=1.4",
     # The floor is 1.3.2 and it is load-bearing. Up to and including 1.3.1,
@@ -85,6 +95,14 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+# This extra cannot be installed on **3.14** or later, and the base install
+# can. The ceiling arrives through `sprezzature-audio>=1.9.0`, which declares
+# `requires-python <3.14,>=3.10` where the 1.5.0 this used to name declared
+# `>=3.10` and no upper bound — the quiet half of a floor move, and harmless
+# here only because this package already promises `>=3.10,<3.14`.
+#
+# Said out loud because the base install is unaffected, which is exactly why
+# nothing else would ever catch it.
 dev = [
     # The sibling that owns the voice, *base install only* — not `[narrate]`,
     # whose backends are the weight this package keeps out of its graph on
@@ -92,9 +110,21 @@ dev = [
     # here names a module that exists over there; its own docstring says the
     # check "passed on every developer's laptop and failed on the one
     # environment that installs nothing extra". It skipped there rather than
-    # failing, which is the same silence. The base install is `click` and
-    # `langdetect`.
-    "sprezzature-audio>=1.5.0",
+    # failing, which is the same silence.
+    #
+    # The sentence that stood here — "the base install is `click` and
+    # `langdetect`" — was true of `sprezzature-audio` 1.5.0 and stopped being
+    # true on 2026-11-01, when 1.9.0 folded every extra into the base. The
+    # floor says 1.9.0 so the test runs against the package the base
+    # dependency names, and not a version where the voice lived behind an
+    # extra this list does not ask for.
+    #
+    # It brings a ceiling with it: 1.9.0 declares `requires-python
+    # <3.14,>=3.10` where 1.5.0 declared `>=3.10` and no upper bound. So this
+    # extra cannot be installed on **3.14** or later. That matches what this
+    # package promises, and it is said here because the base install is
+    # unaffected — which is exactly why nothing else would catch it.
+    "sprezzature-audio>=1.9.0",
     "pytest>=8.0", "ruff", "mypy", "httpx>=0.27", "types-PyYAML",
     # tomllib landed in 3.11 and this package claims 3.10.
     'tomli>=2.0; python_version < "3.11"',

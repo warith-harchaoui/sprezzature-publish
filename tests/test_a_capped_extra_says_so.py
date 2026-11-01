@@ -105,7 +105,17 @@ MEASURED_AT_THEIR_FLOOR: dict[tuple[str, str], str] = {
     ("requests", "2.31"): ">=3.7",
     ("mmdc", "0.3"): ">=3.4",
     ("langdetect", "1.0.9"): "",
-    ("sprezzature-audio", "1.5.0"): ">=3.10",
+    # 1.9.0 since 2026-11-01, the day it was published and this package
+    # stopped asking for `sprezzature-audio[narrate]`. Re-read off the simple
+    # index for the files of the new floor, as this table demands, and the
+    # window **changed**: 1.5.0 declared `>=3.10` with no ceiling, 1.9.0
+    # declares `<3.14,>=3.10`.
+    #
+    # That ceiling now reaches this package through a base dependency, which
+    # is the quiet half of a floor move. It happens to be harmless here —
+    # `requires-python` already says `>=3.10,<3.14` — and it is exactly the
+    # kind of inheritance that is only harmless by luck when nobody looks.
+    ("sprezzature-audio", "1.9.0"): "<3.14,>=3.10",
     # `>=1.3` resolves to 1.3.0, the lowest published; 1.3.0 and 1.3.1 are the
     # only 1.3.x files on the index and both read the same.
     # Moved from 1.3 to 1.3.2 on 2026-11-01, when 1.3.2 was published: up to
@@ -138,10 +148,6 @@ MEASURED_AT_THEIR_FLOOR: dict[tuple[str, str], str] = {
 #: Each value is ``(the dependency line that carries it, its window)``.
 CAPPED_ONE_HOP_DOWN: dict[tuple[str, str], tuple[str, str]] = {
     ("best-engine-ai-helper", "1.4"): ("os-helper<3,>=2.3.0", "<3.14,>=3.10"),
-    ("sprezzature-audio", "1.3.0"): (
-        "speaker-helper[detect,kokoro]>=0.8.0, in 1.4.0's narrate extra",
-        "<3.14,>=3.10",
-    ),
 }
 
 #: The minor versions a capped dependency has to be checked against. 3.14 is
