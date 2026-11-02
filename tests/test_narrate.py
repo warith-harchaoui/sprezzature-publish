@@ -975,9 +975,9 @@ class TestTheVoicesLiveNextDoor:
         """
         `python -m` against the installed package is the normal path.
 
-        Skipped where the voices are absent, which is CI: they live behind
-        `sprezzature-audio[narrate]` and that extra pulls torch. Installing
-        gigabytes so one assertion can run would be the wrong trade, and
+        Skipped where the voices are absent, which is CI: they live in
+        `sprezzature-audio`, whose base pulls torch. Installing gigabytes so
+        one assertion can run would be the wrong trade, and
         asserting unconditionally would be worse — the first version of this
         test did, and it asserted a fact about the *machine* rather than
         about the code. It passed on every developer's laptop and failed on
@@ -1037,7 +1037,13 @@ class TestTheVoicesLiveNextDoor:
         import narrate_post
 
         source = inspect.getsource(narrate_post)
-        assert "sprezzature-audio[narrate]" in source
+        # Plain, with no extra. Narration moved into the base of
+        # `sprezzature-audio` on 2026-11-01 and the empty `[narrate]` alias
+        # that outlived it was deleted once this package named the sibling
+        # plain. A line naming a dead extra still *works* — pip warns and
+        # exits 0 — which is exactly why it has to be pinned here.
+        assert "pip install sprezzature-audio" in source
+        assert "[narrate]" not in source
         assert "sprezzature-audio-install-voice" in source
 
     def test_a_machine_without_the_voices_gets_an_answer_not_a_crash(self, monkeypatch) -> None:

@@ -31,7 +31,7 @@ The measurement trap this file exists inside
 carries ``<3.14``; it says "at least 0.11.0". Reading
 ``importlib.metadata`` instead — the window of whatever copy happens to be
 installed — is a different question with a different answer, and it produces
-false accusations: the locally resolved graph of ``[narrate]`` blames
+false accusations: a locally resolved graph blames
 ``onnxruntime (>=3.11)`` for excluding 3.10, a transitive package three levels
 down whose version nothing in this manifest names. Two neighbouring bricks
 were accused the same way on the same afternoon, over ``scipy`` and
@@ -106,7 +106,7 @@ MEASURED_AT_THEIR_FLOOR: dict[tuple[str, str], str] = {
     ("mmdc", "0.3"): ">=3.4",
     ("langdetect", "1.0.9"): "",
     # 1.9.0 since 2026-11-01, the day it was published and this package
-    # stopped asking for `sprezzature-audio[narrate]`. Re-read off the simple
+    # stopped asking the sibling for an extra. Re-read off the simple
     # index for the files of the new floor, as this table demands, and the
     # window **changed**: 1.5.0 declared `>=3.10` with no ceiling, 1.9.0
     # declares `<3.14,>=3.10`.

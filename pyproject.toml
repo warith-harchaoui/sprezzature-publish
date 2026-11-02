@@ -68,8 +68,8 @@ dependencies = [
     "fastapi-mcp>=0.3",
     "mcp<2.0",
     # Plain, and 1.9.0, since 2026-11-01. It asked for
-    # `sprezzature-audio[narrate]` while the index served 1.5.0, where
-    # `[narrate]` was the real thing and the base had no voice. 1.9.0 folded
+    # the sibling with an extra while the index served 1.5.0, where that
+    # extra was the real thing and the base had no voice. 1.9.0 folded
     # every extra into the base, so the name is now an empty deprecated shim
     # kept alive only for this line and its twin in the other sibling.
     #
@@ -104,7 +104,7 @@ dependencies = [
 # Said out loud because the base install is unaffected, which is exactly why
 # nothing else would ever catch it.
 dev = [
-    # The sibling that owns the voice, *base install only* — not `[narrate]`,
+    # The sibling that owns the voice, *base install only* — no extra,
     # whose backends are the weight this package keeps out of its graph on
     # purpose. `tests/test_narrate.py` checks that the engine command built
     # here names a module that exists over there; its own docstring says the

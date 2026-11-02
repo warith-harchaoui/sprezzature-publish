@@ -541,7 +541,7 @@ def run_engine(
     if command is None:
         raise RuntimeError(
             f"engine {engine!r} is not reachable. The voices ship with "
-            f"sprezzature-audio: pip install 'sprezzature-audio[narrate]', "
+            f"sprezzature-audio: pip install sprezzature-audio, "
             f"then sprezzature-audio-install-voice --engine {engine}"
         )
 
@@ -750,7 +750,7 @@ def main() -> int:
             print(
                 "FAIL speaker-helper is not installed, so there is nothing to "
                 "ask which voice should read this.\n"
-                "  Install: pip install 'sprezzature-audio[narrate]'\n"
+                "  Install: pip install sprezzature-audio\n"
                 "  Or name one yourself: --engine chatterbox",
                 file=sys.stderr,
             )

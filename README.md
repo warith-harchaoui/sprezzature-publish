@@ -155,7 +155,7 @@ the document and the page, and invokes those as subprocesses so their heavy
 imports never enter its graph.
 
 ```sh
-pip install "sprezzature-audio[narrate]"
+pip install sprezzature-audio
 sprezzature-audio-install-voice --engine kokoro
 sprezzature-publish-narrate post.md --out-dir site/audio/
 ```
