@@ -142,8 +142,8 @@ def __getattr__(name: str) -> Any:
         module = importlib.import_module(f"sprezzature_publish_scripts.{module_name}")
     except ImportError as exc:  # pragma: no cover - dependency guard
         raise ImportError(
-            f"`{name}` lives in {module_name}, whose dependencies are an "
-            f"optional extra so the lint stays dependency-free. Install them "
+            f"`{name}` lives in {module_name}, whose dependencies are base "
+            f"dependencies, so this install is broken. Reinstall "
             f"with: pip install 'sprezzature-publish'"
         ) from exc
     return getattr(module, name)

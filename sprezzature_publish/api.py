@@ -161,7 +161,7 @@ def health() -> dict:
 def lint(request: LintRequest) -> dict:
     """Audit Markdown and report every finding.
 
-    Needs nothing beyond the standard library, which is why it is the one
+    Needs nothing beyond click and the standard library, which is why it is the one
     route that always answers. ``render_mermaid`` and the AI pass are off:
     both reach outside this process, and a lint route that silently shells
     out to a diagram renderer is not the millisecond gate it advertises.

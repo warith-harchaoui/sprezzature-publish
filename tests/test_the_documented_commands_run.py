@@ -42,10 +42,9 @@ DOCS = ("README.md", "LISEZMOI.md", "EXAMPLES.md")
 _INVOCATION = re.compile(r"^(make-site|sprezzature-publish[a-z-]*)\s+(.+)$")
 _FENCE = re.compile(r"```(?:bash|sh|console)\n(.*?)```", re.S)
 _FLAG = re.compile(r"(--[a-z][a-z0-9-]*)")
-_ADD_ARGUMENT = re.compile(r'add_argument\(\s*\n?\s*"(--[a-z][a-z0-9-]*)"')
-#: Half the tools declare their flags with Click, not argparse. Same job,
-#: different spelling, and the first version of this file read only the
-#: argparse one. See ``_accepted_flags``.
+#: Every tool declares its flags with Click since argparse left the suite.
+#: The first version of this file read only the argparse spelling, which made
+#: every Click tool look like it accepted nothing. See ``_accepted_flags``.
 _CLICK_OPTION = re.compile(r'@click\.option\(\s*\n?\s*"(--[a-z][a-z0-9-]*)"')
 
 
@@ -90,33 +89,19 @@ def _accepted_flags(module_name: str) -> set[str]:
 
     Reading the source cannot be defeated that way. The objection to it is
     that a flag added through a shared helper would be invisible, and that is
-    real: ``_argparse.make_parser`` adds ``-h`` and ``--version`` to every
-    parser. Those are read from the helper and added here, so the set is the
-    whole truth rather than most of it.
+    real: ``_click.sprezzature_command`` adds ``-h`` / ``--help`` and
+    ``-V`` / ``--version`` to every command. Those are added here, so the set
+    is the whole truth rather than most of it.
     """
     path = REPO_ROOT / "scripts" / f"{module_name}.py"
     if not path.is_file():
         return set()
     source = path.read_text(encoding="utf-8")
-    # Both spellings, because the package ships both parsers on purpose and
-    # a tool is free to pick either. Reading only ``add_argument`` made
-    # every Click tool look like it accepted nothing but ``--help``.
-    flags = set(_ADD_ARGUMENT.findall(source)) | set(_CLICK_OPTION.findall(source))
-    return flags | _SHARED_FLAGS
+    return set(_CLICK_OPTION.findall(source)) | _SHARED_FLAGS
 
 
-def _shared_flags() -> set[str]:
-    """Flags every parser gets from ``_argparse.make_parser``."""
-    helper = REPO_ROOT / "scripts" / "_argparse.py"
-    if not helper.is_file():
-        return {"--help", "--version"}
-    return set(_ADD_ARGUMENT.findall(helper.read_text(encoding="utf-8"))) | {
-        "--help",
-        "--version",
-    }
-
-
-_SHARED_FLAGS: set[str] = set()
+#: Flags every command gets from ``_click.sprezzature_command``.
+_SHARED_FLAGS: set[str] = {"--help", "--version"}
 
 
 def _documented() -> list[tuple[str, str, str, set[str]]]:
@@ -144,12 +129,6 @@ def _documented() -> list[tuple[str, str, str, set[str]]]:
     return out
 
 
-def _ensure_shared() -> None:
-    global _SHARED_FLAGS
-    if not _SHARED_FLAGS:
-        _SHARED_FLAGS = _shared_flags()
-
-
 def test_there_are_documented_commands_to_check() -> None:
     """A regex that stops matching would make the test below vacuous."""
     found = _documented()
@@ -158,7 +137,6 @@ def test_there_are_documented_commands_to_check() -> None:
 
 def test_every_documented_flag_is_one_the_parser_accepts() -> None:
     """A flag in a README is an instruction, and instructions are tested."""
-    _ensure_shared()
     accepted: dict[str, set[str]] = {}
     wrong: list[str] = []
     blind: set[str] = set()

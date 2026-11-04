@@ -64,7 +64,6 @@ Author
 
 from __future__ import annotations
 
-import argparse
 import json
 import math
 import shutil
@@ -73,14 +72,17 @@ from pathlib import Path as _PathHelper
 
 sys.path.insert(0, str(_PathHelper(__file__).resolve().parent))
 from pathlib import Path
+from types import SimpleNamespace
+from typing import Any
 
-from _argparse import make_parser  # noqa: E402
+import click  # noqa: E402
+from _click import run_command, sprezzature_command  # noqa: E402
 
 try:
     from PIL import Image
 except ImportError as _exc:  # pragma: no cover - dependency guard
     raise SystemExit(
-        "the icon set needs Pillow, which is the [icons] extra: "
+        "the icon set needs Pillow, a base dependency, so this install is broken: "
         "pip install 'sprezzature-publish'"
     ) from _exc
 
@@ -137,15 +139,16 @@ def parse_hex(s: str) -> tuple[int, int, int]:
 
     Raises
     ------
-    argparse.ArgumentTypeError
-        When the string is not a valid hex color.
+    click.BadParameter
+        When the string is not a valid hex color. A usage error, so
+        the command exits 2 with the message rather than a traceback.
     """
     s = s.lstrip("#").strip()
     if len(s) == 3:
         # Expand shorthand: ``f00`` → ``ff0000``.
         s = "".join(c * 2 for c in s)
     if len(s) != 6:
-        raise argparse.ArgumentTypeError(f"Bad hex color: {s!r}")
+        raise click.BadParameter(f"Bad hex color: {s!r}")
     return int(s[0:2], 16), int(s[2:4], 16), int(s[4:6], 16)
 
 
@@ -362,66 +365,81 @@ def write_head_snippet(
 # ── CLI entry point ─────────────────────────────────────────────────────────
 
 
-def main() -> int:
+@sprezzature_command(
+    "sprezzature-publish-icons",
+    help="Generate the full favicon / PWA / Apple-touch icon set "
+    "(including site.webmanifest and a paste-ready head.html) "
+    "from a single source logo.",
+    epilog="\b\n"
+    "Examples:\n"
+    "  sprezzature-publish-icons logo.svg --out public --name 'Project'\n"
+    "  sprezzature-publish-icons logo.png --bg '#ffffff' --theme-dark '#000000'\n",
+)
+@click.argument("source", type=click.Path(path_type=Path))
+@click.option(
+    "--raster",
+    type=click.Path(path_type=Path),
+    default=None,
+    help="If --source is SVG, use this PNG for raster outputs.",
+)
+@click.option(
+    "--out",
+    type=click.Path(path_type=Path),
+    default=Path("public"),
+    help="Output directory. Default: ./public",
+)
+@click.option(
+    "--name",
+    default="App",
+    help="Long name in the webmanifest.",
+)
+@click.option(
+    "--short-name",
+    "short_name",
+    default=None,
+    help="Short name in the webmanifest.",
+)
+@click.option(
+    "--bg",
+    default="#FFFFFF",
+    help="Solid background for opaque icons (apple-touch, maskable).",
+)
+@click.option(
+    "--theme-light",
+    "theme_light",
+    default=None,
+    help="theme-color for prefers-color-scheme: light. Default: --bg",
+)
+@click.option(
+    "--theme-dark",
+    "theme_dark",
+    default="#000000",
+    help="theme-color for prefers-color-scheme: dark.",
+)
+def _cli(**options: Any) -> int:
+    """Click command body: the flags arrive as keywords, the work is :func:`_run`."""
+    return _run(SimpleNamespace(**options))
+
+
+def main(argv: list[str] | None = None) -> int:
     """
     Generate the favicon set end-to-end.
+
+    Parameters
+    ----------
+    argv : list of str or None, optional
+        Arguments to parse. ``None`` reads ``sys.argv``.
 
     Returns
     -------
     int
-        Process exit code; always ``0`` on success.
+        Process exit code; ``0`` on success, ``2`` on a usage error.
     """
-    p = make_parser(
-        prog="sprezzature-publish-icons",
-        description="Generate the full favicon / PWA / Apple-touch icon set "
-        "(including site.webmanifest and a paste-ready head.html) "
-        "from a single source logo.",
-        epilog="Examples:\n"
-        "  sprezzature-publish-icons logo.svg --out public --name 'Project'\n"
-        "  sprezzature-publish-icons logo.png --bg '#ffffff' --theme-dark '#000000'\n",
-    )
-    p.add_argument(
-        "source",
-        type=Path,
-        help="Path to the logo (PNG, JPG, WebP, or SVG).",
-    )
-    p.add_argument(
-        "--raster",
-        type=Path,
-        help="If --source is SVG, use this PNG for raster outputs.",
-    )
-    p.add_argument(
-        "--out",
-        type=Path,
-        default=Path("public"),
-        help="Output directory. Default: ./public",
-    )
-    p.add_argument(
-        "--name",
-        default="App",
-        help="Long name in the webmanifest.",
-    )
-    p.add_argument(
-        "--short-name",
-        default=None,
-        help="Short name in the webmanifest.",
-    )
-    p.add_argument(
-        "--bg",
-        default="#FFFFFF",
-        help="Solid background for opaque icons (apple-touch, maskable).",
-    )
-    p.add_argument(
-        "--theme-light",
-        default=None,
-        help="theme-color for prefers-color-scheme: light. Default: --bg",
-    )
-    p.add_argument(
-        "--theme-dark",
-        default="#000000",
-        help="theme-color for prefers-color-scheme: dark.",
-    )
-    args = p.parse_args()
+    return run_command(_cli, argv)
+
+
+def _run(args: SimpleNamespace) -> int:
+    """Write the icon set the parsed flags describe; return the exit code."""
 
     # Parse colors once.
     bg: tuple[int, int, int] = parse_hex(args.bg)

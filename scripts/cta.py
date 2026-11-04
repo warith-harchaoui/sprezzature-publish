@@ -924,7 +924,8 @@ def render_findings(findings: list[Finding], per_rule: int = 8) -> str:
         "HTML, PHP, Markdown, JSON and YAML. Rules only, no model."
     ),
     epilog=(
-        "Examples:\n"
+        "Examples:\n\n"
+        "\b\n"
         "  sprezzature-publish-cta site/                    # detect, then ask\n"
         "  sprezzature-publish-cta site/ --write ctas.yaml --no-ask\n"
         "  sprezzature-publish-cta site/ --ctas ctas.yaml   # audit the pages\n"

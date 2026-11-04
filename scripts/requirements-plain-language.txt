@@ -4,9 +4,9 @@
 #   pip install -r scripts/requirements-plain-language.txt
 #
 # Used for:
-#   - click                : CLI parser; replaces argparse here so the
-#                            user-facing --help is consistent with the rest
-#                            of the Click-backed sprezzature scripts.
+#   - click                : CLI parser, the one every sprezzature command
+#                            uses, so the user-facing --help is consistent
+#                            across the suite.
 #   - langdetect           : detect language from the input text so the
 #                            rewrite stays in the same language without --lang.
 #   - best-engine-ai-helper: routes the actual LLM call (Ollama by default;

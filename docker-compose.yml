@@ -5,6 +5,7 @@
 #
 #   docker compose up -d
 #   curl -s localhost:8000/health
+#   # MCP clients connect to http://localhost:8000/mcp, same container, same port
 #   docker compose run --rm api make-site lint /work/docs
 #
 # The model server is a separate profile. Linting and rendering need nothing
@@ -15,6 +16,10 @@ services:
   api:
     build: .
     image: sprezzature-publish:local
+    # The HTTP routes and the MCP endpoint, from one process on one port.
+    # Written out although the image's CMD says the same, so a reader of this
+    # file does not need the Dockerfile to know what runs.
+    command: ["sprezzature-publish-mcp", "--host", "0.0.0.0", "--port", "8000"]
     ports:
       - "8000:8000"
     environment:

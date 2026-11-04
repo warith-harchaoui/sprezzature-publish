@@ -12,9 +12,9 @@ sprezzature-publish-lint docs/ --format json
 sprezzature-publish-lint docs/ --fix
 ```
 
-The lint is standard library only, so this is the one worth putting in a
-pre-commit hook: no image library, no model client, milliseconds in a
-minimal container.
+The lint needs only click and the standard library, so this is the one
+worth putting in a pre-commit hook: no image library, no model client,
+milliseconds.
 
 ## Render the Mermaid blocks while linting
 
@@ -56,7 +56,7 @@ sprezzature-publish-indexes --root site/ --base-url https://example.com --no-llm
 ```
 
 `robots.txt`, `sitemap.xml`, `llms.txt`, `llms-full.txt`, a feed and
-`humans.txt`. Standard library only, like the lint.
+`humans.txt`. Only click and the standard library, like the lint.
 
 ## Meta tags, drafted by a local model
 
@@ -126,7 +126,7 @@ be missing from the other.
 
 ```bash
 pip install "sprezzature-publish"
-uvicorn sprezzature_publish.api:app --port 8000
+sprezzature-publish-mcp --port 8000     # the routes and /mcp, one process
 curl -s localhost:8000/health
 ```
 

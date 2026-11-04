@@ -51,7 +51,7 @@ Exit code
 
 Notes
 -----
-* Python 3.10+, stdlib only for the static rules. Mermaid rendering needs
+* Python 3.10+, click and the standard library only for the static rules. Mermaid rendering needs
   ``mmdc`` (``pip install -r scripts/requirements-lint-md.txt``).
 * Cross-platform. On Windows the LaTeX delimiter parser is the same.
 
@@ -69,9 +69,13 @@ import subprocess
 import sys
 from dataclasses import dataclass
 from pathlib import Path
+from types import SimpleNamespace
+from typing import Any
+
+import click
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from _argparse import make_parser  # noqa: E402
+from _click import run_command, sprezzature_command  # noqa: E402
 
 # ── Severity levels ────────────────────────────────────────────────────────
 
@@ -660,64 +664,79 @@ def _lint_standalone_mermaid(
     return findings, []
 
 
-def main() -> int:
+@sprezzature_command(
+    "sprezzature-publish-lint",
+    help="Lint Markdown — heading order, code-fence languages, image alt, "
+    "local links, LaTeX delimiter balance, and Mermaid block syntax. "
+    "Optionally render Mermaid blocks to local PNG and ask Ollama for "
+    "label / caption suggestions.",
+    epilog=(
+        "\b\n"
+        "Examples:\n"
+        "  sprezzature-publish-lint docs/intro.md\n"
+        "  sprezzature-publish-lint --render-mermaid docs/\n"
+        "  sprezzature-publish-lint --fix --render-mermaid --ai --ai-lang en docs/\n"
+    ),
+)
+@click.argument("target", type=click.Path(path_type=Path))
+@click.option(
+    "--format",
+    "format",
+    type=click.Choice(["text", "json"]),
+    default="text",
+    help="Output format. Default: text.",
+)
+@click.option(
+    "--fix",
+    is_flag=True,
+    help="Apply safe mechanical fixes in place: MD009 strip trailing "
+    "whitespace (preserves the intentional two-space line break); "
+    "with --render-mermaid, also insert PNG sibling references. "
+    "Idempotent. Never invents content.",
+)
+@click.option(
+    "--render-mermaid",
+    "render_mermaid",
+    is_flag=True,
+    help="Render each Mermaid block to a local PNG sibling.",
+)
+@click.option(
+    "--out-dir",
+    "out_dir",
+    type=click.Path(path_type=Path),
+    default=None,
+    help="Directory for rendered Mermaid PNGs. Default: alongside the source.",
+)
+@click.option(
+    "--ai",
+    is_flag=True,
+    help="Ask the local Ollama daemon for Mermaid label improvements and "
+    "LaTeX captions. Read-only — never mutates the source.",
+)
+@click.option(
+    "--ai-lang",
+    "ai_lang",
+    default="en",
+    help="Language of the document, used for LaTeX captions. Default: en.",
+)
+@click.option(
+    "--ai-model",
+    "ai_model",
+    default="",
+    help="Override the Ollama model tag. Default: hardware-picked.",
+)
+def _cli(**options: Any) -> int:
+    """Click command body: the flags arrive as keywords, the work is :func:`_run`."""
+    return _run(SimpleNamespace(**options))
+
+
+def main(argv: list[str] | None = None) -> int:
     """CLI entry point for the Markdown linter; returns a process exit code."""
-    p = make_parser(
-        prog="sprezzature-publish-lint",
-        description="Lint Markdown — heading order, code-fence languages, image alt, "
-        "local links, LaTeX delimiter balance, and Mermaid block syntax. "
-        "Optionally render Mermaid blocks to local PNG and ask Ollama for "
-        "label / caption suggestions.",
-        epilog=(
-            "Examples:\n"
-            "  sprezzature-publish-lint docs/intro.md\n"
-            "  sprezzature-publish-lint --render-mermaid docs/\n"
-            "  sprezzature-publish-lint --fix --render-mermaid --ai --ai-lang en docs/\n"
-        ),
-    )
-    p.add_argument("target", type=Path, help="Markdown file or directory.")
-    p.add_argument(
-        "--format", choices=["text", "json"], default="text", help="Output format. Default: text."
-    )
-    p.add_argument(
-        "--fix",
-        action="store_true",
-        help="Apply safe mechanical fixes in place: MD009 strip trailing "
-        "whitespace (preserves the intentional two-space line break); "
-        "with --render-mermaid, also insert PNG sibling references. "
-        "Idempotent. Never invents content.",
-    )
-    p.add_argument(
-        "--render-mermaid",
-        action="store_true",
-        dest="render_mermaid",
-        help="Render each Mermaid block to a local PNG sibling.",
-    )
-    p.add_argument(
-        "--out-dir",
-        type=Path,
-        dest="out_dir",
-        help="Directory for rendered Mermaid PNGs. Default: alongside the source.",
-    )
-    p.add_argument(
-        "--ai",
-        action="store_true",
-        help="Ask the local Ollama daemon for Mermaid label improvements and "
-        "LaTeX captions. Read-only — never mutates the source.",
-    )
-    p.add_argument(
-        "--ai-lang",
-        default="en",
-        dest="ai_lang",
-        help="Language of the document, used for LaTeX captions. Default: en.",
-    )
-    p.add_argument(
-        "--ai-model",
-        default="",
-        dest="ai_model",
-        help="Override the Ollama model tag. Default: hardware-picked.",
-    )
-    args = p.parse_args()
+    return run_command(_cli, argv)
+
+
+def _run(args: SimpleNamespace) -> int:
+    """Lint every target the parsed flags name; return the process exit code."""
 
     targets = gather_targets(args.target)
     if not targets:

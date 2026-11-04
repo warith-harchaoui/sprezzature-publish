@@ -40,11 +40,11 @@ classifiers = [
 # sprezzature-vision nearly shipped again. Behind an extra it would be
 # installed-but-broken by default; here it is ~100 kB of pure Python.
 #
-# Everything heavier stays an extra, named after the tool that needs it, so
-# an install says what it is for — and so `sprezzature-publish-lint` reads
-# Markdown with the standard library alone. That is what lets the lint sit in
-# a pre-commit hook and a minimal CI container without an image library or a
-# model client behind it.
+# Everything heavier was an extra until 2026-11-01 and is in the base below
+# now, but `sprezzature-publish-lint` still reads Markdown with click and the
+# standard library alone: it never imports the rest. That is what lets the
+# lint sit in a pre-commit hook without an image library or a model client
+# behind it.
 dependencies = [
     "click>=8.1",
 
@@ -141,9 +141,9 @@ dev = [
 # One command per tool, named for the package so `pip install` puts something
 # usable on PATH rather than a path that only exists inside a clone.
 #
-# The drafting tools are offered through both parsers, which is the house
-# contract (SURFACES.md in the monorepo): `make-site` reads its flags with
-# argparse, `sprezzature-publish` with click, and both call the same engine.
+# `make-site` and `sprezzature-publish` are two spellings of one click front
+# door. Every command below is click too, the MCP server included, since
+# 2026-11-04: no argparse anywhere (tests/test_every_command_is_click.py).
 make-site = "sprezzature_publish.cli:main"
 sprezzature-publish = "sprezzature_publish.cli:main"
 sprezzature-publish-lint = "sprezzature_publish_scripts.lint_markdown:main"

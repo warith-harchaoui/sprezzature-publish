@@ -4,9 +4,9 @@
 #   pip install -r scripts/requirements-meta-tags.txt
 #
 # Used for:
-#   - click                : CLI parser; replaces argparse here so the
-#                            user-facing --help is consistent with the rest
-#                            of the Click-backed sprezzature scripts.
+#   - click                : CLI parser, the one every sprezzature command
+#                            uses, so the user-facing --help is consistent
+#                            across the suite.
 #   - requests             : fetching a live URL to summarise (not the LLM
 #                            call itself -- that's best-engine-ai-helper's job).
 #   - langdetect           : detect language from extracted page text so the

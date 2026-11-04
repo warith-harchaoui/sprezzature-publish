@@ -10,8 +10,8 @@ comment saying why the broad catch is intentional.
 
 ## The dependency rule, which is the one that is easy to break
 
-Two tools are standard library only, and that is a published promise rather
-than an accident:
+Two tools need only click and the standard library, and that is a
+published promise rather than an accident:
 
 * `scripts/lint_markdown.py`. It runs in milliseconds in a minimal
   container, which is the whole reason it is worth putting in a pre-commit
@@ -19,15 +19,15 @@ than an accident:
 * `scripts/site_indexes.py`. It writes `robots.txt`, `sitemap.xml`,
   `llms.txt`, a feed and `humans.txt`, all of them text.
 
-Everything heavier belongs behind an extra named after the tool that needs
-it (`[html]`, `[icons]`, `[prose]`), so that an install says what it is for.
-A new import in either of those two files is a review question, not a
-detail.
+Everything heavier is a base dependency since the extras were folded in on
+2026-11-01, but neither of those two files imports it. A new import in either
+of them is a review question, not a detail.
 
 ## The two names share one table
 
 `make-site` and `sprezzature-publish` are two spellings of one click front
-door — the argparse twin was dropped on 2026-10-25 — and both resolve
+door (the argparse twin was dropped on 2026-10-25, and every per-tool
+command and the MCP server moved to click on 2026-11-04) and both resolve
 against one table of tools. A tool added to one and
 not the other is a half-shipped tool, and
 `tests/test_the_surfaces_agree.py` fails on it. Add the entry point in

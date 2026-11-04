@@ -494,7 +494,8 @@ def fix_site(root: Path, *, base_url: str, lang: str) -> list[str]:
         "deterministic repairs; a URL is only ever read."
     ),
     epilog=(
-        "Examples:\n"
+        "Examples:\n\n"
+        "\b\n"
         "  sprezzature-publish-findable site/\n"
         "  sprezzature-publish-findable site/ --ctas ctas.yaml --base-url https://example.org --fix\n"
         "  sprezzature-publish-findable https://example.org/pricing\n"

@@ -57,9 +57,12 @@ import re
 import sys
 from dataclasses import dataclass
 from pathlib import Path
+from types import SimpleNamespace
+from typing import Any
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from _argparse import make_parser  # noqa: E402
+import click  # noqa: E402
+from _click import run_command, sprezzature_command  # noqa: E402
 
 # Reuse the Mermaid renderer + fenced-block extractor from the linter so
 # both tools agree on what a Mermaid block looks like and how it is
@@ -426,52 +429,62 @@ def gather_inputs(target: Path) -> list[Path]:
     return sorted(target.rglob("*.md")) + sorted(target.rglob("*.markdown"))
 
 
-def main() -> int:
+@sprezzature_command(
+    "sprezzature-publish-html",
+    help="Markdown → HTML converter integrated with the sprezzature skill — "
+    "local Mermaid PNG rendering, KaTeX for LaTeX, Tailwind shell.",
+    epilog="\b\n"
+    "Examples:\n"
+    "  sprezzature-publish-html README.md --out site/\n"
+    "  sprezzature-publish-html docs/ --out site/ --title 'Docs' --lang en\n",
+)
+@click.argument("target", type=click.Path(path_type=Path))
+@click.option("--out", type=click.Path(path_type=Path), required=True, help="Output directory.")
+@click.option("--title", default="", help="Page title. Default: first H1 of each source.")
+@click.option(
+    "--site-name",
+    "site_name",
+    default="",
+    help="Sticky-header brand name. Default: page title.",
+)
+@click.option(
+    "--lang",
+    default="auto",
+    help="HTML lang attribute (BCP-47). Default: auto = detect per file.",
+)
+@click.option(
+    "--description",
+    default="",
+    help="Meta description. Default: first prose paragraph (truncated).",
+)
+@click.option(
+    "--katex-base",
+    "katex_base",
+    default="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/",
+    help="Base URL for KaTeX assets. Pass a local path for an offline build. "
+    "Default: jsdelivr CDN.",
+)
+@click.option(
+    "--readalong",
+    "narration_dir",
+    type=click.Path(path_type=Path),
+    default=None,
+    help="Directory holding a narration run (the audio plus narration.vtt). "
+    "Pages with a recording there get a player and a sentence-by-sentence "
+    "highlight; pages without one are converted unchanged.",
+)
+def _cli(**options: Any) -> int:
+    """Click command body: the flags arrive as keywords, the work is :func:`_run`."""
+    return _run(SimpleNamespace(**options))
+
+
+def main(argv: list[str] | None = None) -> int:
     """CLI entry point for the Markdown-to-HTML converter; returns a process exit code."""
-    p = make_parser(
-        prog="sprezzature-publish-html",
-        description="Markdown → HTML converter integrated with the sprezzature skill — "
-        "local Mermaid PNG rendering, KaTeX for LaTeX, Tailwind shell.",
-        epilog="Examples:\n"
-        "  sprezzature-publish-html README.md --out site/\n"
-        "  sprezzature-publish-html docs/ --out site/ --title 'Docs' --lang en\n",
-    )
-    p.add_argument("target", type=Path, help="Markdown file or directory.")
-    p.add_argument("--out", type=Path, required=True, help="Output directory.")
-    p.add_argument("--title", default="", help="Page title. Default: first H1 of each source.")
-    p.add_argument(
-        "--site-name",
-        default="",
-        dest="site_name",
-        help="Sticky-header brand name. Default: page title.",
-    )
-    p.add_argument(
-        "--lang",
-        default="auto",
-        help="HTML lang attribute (BCP-47). Default: auto = detect per file.",
-    )
-    p.add_argument(
-        "--description",
-        default="",
-        help="Meta description. Default: first prose paragraph (truncated).",
-    )
-    p.add_argument(
-        "--katex-base",
-        default="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/",
-        dest="katex_base",
-        help="Base URL for KaTeX assets. Pass a local path for an offline build. "
-        "Default: jsdelivr CDN.",
-    )
-    p.add_argument(
-        "--readalong",
-        type=Path,
-        default=None,
-        dest="narration_dir",
-        help="Directory holding a narration run (the audio plus narration.vtt). "
-        "Pages with a recording there get a player and a sentence-by-sentence "
-        "highlight; pages without one are converted unchanged.",
-    )
-    args = p.parse_args()
+    return run_command(_cli, argv)
+
+
+def _run(args: SimpleNamespace) -> int:
+    """Convert every Markdown source the parsed flags name; return the exit code."""
 
     inputs = gather_inputs(args.target)
     if not inputs:

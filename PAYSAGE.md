@@ -60,9 +60,9 @@ Markdown rendu n'installe jamais une pile de synthèse vocale.
   dit déjà. C'est le dixième outil et le plus récent : il est dans le dépôt
   et pas encore dans la roue publiée, qui est la `1.3.0`.
 - **Le Markdown doit passer un contrôle avant d'être rendu.** L'audit du
-  Markdown n'a aucune dépendance, pas même une bibliothèque d'images, ce qui
-  lui permet de tenir dans un crochet de pré-commit et de tourner en
-  millisecondes dans un conteneur minimal.
+  Markdown n'a besoin que de click et de la bibliothèque standard, d'aucune
+  bibliothèque d'images, ce qui lui permet de tenir dans un crochet de
+  pré-commit et de tourner en millisecondes dans un conteneur minimal.
 - **Un article doit pouvoir s'écouter, et l'auditeur doit pouvoir suivre sur
   la page.** La narration tourne sur votre machine, et la lecture suivie
   qu'elle lie est vérifiée repère par repère contre la page rendue, pas

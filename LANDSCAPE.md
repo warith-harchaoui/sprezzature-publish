@@ -56,9 +56,9 @@ text-to-speech stack.
   fail to find, and with `--fix` writes back only what can be derived from
   what the page already says. It is the tenth tool and the newest: it is in
   the repository and not yet in the published wheel, which is `1.3.0`.
-- **The Markdown has to be gated before it renders.** The lint has no
-  dependencies at all, not even an image library, which is what lets it sit in
-  a pre-commit hook and run in milliseconds in a minimal container.
+- **The Markdown has to be gated before it renders.** The lint needs
+  only click and the standard library, not even an image library, which is
+  what lets it sit in a pre-commit hook and run in milliseconds in a minimal container.
 - **A post should be listenable, and the listener should be able to follow
   along on the page.** The narration runs on your machine, and the read-along
   it binds is verified cue by cue against the rendered page rather than
