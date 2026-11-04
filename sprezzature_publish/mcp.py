@@ -3,9 +3,9 @@ sprezzature-publish — Model Context Protocol (MCP) surface.
 
 Adapter that republishes the FastAPI app in :mod:`sprezzature_publish.api`
 as MCP tools, so any MCP-aware host — an agent runtime, an IDE integration,
-a custom shell — can call ``check_contrast`` / ``simulate_color_blindness``
-/ ``get_palette`` as first-class tools instead of guessing at a shell
-command. Uses :mod:`fastapi_mcp` (https://github.com/tadata-org/fastapi_mcp):
+a custom shell — can call ``lint_markdown``, ``audit_site``,
+``find_calls_to_action``, ``build_faq`` or ``report_findability`` as
+first-class tools instead of guessing at a shell command. Uses :mod:`fastapi_mcp` (https://github.com/tadata-org/fastapi_mcp):
 one wrapper over the whole existing HTTP surface, so the routes serve both
 plain HTTP callers and MCP hosts without being written twice.
 
@@ -18,13 +18,14 @@ the disagreement only shows up at call time. Deriving the tools from the
 FastAPI signatures means the two cannot disagree: the ``operation_id`` on
 each route *is* the tool name, and the Pydantic model *is* the schema.
 
-Why colour checks are worth giving an agent
---------------------------------------------
-These are questions with defensible answers rather than opinions. A contrast
-ratio is defined by WCAG; a colour-vision simulation is a published matrix.
-An assistant asked "is this palette accessible?" can now answer with a
-number it computed instead of an impression it formed — and be wrong in a
-way that is checkable.
+Why these are worth giving an agent
+-----------------------------------
+Each answers with evidence rather than an impression: a lint rule names the
+line, an audit rule cites the specification behind it, a FAQ answer names
+the passage it came from, and a question the site cannot answer is listed
+as such instead of answered. The site-level tools take the CTAs as a
+parameter and say so in the response when they are missing, which is the
+agent's cue to ask the user.
 
 ``fastapi-mcp`` is a base dependency since 2026-11-01, so there is no
 extra to ask for::
@@ -89,8 +90,9 @@ else:
         app,
         name="sprezzature-publish",
         description=(
-            "Sprezzature Accessibility MCP tools: lint HTML against a WCAG-oriented "
-            "rule set covering images, controls, headings, motion and captions."
+            "Sprezzature Publish MCP tools: lint Markdown, audit a page's head and "
+            "indexes, find a site's calls to action, build the FAQ it lacks from "
+            "its own pages, and one SEO, GEO and AEO report ordered by the CTA."
         ),
         include_tags=["meta", "actions"],
     )
@@ -119,40 +121,46 @@ else:
         argv : list of str or None, optional
             Arguments to parse. ``None`` reads ``sys.argv``.
         """
-        import argparse
         import os
 
-        parser = argparse.ArgumentParser(
-            prog="sprezzature-publish-mcp",
-            description=(
+        import click
+
+        @click.command(
+            name="sprezzature-publish-mcp",
+            help=(
                 "Serve the sprezzature-publish MCP tools over HTTP. Every tool is a "
                 "route on the same FastAPI app, with the MCP endpoint "
                 "mounted beside them."
             ),
-            formatter_class=argparse.RawDescriptionHelpFormatter,
             epilog=(
                 "Defaults come from SPREZZATURE_PUBLISH_HOST and "
-                "SPREZZATURE_PUBLISH_PORT when those are set.\n"
+                "SPREZZATURE_PUBLISH_PORT when those are set.\n\n"
                 "The host defaults to 127.0.0.1: pass --host 0.0.0.0 to "
                 "accept connections from outside this machine."
             ),
+            context_settings={"help_option_names": ["-h", "--help"]},
         )
-        parser.add_argument(
+        @click.option(
             "--host",
             default=os.environ.get("SPREZZATURE_PUBLISH_HOST", "127.0.0.1"),
-            help="Interface to bind (default: %(default)s).",
+            show_default=True,
+            help="Interface to bind.",
         )
-        parser.add_argument(
+        @click.option(
             "--port",
             type=int,
             default=int(os.environ.get("SPREZZATURE_PUBLISH_PORT", "8000")),
-            help="Port to bind (default: %(default)s).",
+            show_default=True,
+            help="Port to bind.",
         )
-        args = parser.parse_args(argv)
+        def serve(host: str, port: int) -> None:
+            import uvicorn
 
-        import uvicorn
+            uvicorn.run(app, host=host, port=port, workers=1)
 
-        uvicorn.run(app, host=args.host, port=args.port, workers=1)
+        # Standalone mode, as argparse behaved: --help exits 0, a usage
+        # error exits 2, and nothing is bound before the flags are read.
+        serve.main(args=argv, prog_name="sprezzature-publish-mcp")
 
 
 if __name__ == "__main__":  # pragma: no cover

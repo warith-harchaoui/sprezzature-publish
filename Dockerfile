@@ -13,7 +13,11 @@ EXPOSE 8000
 
 # Serve what the image was built for. A CMD of `--help` would be a container
 # that starts, prints and exits — which looks like it works and does nothing.
-# Override with any of the commands:
+#
+# The MCP server, not bare uvicorn on the API: importing sprezzature_publish.mcp
+# is what mounts /mcp on the FastAPI app, so `uvicorn sprezzature_publish.api:app`
+# served /v1/... and /health with no /mcp at all. This one process serves both,
+# on one port. Override with any of the commands:
 #
 #   docker run --rm -v "$PWD:/work" IMAGE make-site lint /work/docs
-CMD ["uvicorn", "sprezzature_publish.api:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["sprezzature-publish-mcp", "--host", "0.0.0.0", "--port", "8000"]

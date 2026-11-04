@@ -22,7 +22,7 @@ TOOLS: dict[str, tuple[str, str]] = {
     "lint": (
         "lint_markdown",
         "Audit the Markdown before anything renders it, and fix what has one "
-        "safe repair. Standard library only.",
+        "safe repair. Only click and the standard library.",
     ),
     "audit": (
         "audit_site",

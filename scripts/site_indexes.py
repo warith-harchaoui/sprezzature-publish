@@ -67,7 +67,7 @@ Usage
 
 Notes
 -----
-* Python 3.10+, stdlib only.
+* Python 3.10+, click and the standard library only.
 * The script reads ``.html`` files at the project root and inside common
   output folders (``public/``, ``dist/``, ``site/``, ``_site/``,
   ``build/``) to populate sitemap and llms.txt. ``.md`` files at the
@@ -92,9 +92,12 @@ from collections.abc import Iterable
 from dataclasses import dataclass
 from email.utils import format_datetime
 from pathlib import Path
+from types import SimpleNamespace
+from typing import Any
 from urllib.parse import urljoin
 
-from _argparse import make_parser  # noqa: E402
+import click  # noqa: E402
+from _click import run_command, sprezzature_command  # noqa: E402
 
 # ── Module-level configuration ────────────────────────────────────────────────
 
@@ -969,112 +972,126 @@ def find_blog_dir(root: Path, explicit: Path | None) -> Path | None:
     return None
 
 
-def main() -> int:
+@sprezzature_command(
+    "sprezzature-publish-indexes",
+    help="Generate robots.txt, sitemap.xml, llms.txt, an Atom or RSS "
+    "feed and humans.txt for a static site. click and the standard library only.",
+    epilog="\b\n"
+    "Examples:\n"
+    "  sprezzature-publish-indexes --root . --base-url https://example.com\n"
+    "  sprezzature-publish-indexes --root . --base-url https://example.com --feed-from posts\n"
+    "  sprezzature-publish-indexes --root . --base-url https://example.com --rss --humans\n",
+)
+@click.option(
+    "--root",
+    type=click.Path(path_type=Path),
+    default=Path("."),
+    help="Project root. Default: current directory.",
+)
+@click.option(
+    "--base-url",
+    "base_url",
+    required=True,
+    help="Absolute origin of the published site (e.g. https://example.com).",
+)
+@click.option(
+    "--out",
+    type=click.Path(path_type=Path),
+    default=None,
+    help="Output directory. Default: same as --root.",
+)
+@click.option(
+    "--feed-from",
+    "feed_from",
+    type=click.Path(path_type=Path),
+    default=None,
+    help="Directory containing blog posts. When omitted, posts/ or blog/ is auto-detected.",
+)
+@click.option(
+    "--rss",
+    is_flag=True,
+    help="Emit RSS 2.0 instead of Atom 1.0.",
+)
+@click.option(
+    "--humans",
+    is_flag=True,
+    help="Emit humans.txt (always reads AUTHORS / CREDITS when present).",
+)
+@click.option(
+    "--name",
+    default="",
+    help="Project name. Falls back to the H1 / <title> of the root README / index.",
+)
+@click.option(
+    "--summary",
+    default="",
+    help="Site summary used in llms.txt blockquote.",
+)
+@click.option(
+    "--offer",
+    default="",
+    help="One sentence saying what the site offers. llms.txt leads with it.",
+)
+@click.option(
+    "--cta",
+    multiple=True,
+    metavar="LABEL=URL",
+    help="A call to action, primary first; repeat for several. llms.txt lists "
+    "them before any page, and the pages that carry them come first.",
+)
+@click.option(
+    "--no-llms-full",
+    "no_llms_full",
+    is_flag=True,
+    help="Skip llms-full.txt (the concatenated full-text corpus). "
+    "By default it is emitted from the Markdown sources.",
+)
+@click.option(
+    "--llms-full-max-kb",
+    "llms_full_max_kb",
+    type=int,
+    default=0,
+    help="Hard size budget (KB) for llms-full.txt. Pages are kept in "
+    "priority order (README / index first) until the budget is "
+    "reached; the rest are dropped and named in a warning. "
+    "0 (default) means no cap.",
+)
+@click.option(
+    "--audio-manifest",
+    "audio_manifest",
+    type=click.Path(path_type=Path),
+    default=None,
+    help="Path to out/audio/manifest.json (from narrate_post.py). "
+    "When passed, feed entries gain <enclosure> rows so the "
+    "blog feed doubles as a podcast feed.",
+)
+@click.option(
+    "--audio-root",
+    "audio_root",
+    type=click.Path(path_type=Path),
+    default=None,
+    help="Directory the audio paths in --audio-manifest are relative "
+    "to. When set, the renderer stats each file to populate the "
+    "enclosure 'length' attribute. Defaults to --root.",
+)
+def _cli(**options: Any) -> int:
+    """Click command body: the flags arrive as keywords, the work is :func:`_run`."""
+    options["cta"] = list(options["cta"])
+    return _run(SimpleNamespace(**options))
+
+
+def main(argv: list[str] | None = None) -> int:
     """CLI entry point. Writes the requested files into ``--out`` (default ``root``)."""
-    p = make_parser(
-        prog="sprezzature-publish-indexes",
-        description="Generate robots.txt, sitemap.xml, llms.txt, an Atom or RSS "
-        "feed and humans.txt for a static site. Stdlib only.",
-        epilog="Examples:\n"
-        "  sprezzature-publish-indexes --root . --base-url https://example.com\n"
-        "  sprezzature-publish-indexes --root . --base-url https://example.com --feed-from posts\n"
-        "  sprezzature-publish-indexes --root . --base-url https://example.com --rss --humans\n",
-    )
-    p.add_argument(
-        "--root",
-        type=Path,
-        default=Path("."),
-        help="Project root. Default: current directory.",
-    )
-    p.add_argument(
-        "--base-url",
-        required=True,
-        help="Absolute origin of the published site (e.g. https://example.com).",
-    )
-    p.add_argument(
-        "--out",
-        type=Path,
-        help="Output directory. Default: same as --root.",
-    )
-    p.add_argument(
-        "--feed-from",
-        type=Path,
-        dest="feed_from",
-        help="Directory containing blog posts. When omitted, posts/ or blog/ is auto-detected.",
-    )
-    p.add_argument(
-        "--rss",
-        action="store_true",
-        help="Emit RSS 2.0 instead of Atom 1.0.",
-    )
-    p.add_argument(
-        "--humans",
-        action="store_true",
-        help="Emit humans.txt (always reads AUTHORS / CREDITS when present).",
-    )
-    p.add_argument(
-        "--name",
-        default="",
-        help="Project name. Falls back to the H1 / <title> of the root README / index.",
-    )
-    p.add_argument(
-        "--summary",
-        default="",
-        help="Site summary used in llms.txt blockquote.",
-    )
-    p.add_argument(
-        "--offer",
-        default="",
-        help="One sentence saying what the site offers. llms.txt leads with it.",
-    )
-    p.add_argument(
-        "--cta",
-        action="append",
-        default=[],
-        metavar="LABEL=URL",
-        help="A call to action, primary first; repeat for several. llms.txt lists "
-        "them before any page, and the pages that carry them come first.",
-    )
-    p.add_argument(
-        "--no-llms-full",
-        action="store_true",
-        dest="no_llms_full",
-        help="Skip llms-full.txt (the concatenated full-text corpus). "
-        "By default it is emitted from the Markdown sources.",
-    )
-    p.add_argument(
-        "--llms-full-max-kb",
-        type=int,
-        default=0,
-        dest="llms_full_max_kb",
-        help="Hard size budget (KB) for llms-full.txt. Pages are kept in "
-        "priority order (README / index first) until the budget is "
-        "reached; the rest are dropped and named in a warning. "
-        "0 (default) means no cap.",
-    )
-    p.add_argument(
-        "--audio-manifest",
-        type=Path,
-        default=None,
-        dest="audio_manifest",
-        help="Path to out/audio/manifest.json (from narrate_post.py). "
-        "When passed, feed entries gain <enclosure> rows so the "
-        "blog feed doubles as a podcast feed.",
-    )
-    p.add_argument(
-        "--audio-root",
-        type=Path,
-        default=None,
-        dest="audio_root",
-        help="Directory the audio paths in --audio-manifest are relative "
-        "to. When set, the renderer stats each file to populate the "
-        "enclosure 'length' attribute. Defaults to --root.",
-    )
-    args = p.parse_args()
+    return run_command(_cli, argv)
+
+
+def _run(args: SimpleNamespace) -> int:
+    """Write the index files the parsed flags ask for; return the exit code."""
     try:
         ctas: list[tuple[str, str]] = [parse_cta(v) for v in args.cta]
     except ValueError as exc:
-        p.error(str(exc))
+        # A usage error, exit 2, as a malformed flag value always was here.
+        raise click.UsageError(str(exc)) from exc
     cta_urls: list[str] = [url for _, url in ctas]
 
     root: Path = args.root.resolve()

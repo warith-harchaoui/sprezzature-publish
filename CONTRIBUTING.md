@@ -34,15 +34,18 @@ ruff check .
 
 ## Adding a tool
 
-1. Write `scripts/<tool>.py` with a `main()` and a parser built through
-   `scripts/_argparse.py` (or `scripts/_click.py` for a click tool), so it
-   inherits `--version` and the shared help shape.
+1. Write `scripts/<tool>.py` with a `main(argv=None) -> int` and a click
+   command built through `scripts/_click.py` (`sprezzature_command` plus
+   `run_command`), so it inherits `-V/--version`, `-h/--help` and the
+   shared help shape. No argparse: `tests/test_every_command_is_click.py`
+   fails on it.
 2. Register it in `[project.scripts]` in `pyproject.toml` as
    `sprezzature-publish-<tool>`. Both front doors read that table, so this
    one line is what puts the tool behind `make-site <tool>` and
    `sprezzature-publish <tool>`.
-3. If it needs anything outside the standard library, add an extra named
-   after it rather than widening the base install. See `CODING.md`.
+3. If it needs anything beyond click and the standard library, add it to
+   the base dependencies (there are no extras), and keep it out of the lint
+   and the indexes. See `CODING.md`.
 4. Add a test in `tests/`: at least one input that should produce output,
    one that should be refused.
 5. Document it in the table in `README.md` and `LISEZMOI.md`, in both
@@ -53,7 +56,7 @@ ruff check .
 ## Code standards
 
 See `CODING.md`. NumPy docstrings, full typing, ~25-30% comment density,
-and standard library only in the lint and the indexes.
+and only click and the standard library in the lint and the indexes.
 
 ## Prose standards
 

@@ -48,7 +48,7 @@ Usage
 
 Notes
 -----
-* Python 3.10+, stdlib only.
+* Python 3.10+, click and the standard library only.
 * Entry ``id``/``guid`` is a stable ``tag:`` URI:
   ``tag:sprezzature.ai,<year>:<package>-<version>``.
 * Entry ``link`` points at the package's CHANGELOG.md on GitHub (the
@@ -67,9 +67,12 @@ import re
 import sys
 from dataclasses import dataclass
 from pathlib import Path
+from types import SimpleNamespace
+from typing import Any
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from _argparse import make_parser  # noqa: E402
+import click  # noqa: E402
+from _click import run_command, sprezzature_command  # noqa: E402
 from site_indexes import _today_iso, render_atom, render_rss  # noqa: E402
 
 # ── Package registry ─────────────────────────────────────────────────────
@@ -467,47 +470,63 @@ def build_posts(
     return posts, entry_ids, entry_links
 
 
-def main() -> int:
+_DEFAULT_ROOT: Path = Path(__file__).resolve().parents[2]  # .../sprezzature (monorepo root)
+
+
+@sprezzature_command(
+    "sprezzature-publish-changelog",
+    help="Build the sprezzature.ai Atom + RSS feed from every "
+    "sprezzature-* package's CHANGELOG.md release notes.",
+    epilog="\b\n"
+    "Examples:\n"
+    "  changelog_feed.py\n"
+    "  changelog_feed.py --repos-root .. --out ../web\n"
+    "  changelog_feed.py --rss-only\n",
+)
+@click.option(
+    "--repos-root",
+    "repos_root",
+    type=click.Path(path_type=Path),
+    default=_DEFAULT_ROOT.parent,
+    help="Directory containing the sprezzature-* sibling repos "
+    f"(and, as one of them, sprezzature/). Default: {_DEFAULT_ROOT.parent}",
+)
+@click.option(
+    "--out",
+    type=click.Path(path_type=Path),
+    default=_DEFAULT_ROOT / "web",
+    help=f"Output directory for feed.atom / feed.xml. Default: {_DEFAULT_ROOT / 'web'}",
+)
+@click.option(
+    "--base-url",
+    "base_url",
+    default="https://sprezzature.ai",
+    help="Absolute origin of the published site. Default: https://sprezzature.ai",
+)
+@click.option(
+    "--rss-only",
+    "rss_only",
+    is_flag=True,
+    help="Only write feed.xml (RSS 2.0); skip feed.atom.",
+)
+@click.option(
+    "--atom-only",
+    "atom_only",
+    is_flag=True,
+    help="Only write feed.atom (Atom 1.0); skip feed.xml.",
+)
+def _cli(**options: Any) -> int:
+    """Click command body: the flags arrive as keywords, the work is :func:`_run`."""
+    return _run(SimpleNamespace(**options))
+
+
+def main(argv: list[str] | None = None) -> int:
     """CLI entry point. Parses every package CHANGELOG.md and writes feed.atom / feed.xml."""
-    p = make_parser(
-        prog="sprezzature-publish-changelog",
-        description="Build the sprezzature.ai Atom + RSS feed from every "
-        "sprezzature-* package's CHANGELOG.md release notes.",
-        epilog="Examples:\n"
-        "  changelog_feed.py\n"
-        "  changelog_feed.py --repos-root .. --out ../web\n"
-        "  changelog_feed.py --rss-only\n",
-    )
-    default_root: Path = Path(__file__).resolve().parents[2]  # .../sprezzature (monorepo root)
-    p.add_argument(
-        "--repos-root",
-        type=Path,
-        default=default_root.parent,
-        help="Directory containing the sprezzature-* sibling repos "
-        f"(and, as one of them, sprezzature/). Default: {default_root.parent}",
-    )
-    p.add_argument(
-        "--out",
-        type=Path,
-        default=default_root / "web",
-        help=f"Output directory for feed.atom / feed.xml. Default: {default_root / 'web'}",
-    )
-    p.add_argument(
-        "--base-url",
-        default="https://sprezzature.ai",
-        help="Absolute origin of the published site. Default: https://sprezzature.ai",
-    )
-    p.add_argument(
-        "--rss-only",
-        action="store_true",
-        help="Only write feed.xml (RSS 2.0); skip feed.atom.",
-    )
-    p.add_argument(
-        "--atom-only",
-        action="store_true",
-        help="Only write feed.atom (Atom 1.0); skip feed.xml.",
-    )
-    args = p.parse_args()
+    return run_command(_cli, argv)
+
+
+def _run(args: SimpleNamespace) -> int:
+    """Write the feeds the parsed flags ask for; return the exit code."""
 
     base_url: str = args.base_url.rstrip("/")
     repos_root: Path = args.repos_root.resolve()

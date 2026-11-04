@@ -87,7 +87,15 @@ def test_a_command_announces_the_name_that_installs_it(command: str) -> None:
     here that could disagree.
     """
     source = _source_of(CONSOLE_SCRIPTS[command])
-    declared = re.findall(r'prog\s*=\s*"([^"]+)"', source)
+    # ``prog_name=`` for a bare click command, the first argument of
+    # ``sprezzature_command`` for the tools. ``prog=`` was the argparse
+    # spelling; read too, so a parser that grows back is still checked.
+    declared = [
+        a or b
+        for a, b in re.findall(
+            r'(?:prog|prog_name)\s*=\s*"([^"]+)"|sprezzature_command\(\s*"([^"]+)"', source
+        )
+    ]
     if not declared:
         pytest.skip("this command takes its name from the entry point itself")
     assert command in declared, (
@@ -100,7 +108,7 @@ def test_the_commands_are_named_for_this_package() -> None:
     Every installed command is guessable from the package name.
 
     ``make-site`` is the one exception, and a deliberate one: it is the
-    argparse front door, and the house spells those ``make-X`` —
+    front door's other spelling, and the house spells those ``make-X``:
     ``make-map``, ``make-figure``, ``make-alt``.
     """
     for command in CONSOLE_SCRIPTS:

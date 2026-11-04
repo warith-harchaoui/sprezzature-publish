@@ -85,7 +85,6 @@ Author
 
 from __future__ import annotations
 
-import argparse
 import importlib.util
 import json
 import os
@@ -93,7 +92,10 @@ import subprocess
 import sys
 import time
 from pathlib import Path
+from types import SimpleNamespace
 from typing import Any
+
+import click
 
 
 def _llm_chat(*args: Any, **kwargs: Any) -> Any:
@@ -128,6 +130,7 @@ def _llm_chat(*args: Any, **kwargs: Any) -> Any:
 # Local helpers — pure-Python, no heavy ML deps.
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import _readalong  # noqa: E402
+from _click import run_command, sprezzature_command  # noqa: E402
 from _lang import detect_text_language  # noqa: E402
 from _narrate import (  # noqa: E402
     LLM_SYSTEM_PROMPT,
@@ -577,7 +580,7 @@ def run_engine(
     if lexicon:
         cmd += ["--lexicon", str(lexicon)]
     # Same restraint, same reason: `--audio-format` and `--bitrate` landed in
-    # sprezzature-audio 1.7.0, and argparse rejects an unknown flag outright,
+    # sprezzature-audio 1.7.0, and its parser rejects an unknown flag outright,
     # so an older wrapper would fail the whole narration over a default that
     # matches what it already does. The WAV default is therefore sent as
     # silence, and only a real request crosses the boundary.
@@ -613,106 +616,131 @@ def run_engine(
 # ── CLI ────────────────────────────────────────────────────────────────────
 
 
-def parse_args() -> argparse.Namespace:
-    """Parse the command-line arguments."""
-    parser = argparse.ArgumentParser(
-        prog="sprezzature-publish-narrate",
-        description="Narrate a Markdown post via a local OSS TTS engine.",
-        formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog=__doc__,
-    )
-    parser.add_argument(
-        "post",
-        type=Path,
-        help="Path to the post to narrate: Markdown, or an HTML page.",
-    )
-    parser.add_argument(
-        "--scope",
-        default=None,
-        help="HTML input only: the element to read, as 'article', '#id' or "
-        "'.class'. Without it the whole document is read — header, nav "
-        "and footer included, which is rarely what a reader asked for.",
-    )
-    parser.add_argument(
-        "--engine",
-        choices=ENGINES,
-        default=None,
-        help="TTS engine wrapper. Left unset, speaker-helper's router picks "
-        "it from the language and the offline condition, which is where that "
-        "decision belongs. Name one to override the router on purpose.",
-    )
-    parser.add_argument(
-        "--voice",
-        default="",
-        help="Engine built-in voice name. Left empty, each engine uses its "
-        "own default — for kokoro that means detecting the language of "
-        "the text and picking the voice that speaks it. Ignored if "
-        "--voice-sample is set.",
-    )
-    parser.add_argument(
-        "--voice-sample",
-        type=Path,
-        default=None,
-        help="Path to a reference WAV for voice cloning. Overrides --voice.",
-    )
-    parser.add_argument(
-        "--lang",
-        default="",
-        help="Two-letter language tag for the whole reading, e.g. 'fr'. "
-        "Left empty it is detected once from the full text, which is "
-        "right for almost every page; set it where a page quotes "
-        "another language at length and detection reads the quotes "
-        "instead of the page.",
-    )
-    parser.add_argument(
-        "--lexicon",
-        type=Path,
-        default=None,
-        help="A pronunciation lexicon (YAML) for the words no engine can "
-        "guess — acronyms, product names, surnames. State a word once and "
-        "every narration says it the same way. Needs speaker-helper 0.11.",
-    )
-    parser.add_argument(
-        "--out-dir",
-        type=Path,
-        default=Path("out/audio"),
-        help="Where to write the audio file + manifest (default: out/audio/).",
-    )
-    parser.add_argument(
-        "--audio-format",
-        default="wav",
-        help="Container for the narration: wav (default) or a lossy one such "
-        "as mp3. A forty-minute reading is over a hundred megabytes as WAV "
-        "and under twenty as a 64 kb/s mp3. Needs sprezzature-audio 1.7.",
-    )
-    parser.add_argument(
-        "--bitrate",
-        default="",
-        help="Bitrate for a lossy --audio-format, e.g. 64k. Empty leaves the "
-        "choice to speaker-helper, which holds the default for speech.",
-    )
-    parser.add_argument(
-        "--ai-hints",
-        action="store_true",
-        help="Enrich segment hints via local Ollama (off by default).",
-    )
-    parser.add_argument(
-        "--ai-hints-only",
-        action="store_true",
-        help="Print the enriched segment hints as JSON and exit. "
-        "Useful for review before invoking the TTS engine.",
-    )
-    parser.add_argument(
-        "--force",
-        action="store_true",
-        help="Re-narrate even when the manifest sha256 matches the source.",
-    )
-    return parser.parse_args()
+def _raw_epilog(text: str | None) -> str:
+    """The module docstring as click prints it: every paragraph left as written.
+
+    argparse showed it raw through ``RawDescriptionHelpFormatter``. Click
+    rewraps paragraphs unless one opens with a ``\\b`` line, which is what
+    keeps the usage examples on their own lines.
+    """
+    return "\n\n".join("\b\n" + part for part in (text or "").strip().split("\n\n"))
 
 
-def main() -> int:
+@sprezzature_command(
+    "sprezzature-publish-narrate",
+    help="Narrate a Markdown post via a local OSS TTS engine.",
+    epilog=_raw_epilog(__doc__),
+)
+@click.argument("post", type=click.Path(path_type=Path))
+@click.option(
+    "--scope",
+    default=None,
+    help="HTML input only: the element to read, as 'article', '#id' or "
+    "'.class'. Without it the whole document is read — header, nav "
+    "and footer included, which is rarely what a reader asked for.",
+)
+@click.option(
+    "--engine",
+    type=click.Choice(ENGINES),
+    default=None,
+    help="TTS engine wrapper. Left unset, speaker-helper's router picks "
+    "it from the language and the offline condition, which is where that "
+    "decision belongs. Name one to override the router on purpose.",
+)
+@click.option(
+    "--voice",
+    default="",
+    help="Engine built-in voice name. Left empty, each engine uses its "
+    "own default — for kokoro that means detecting the language of "
+    "the text and picking the voice that speaks it. Ignored if "
+    "--voice-sample is set.",
+)
+@click.option(
+    "--voice-sample",
+    "voice_sample",
+    type=click.Path(path_type=Path),
+    default=None,
+    help="Path to a reference WAV for voice cloning. Overrides --voice.",
+)
+@click.option(
+    "--lang",
+    default="",
+    help="Two-letter language tag for the whole reading, e.g. 'fr'. "
+    "Left empty it is detected once from the full text, which is "
+    "right for almost every page; set it where a page quotes "
+    "another language at length and detection reads the quotes "
+    "instead of the page.",
+)
+@click.option(
+    "--lexicon",
+    type=click.Path(path_type=Path),
+    default=None,
+    help="A pronunciation lexicon (YAML) for the words no engine can "
+    "guess — acronyms, product names, surnames. State a word once and "
+    "every narration says it the same way. Needs speaker-helper 0.11.",
+)
+@click.option(
+    "--out-dir",
+    "out_dir",
+    type=click.Path(path_type=Path),
+    default=Path("out/audio"),
+    help="Where to write the audio file + manifest (default: out/audio/).",
+)
+@click.option(
+    "--audio-format",
+    "audio_format",
+    default="wav",
+    help="Container for the narration: wav (default) or a lossy one such "
+    "as mp3. A forty-minute reading is over a hundred megabytes as WAV "
+    "and under twenty as a 64 kb/s mp3. Needs sprezzature-audio 1.7.",
+)
+@click.option(
+    "--bitrate",
+    default="",
+    help="Bitrate for a lossy --audio-format, e.g. 64k. Empty leaves the "
+    "choice to speaker-helper, which holds the default for speech.",
+)
+@click.option(
+    "--ai-hints",
+    "ai_hints",
+    is_flag=True,
+    help="Enrich segment hints via local Ollama (off by default).",
+)
+@click.option(
+    "--ai-hints-only",
+    "ai_hints_only",
+    is_flag=True,
+    help="Print the enriched segment hints as JSON and exit. "
+    "Useful for review before invoking the TTS engine.",
+)
+@click.option(
+    "--force",
+    is_flag=True,
+    help="Re-narrate even when the manifest sha256 matches the source.",
+)
+def _cli(**options: Any) -> int:
+    """Click command body: the flags arrive as keywords, the work is :func:`_run`."""
+    return _run(SimpleNamespace(**options))
+
+
+def parse_args(argv: list[str] | None = None) -> SimpleNamespace:
+    """Parse the command-line arguments without running anything.
+
+    Reads ``sys.argv`` when ``argv`` is ``None``, as the argparse version
+    did. A usage error raises :class:`click.UsageError`.
+    """
+    words = list(sys.argv[1:] if argv is None else argv)
+    with _cli.make_context("sprezzature-publish-narrate", words) as ctx:
+        return SimpleNamespace(**ctx.params)
+
+
+def main(argv: list[str] | None = None) -> int:
     """CLI entrypoint. Returns ``0`` on success."""
-    args = parse_args()
+    return run_command(_cli, argv)
+
+
+def _run(args: SimpleNamespace) -> int:
+    """Narrate the post the parsed flags name; return the exit code."""
     if not args.post.is_file():
         print(f"FAIL post not found: {args.post}", file=sys.stderr)
         return 1

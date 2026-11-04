@@ -127,8 +127,8 @@ Over MCP the CTAs are a parameter, and their absence comes back as a
 own. The FAQ is a draft for the author to read (`draft: true`), and a
 question the pages cannot answer comes back under `gaps`, not answered.
 
-Start with the lint either way. It has no dependencies at all, so it runs
-where nothing else will, and a document that fails it will not render well
+Start with the lint either way. It needs only click and the standard
+library, so it runs where nothing else will, and a document that fails it will not render well
 anyway.
 
 ---

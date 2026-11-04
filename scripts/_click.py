@@ -13,16 +13,20 @@ and behave the same way, whichever library built them.
 
 Why importing this can fail, and what it says
 ----------------------------------------------
-``click`` is a third-party package, and in most of these repositories it is
-an *extra* rather than a base dependency — the argparse twin of every command
-needs nothing, which is the whole point of shipping both. So a bare
-``pip install`` leaves the Click commands on ``PATH`` and unable to start.
+``click`` is a third-party package and, since 2026-11-01, a base dependency
+of every sprezzature package: one ``pip install`` puts the commands on
+``PATH`` and the parser they need beside them. An ``ImportError`` here means
+a hand-assembled or broken install, and :func:`_missing_click_message` says
+so with the one line that repairs it, instead of a bare
+``ModuleNotFoundError`` about a package the reader never asked for.
 
-Until this file guarded the import, what they printed was
-``ModuleNotFoundError: No module named 'click'``: a traceback about a package
-the reader never asked for, for a command their own install had just created.
-:func:`_missing_click_message` replaces it with the install line that works,
-read from the installed metadata so it stays right when an extra is renamed.
+Which version ``-V`` prints
+---------------------------
+The installed package's own version, read from its metadata, so a release
+cannot ship a ``-V`` that names the one before it. ``SKILL_VERSION`` below is
+only the fallback for a script run from a bare clone, where no metadata
+exists; it was the only source until 2026-11-04, and four repositories were
+printing a version they had long left behind.
 
 Why a custom ``Command`` subclass
 ---------------------------------
@@ -55,69 +59,41 @@ from collections.abc import Callable, Sequence
 from typing import Any
 
 
-def _missing_click_message() -> str:
-    """What to say when ``click`` is not installed.
+def _distribution() -> str:
+    """The distribution this copy belongs to, or ``""`` when nothing says.
 
-    Every command in this suite comes in two: an argparse one that needs
-    nothing, and a Click twin. Click is therefore an *extra* in most of these
-    packages — and until this guard existed, running the twin after a bare
-    ``pip install`` gave ``ModuleNotFoundError: No module named 'click'``. A
-    traceback about a third-party package the reader never asked for, for a
-    command their own ``pip install`` had just put on PATH.
-
-    The message is assembled rather than written out, because this file is
-    copied byte-for-byte into nine repositories and cannot know which one it
-    is sitting in. It works it out: the installed package name comes from
-    ``__package__`` (``sprezzature_audio_scripts`` → ``sprezzature-audio``),
-    and *which extras actually declare click* is read from the installed
-    metadata — so the line it prints stays right when an extra is renamed,
-    with nothing here to keep in step.
+    Three readings, first match wins. The import name
+    (``sprezzature_audio_scripts._click``) and the folder of an installed
+    wheel (``sprezzature_audio_scripts/``) both carry it. A script that does
+    ``from _click import ...`` from an editable checkout has neither, so the
+    last reading is the ``pyproject.toml`` one level up.
     """
     import re
     from pathlib import Path
 
-    # From the file, not from ``__package__``. These scripts are imported two
-    # ways on purpose — as ``sprezzature_<brick>_scripts._click`` from a
-    # wheel, and by bare name from a clone with ``scripts/`` on the path — and
-    # ``__package__`` is empty in the second. The directory name is right in
-    # both, and the first version of this function fell to its generic branch
-    # for exactly the commands that import it the clone way.
-    folder = Path(__file__).resolve().parent.name
-    package = folder.replace("_scripts", "") if folder.endswith("_scripts") else ""
-    distribution = package.replace("_", "-") if package else ""
-    if not distribution:
-        # A loose checkout, where there is no distribution to name.
-        # `pip install click` is then the honest whole answer.
-        return (
-            "This command's parser is built with Click, which is not "
-            "installed.\n    pip install click\n"
-            "Every command here also has an argparse twin that needs nothing."
-        )
-
-    extras: list[str] = []
+    here = Path(__file__).resolve()
+    for name in ((__package__ or __name__).split(".")[0], here.parent.name):
+        if name.endswith("_scripts"):
+            return name[: -len("_scripts")].replace("_", "-")
+    manifest = here.parent.parent / "pyproject.toml"
     try:
-        from importlib.metadata import requires
+        text = manifest.read_text(encoding="utf-8")
+    except OSError:
+        return ""
+    m = re.search(r'^\[project\][^\[]*?^name\s*=\s*"([^"]+)"', text, re.M | re.S)
+    return m.group(1) if m else ""
 
-        for requirement in requires(distribution) or []:
-            if re.match(r"^click\b", requirement) and 'extra == "' in requirement:
-                extras.append(requirement.split('extra == "')[1].split('"')[0])
-    except Exception:  # pragma: no cover - metadata absent on a bare clone
-        extras = []
 
-    if extras:
-        install = "\n".join(
-            f"    pip install '{distribution}[{extra}]'" for extra in sorted(set(extras))
-        )
-        return (
-            f"This command's parser is built with Click, which {distribution} "
-            f"installs only with an extra:\n{install}\n"
-            f"Every command here also has an argparse twin that needs nothing."
-        )
+def _missing_click_message() -> str:
+    """What to say when ``click`` is not installed: the install is broken."""
+    distribution = _distribution() or "the package"
     return (
-        f"This command's parser is built with Click, which is not installed.\n"
-        f"    pip install click\n"
-        f"Every command in {distribution} also has an argparse twin that "
-        f"needs nothing."
+        f"This command's parser is built with Click, a base dependency of "
+        f"{distribution} that is missing from this environment. Reinstall:\n"
+        f"    pip install --force-reinstall {distribution}"
+        if _distribution()
+        else "This command's parser is built with Click, which is not installed.\n"
+        "    pip install click"
     )
 
 
@@ -127,6 +103,19 @@ except ImportError as exc:  # pragma: no cover - exercised by a bare install
     raise ImportError(_missing_click_message()) from exc
 
 SKILL_VERSION = "1.5.0"
+
+
+def _version() -> str:
+    """The installed package's version, or :data:`SKILL_VERSION` from a clone."""
+    distribution = _distribution()
+    if distribution:
+        try:
+            from importlib.metadata import PackageNotFoundError, version
+
+            return version(distribution)
+        except PackageNotFoundError:
+            pass
+    return SKILL_VERSION
 
 
 #: Context settings shared by every sprezzature Click command. ``-h`` joins
@@ -176,7 +165,7 @@ def sprezzature_command(
     -------
     Callable
         Decorator that wraps the target function as a :class:`SprezzatureCommand`
-        with a ``-V`` / ``--version`` option emitting ``"<name> <SKILL_VERSION>"``.
+        with a ``-V`` / ``--version`` option emitting the installed package version (:func:`_version`).
     """
 
     def decorator(func: Callable[..., Any]) -> click.Command:
@@ -191,7 +180,7 @@ def sprezzature_command(
         # Version flag mirrors the argparse-era ``-V`` / ``--version`` pair
         # and the ``%(prog)s 0.2.0`` payload so test_cli_help keeps passing.
         cmd = click.version_option(
-            SKILL_VERSION,
+            _version(),
             "-V",
             "--version",
             prog_name=name,

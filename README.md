@@ -22,7 +22,7 @@ Astro instead; this does not compete with them and says so.
 
 | | |
 |---|---|
-| `sprezzature-publish-lint` | **audit** — read the Markdown before anything renders it. Standard library only, milliseconds, pre-commit shaped. `--fix` repairs what has one safe repair. |
+| `sprezzature-publish-lint` | **audit** — read the Markdown before anything renders it. Only click and the standard library, milliseconds, pre-commit shaped. `--fix` repairs what has one safe repair. |
 | `sprezzature-publish-audit` | **audit** — read the site *after* it exists: head meta, Open Graph, icon links, `robots.txt`, `sitemap.xml`, `llms.txt`. Takes a directory, a page or a live URL — no Markdown source required. `--fix` writes back what can be derived rather than invented. |
 | `sprezzature-publish-cta` | **first** — find the calls to action a site already offers, ask which ones it is for, write `ctas.yaml`, and check every page against them. Reads HTML, PHP, Markdown, JSON and YAML. |
 | `sprezzature-publish-faq` | **make** — build the FAQ a site is missing from its own pages: questions ranked by the declared CTA, answers grounded in the site's words, the questions it cannot answer yet. **audit** — the `FAQPage` markup against the visible FAQ, `--fix` rewrites it. |
@@ -53,7 +53,8 @@ the table rule by rule and is the thing to cite when a finding is disputed.
 
 One front door over all thirteen, in click, under two names: `make-site <tool>`
 and `sprezzature-publish <tool>` resolve to the same callable, so they cannot
-drift. The argparse twin was removed on 2026-10-25.
+drift. The argparse twin was removed on 2026-10-25, and on 2026-11-04 the
+per-tool commands and the MCP server followed: every command here is click.
 
 ## Install
 
@@ -73,11 +74,12 @@ is not one of them.
 Requires **Python 3.10–3.13**: `sprezzature-audio`, now a base dependency,
 declares `<3.14` at the version named in the manifest.
 
-The lint having **no dependencies at all** is deliberate, and it is the
-reason this package is worth putting in a pre-commit hook: it runs in
-milliseconds in a minimal container, with no image library and no model
-client behind it. Everything heavier is an extra, named after the tool that
-needs it, so an install says what it is for.
+The lint needing **only click and the standard library** is deliberate, and
+it is the reason this package is worth putting in a pre-commit hook: it runs
+in milliseconds, with no image library and no model client behind it. The
+rest of the package is installed beside it, since there are no extras any
+more, and the lint does not depend on it: `requests`, which only `--ai` uses,
+is picked up when present, and every rule runs without it.
 
 ## Use
 
@@ -152,9 +154,13 @@ caller should import rather than shell out and parse stdout.
 
 ```sh
 pip install "sprezzature-publish"
-uvicorn sprezzature_publish.api:app --port 8000
+sprezzature-publish-mcp --port 8000     # the routes and /mcp, one process
 curl -s localhost:8000/health
 ```
+
+`uvicorn sprezzature_publish.api:app` serves the routes alone: the MCP
+endpoint is mounted when `sprezzature_publish.mcp` is imported, which is what
+`sprezzature-publish-mcp` does before it binds.
 
 Seven routes — lint, audit, render, plain-language, CTAs, FAQ and the joint
 findability report — because those are the ones that cross a network
@@ -171,6 +177,10 @@ docker compose up -d
 curl -s localhost:8000/health
 docker compose --profile prose up -d       # adds the local model server
 ```
+
+The container runs `sprezzature-publish-mcp`, so one port serves the HTTP
+routes and the MCP endpoint: point an MCP client at
+`http://localhost:8000/mcp`.
 
 The model server is a separate profile: only the tools that ask a local model need it, and
 someone who only wants pages should not be made to run one.

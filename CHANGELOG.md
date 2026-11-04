@@ -6,6 +6,37 @@ versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Changed — click only, and the container serves `/mcp`
+
+- **Every command is click now.** `sprezzature-publish-lint`, `-html`,
+  `-icons`, `-indexes`, `-changelog`, `-narrate`, `-readalong` and the
+  `sprezzature-publish-mcp` server built argparse parsers; they are click
+  commands through `scripts/_click.py`, with the same flags, defaults,
+  choices, positional arguments, `-V/--version` and exit codes (a usage
+  error still exits 2). `main(argv=None) -> int` keeps its signature, and
+  `narrate_post.parse_args()` still returns the parsed flags. Example lines
+  in `--help` keep their layout. `scripts/_argparse.py` had no caller left
+  and is deleted. `tests/test_every_command_is_click.py` runs every console
+  script's `--help` for click's `Usage:` line and fails on any
+  `import argparse` in the package.
+- **A bad `--bg` colour is a usage error.** `sprezzature-publish-icons --bg zz`
+  ended in an `argparse.ArgumentTypeError` traceback, because the colour was
+  parsed after the parser; it now exits 2 with the message.
+  `favicons.parse_hex` raises `click.BadParameter`.
+- **The Docker image serves the MCP endpoint.** Its `CMD` ran
+  `uvicorn sprezzature_publish.api:app`, and `/mcp` is mounted only when
+  `sprezzature_publish.mcp` is imported, so the container answered `/v1/...`
+  and `/health` and had no `/mcp`. It runs `sprezzature-publish-mcp --host
+  0.0.0.0 --port 8000` now, which serves both on one port; `docker-compose.yml`
+  says the same command out loud.
+- **The lint's promise, told truthfully.** README, LISEZMOI, EXAMPLES,
+  TRIGGERS, CODING, CONTRIBUTING, LANDSCAPE and PAYSAGE said the lint and the
+  indexes had no dependencies at all. They need click and the standard
+  library, nothing else (the lint picks up `requests` for `--ai` when it is
+  there), which is what keeps the lint fit for a pre-commit hook. The same
+  pages stop sending readers to extras that were folded into the base on
+  2026-11-01.
+
 ## [1.4.0] — 2026-11-04
 
 ### Added — SEO, GEO and AEO, ordered by the call to action

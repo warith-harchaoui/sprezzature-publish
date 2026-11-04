@@ -102,8 +102,8 @@ def _attach(name: str, module_name: str, summary: str) -> None:
             module = importlib.import_module(f"sprezzature_publish_scripts.{_module}")
         except ImportError as exc:  # pragma: no cover - dependency guard
             raise SystemExit(
-                f"{_name}: its dependencies are an optional extra so the lint "
-                f"stays dependency-free. Install them with: "
+                f"{_name}: its dependencies are base dependencies, so this "
+                f"install is broken. Reinstall with: "
                 f"pip install 'sprezzature-publish'\n  ({exc})"
             ) from exc
 

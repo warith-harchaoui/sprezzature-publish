@@ -1147,7 +1147,8 @@ def model_drafter(no_cache: bool = False) -> Drafter | None:
         "the markup from the visible FAQ."
     ),
     epilog=(
-        "Examples:\n"
+        "Examples:\n\n"
+        "\b\n"
         "  sprezzature-publish-faq site/                      # draft, Markdown\n"
         "  sprezzature-publish-faq site/ --format html -o faq.html\n"
         "  sprezzature-publish-faq site/ --hints questions.csv --no-llm\n"

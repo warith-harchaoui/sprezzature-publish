@@ -63,11 +63,14 @@ from __future__ import annotations
 import hashlib
 import sys
 from pathlib import Path
+from types import SimpleNamespace
+from typing import Any
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import _narrate  # noqa: E402
 import _readalong  # noqa: E402
-from _argparse import make_parser  # noqa: E402
+import click  # noqa: E402
+from _click import run_command, sprezzature_command  # noqa: E402
 from _lang import detect_text_language  # noqa: E402
 
 
@@ -320,101 +323,114 @@ def check(page: Path, narration_dir: Path, *, tolerate: tuple[str, ...] = ()) ->
     return _readalong.disagreements(page.read_text(encoding="utf-8"), cues, tolerate=tolerate)
 
 
-def main() -> int:
+@sprezzature_command(
+    "sprezzature-publish-readalong",
+    help="Add a sentence-by-sentence read-along to an existing HTML page.",
+    epilog="\b\n"
+    "Examples:\n"
+    "  narrate_post.py page.html --scope article --out-dir audio/\n"
+    "  readalong.py page.html --narration audio/ --scope article --out built/\n",
+)
+@click.argument("page", type=click.Path(path_type=Path))
+@click.option(
+    "--narration",
+    "narration_dir",
+    type=click.Path(path_type=Path),
+    default=None,
+    help="Directory holding the narration run (narration.vtt + the audio). "
+    "Required except with --strip, which reads nothing but the page.",
+)
+@click.option(
+    "--out",
+    "out_dir",
+    type=click.Path(path_type=Path),
+    default=None,
+    help="Output directory. The input page is never modified in place. "
+    "Required except with --check, which writes nothing.",
+)
+@click.option(
+    "--strip",
+    is_flag=True,
+    help="Take the read-along back out instead of putting it in. The "
+    "first half of correcting a sentence in a page that already "
+    "has a voice: strip, edit the prose, then record again. Needs "
+    "--out and ignores --narration.",
+)
+@click.option(
+    "--check",
+    is_flag=True,
+    help="Compare a shipped page to its shipped cues and say nothing if "
+    "they agree. Catches the one failure nothing else does: a page "
+    "edited after its player was written in, whose every timestamp "
+    "now points at the wrong sentence. Needs --narration and "
+    "writes nothing.",
+)
+@click.option(
+    "--tolerate",
+    multiple=True,
+    metavar="TEXT",
+    help="With --check: a cue text that legitimately carries no marker. "
+    "A narration says 'End quote.' after a block quotation, and "
+    "those words are not on the page. Repeatable.",
+)
+@click.option(
+    "--scope",
+    default=None,
+    help="Element to read: 'article', '#id' or '.class'. Without it the "
+    "whole document is read, navigation and footer included.",
+)
+@click.option(
+    "--css",
+    "stylesheets",
+    type=click.Path(path_type=Path),
+    multiple=True,
+    metavar="PATH",
+    help="A stylesheet to read the page's colours from. Repeatable. For "
+    "a page built from a fragment, which carries none of its own.",
+)
+@click.option(
+    "--no-head",
+    "no_head",
+    is_flag=True,
+    help="Do not write the stylesheet and module links into the page. "
+    "For a templated site that carries them in its layout.",
+)
+@click.option(
+    "--href-base",
+    "href_base",
+    default="",
+    metavar="URL",
+    help="URL prefix for the audio and the cues, instead of a path "
+    "relative to the output. For a page not served from where it "
+    "is stored.",
+)
+@click.option(
+    "--no-follow",
+    "no_follow",
+    is_flag=True,
+    help="Add the player without the sentence-by-sentence highlight. A "
+    "supported shape, not a degraded one: some readers want to read "
+    "ahead of the voice rather than be led by it.",
+)
+@click.option(
+    "--lang",
+    default="auto",
+    help="BCP-47 language tag. Default: auto = detect from the page's text.",
+)
+def _cli(**options: Any) -> int:
+    """Click command body: the flags arrive as keywords, the work is :func:`_run`."""
+    options["tolerate"] = list(options["tolerate"])
+    options["stylesheets"] = list(options["stylesheets"])
+    return _run(SimpleNamespace(**options))
+
+
+def main(argv: list[str] | None = None) -> int:
     """CLI entry point; returns a process exit code."""
-    parser = make_parser(
-        prog="sprezzature-publish-readalong",
-        description="Add a sentence-by-sentence read-along to an existing HTML page.",
-        epilog="Examples:\n"
-        "  narrate_post.py page.html --scope article --out-dir audio/\n"
-        "  readalong.py page.html --narration audio/ --scope article --out built/\n",
-    )
-    parser.add_argument("page", type=Path, help="HTML page to wire up.")
-    parser.add_argument(
-        "--narration",
-        type=Path,
-        default=None,
-        dest="narration_dir",
-        help="Directory holding the narration run (narration.vtt + the audio). "
-        "Required except with --strip, which reads nothing but the page.",
-    )
-    parser.add_argument(
-        "--out",
-        type=Path,
-        default=None,
-        dest="out_dir",
-        help="Output directory. The input page is never modified in place. "
-        "Required except with --check, which writes nothing.",
-    )
-    parser.add_argument(
-        "--strip",
-        action="store_true",
-        help="Take the read-along back out instead of putting it in. The "
-        "first half of correcting a sentence in a page that already "
-        "has a voice: strip, edit the prose, then record again. Needs "
-        "--out and ignores --narration.",
-    )
-    parser.add_argument(
-        "--check",
-        action="store_true",
-        help="Compare a shipped page to its shipped cues and say nothing if "
-        "they agree. Catches the one failure nothing else does: a page "
-        "edited after its player was written in, whose every timestamp "
-        "now points at the wrong sentence. Needs --narration and "
-        "writes nothing.",
-    )
-    parser.add_argument(
-        "--tolerate",
-        action="append",
-        default=[],
-        metavar="TEXT",
-        help="With --check: a cue text that legitimately carries no marker. "
-        "A narration says 'End quote.' after a block quotation, and "
-        "those words are not on the page. Repeatable.",
-    )
-    parser.add_argument(
-        "--scope",
-        default=None,
-        help="Element to read: 'article', '#id' or '.class'. Without it the "
-        "whole document is read, navigation and footer included.",
-    )
-    parser.add_argument(
-        "--css",
-        type=Path,
-        action="append",
-        default=[],
-        dest="stylesheets",
-        metavar="PATH",
-        help="A stylesheet to read the page's colours from. Repeatable. For "
-        "a page built from a fragment, which carries none of its own.",
-    )
-    parser.add_argument(
-        "--no-head",
-        action="store_true",
-        help="Do not write the stylesheet and module links into the page. "
-        "For a templated site that carries them in its layout.",
-    )
-    parser.add_argument(
-        "--href-base",
-        default="",
-        metavar="URL",
-        help="URL prefix for the audio and the cues, instead of a path "
-        "relative to the output. For a page not served from where it "
-        "is stored.",
-    )
-    parser.add_argument(
-        "--no-follow",
-        action="store_true",
-        help="Add the player without the sentence-by-sentence highlight. A "
-        "supported shape, not a degraded one: some readers want to read "
-        "ahead of the voice rather than be led by it.",
-    )
-    parser.add_argument(
-        "--lang",
-        default="auto",
-        help="BCP-47 language tag. Default: auto = detect from the page's text.",
-    )
-    args = parser.parse_args()
+    return run_command(_cli, argv)
+
+
+def _run(args: SimpleNamespace) -> int:
+    """Wire, strip or check the read-along the parsed flags ask for."""
 
     if not args.page.is_file():
         print(f"readalong: no such page: {args.page}", file=sys.stderr)

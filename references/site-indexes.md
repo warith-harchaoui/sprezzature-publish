@@ -1,6 +1,6 @@
 # Site indexes: `site_indexes.py`
 
-Generate the standard set of site-index files for a project's web output, respecting the canonical specs for each. One Python script, stdlib only.
+Generate the standard set of site-index files for a project's web output, respecting the canonical specs for each. One Python script, click and the standard library only.
 
 ## What it emits
 

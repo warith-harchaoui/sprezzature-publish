@@ -156,8 +156,9 @@ class TestCache:
         # ledger file can be truncated by a full disk or an interrupted write.
         fresh_cache.mkdir(parents=True)
         (fresh_cache / "ledger.db").write_text("not a database", encoding="utf-8")
-        assert memoized("meta", "abc", lambda: {"title": "Fresh"},
-                        cache_dir=fresh_cache) == {"title": "Fresh"}
+        assert memoized("meta", "abc", lambda: {"title": "Fresh"}, cache_dir=fresh_cache) == {
+            "title": "Fresh"
+        }
 
     def test_a_miss_runs_the_work(self, fresh_cache):
         runs: list[int] = []
@@ -166,9 +167,7 @@ class TestCache:
             runs.append(1)
             return {"title": "Computed"}
 
-        assert memoized("meta", "never-set", work, cache_dir=fresh_cache) == {
-            "title": "Computed"
-        }
+        assert memoized("meta", "never-set", work, cache_dir=fresh_cache) == {"title": "Computed"}
         assert len(runs) == 1
 
     def test_no_cache_neither_reads_nor_writes(self, fresh_cache):
@@ -246,7 +245,7 @@ class TestMain:
         assert parsed["canonical"] == "https://example.com/demo"
 
     def test_no_source_no_goal_errors(self, fresh_cache, monkeypatch):
-        # argparse error path → SystemExit (code 2 is argparse default).
+        # Usage error path → SystemExit (code 2, as argparse had it).
         monkeypatch.setattr(sys, "argv", ["meta"])
         with pytest.raises(SystemExit):
             meta.main()

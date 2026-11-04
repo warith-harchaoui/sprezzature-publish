@@ -12,11 +12,11 @@ Author
 
 from __future__ import annotations
 
-import argparse
 import json
 import sys
 from pathlib import Path
 
+import click
 import pytest
 
 PIL = pytest.importorskip("PIL")
@@ -47,14 +47,13 @@ class TestParseHex:
         assert fv.parse_hex("00ff00") == (0, 255, 0)
 
     def test_bad_length_raises(self):
-        with pytest.raises(argparse.ArgumentTypeError):
+        with pytest.raises(click.BadParameter):
             fv.parse_hex("#1234")
 
     def test_non_hex_raises(self):
         with pytest.raises(ValueError):
-            # Underlying ``int(..., 16)`` raises ValueError, which is a
-            # superclass of ArgumentTypeError's parent — either way it
-            # must not silently return a wrong colour.
+            # Underlying ``int(..., 16)`` raises ValueError. Either way
+            # it must not silently return a wrong colour.
             fv.parse_hex("#zzzzzz")
 
 
@@ -121,7 +120,7 @@ class TestMain:
         source = _make_source(tmp_path / "logo.png", size=256, color=(0, 122, 255, 255))
         out_dir = tmp_path / "public"
 
-        # Drive argparse via sys.argv.
+        # Drive the command via sys.argv.
         argv = [
             "favicons",
             str(source),

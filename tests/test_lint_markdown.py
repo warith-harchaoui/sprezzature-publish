@@ -79,14 +79,18 @@ def test_lint_help_advertises_mermaid_and_ai() -> None:
 
 
 def test_version_flag() -> None:
-    """``-V`` must exit 0 and report the shared SKILL_VERSION."""
-    # Read from the canonical source so the test does not lock to one
-    # release tag (cf. test_cli_help.py).
-    from _argparse import SKILL_VERSION  # noqa: E402
+    """``-V`` must exit 0 and report the version ``_click`` resolves.
+
+    That is the installed package's version, read from its metadata, with
+    ``SKILL_VERSION`` only as the fallback for a bare clone. Asked of the
+    helper rather than written here, so the test does not lock to one
+    release tag (cf. test_cli_help.py).
+    """
+    from _click import _version  # noqa: E402
 
     proc = _run("-V")
     assert proc.returncode == 0
-    assert SKILL_VERSION in proc.stdout
+    assert _version() in proc.stdout
 
 
 def test_prompts_load_without_pyyaml() -> None:
