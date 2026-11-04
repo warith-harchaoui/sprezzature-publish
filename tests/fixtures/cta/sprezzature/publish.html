@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="en" data-color-scheme="light" data-color-mode="academic">
+<head>
+  <script>(function(){var s;try{s=localStorage.getItem('sprezzature-color-mode');}catch(e){}
+    document.documentElement.setAttribute('data-color-mode',s==='corporate'?'corporate':'academic');})();</script>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Publishing — Sprezzature</title>
+  <meta name="description" content="Turn a folder of Markdown into a static site: per-page meta tags, a full favicon / PWA-icon set from one logo, robots + sitemap + llms.txt + feeds, plain-language rewrites, and local narration.">
+  <link rel="canonical" href="https://sprezzature.ai/publish.html">
+  <link rel="alternate" hreflang="en" href="https://sprezzature.ai/publish.html">
+  <link rel="alternate" hreflang="fr" href="https://sprezzature.ai/fr/publish.html">
+  <link rel="alternate" hreflang="x-default" href="https://sprezzature.ai/publish.html">
+  <meta name="theme-color" content="#FFFFFF" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#0B0B0C" media="(prefers-color-scheme: dark)">
+  <meta property="og:type" content="article">
+  <meta property="og:title" content="Publishing — Sprezzature">
+  <meta property="og:description" content="Turn a folder of Markdown into a static site: per-page meta tags, a full favicon / PWA-icon set from one logo, robots + sitemap + llms.txt + feeds, plain-language rewrites, and local narration.">
+  <meta property="og:url" content="https://sprezzature.ai/publish.html">
+  <meta property="og:image" content="https://sprezzature.ai/img/logo.png">
+  <meta property="og:image:alt" content="The Sprezzature project logo.">
+  <meta property="og:site_name" content="Sprezzature">
+  <meta property="og:locale" content="en_US">
+  <meta property="og:locale:alternate" content="fr_FR">
+  <meta property="og:image:width" content="1254">
+  <meta property="og:image:height" content="1254">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="icon" href="favicon.ico" sizes="any">
+  <link rel="icon" href="favicon-32.png" sizes="32x32" type="image/png">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png" sizes="180x180">
+  <link rel="preload" href="fonts/roboto/Roboto-Variable.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="fonts/roboto/fonts.css">
+  <link rel="stylesheet" href="fonts/roboto-serif/fonts.css">
+  <link rel="stylesheet" href="fonts/roboto-mono/fonts.css">
+  <script>(function(){var s;try{s=localStorage.getItem('sprezzature-theme');}catch(e){}
+    if(!s)s=window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';
+    document.documentElement.setAttribute('data-color-scheme',s);})();</script>
+  <link rel="stylesheet" href="css/app.css">
+  <!-- GEO / structured data for AI overviews and search -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "WebPage",
+        "name": "Publishing — Sprezzature",
+        "description": "Turn a folder of Markdown into a static site: per-page meta tags, favicons, robots, sitemap, llms.txt, plain-language rewrites, and localised narration.",
+        "url": "https://sprezzature.ai/publish.html",
+        "inLanguage": "en",
+        "author": {"@type": "Person", "name": "Warith HARCHAOUI", "url": "https://www.linkedin.com/in/warith-harchaoui/"}
+      },
+      {
+        "@type": "SoftwareApplication",
+        "name": "sprezzature-publish",
+        "applicationCategory": "DeveloperApplication",
+        "description": "Converts a Markdown folder into a static site. Generates per-page SEO and Open Graph meta tags, a full favicon set from one logo, robots.txt, sitemap.xml, llms.txt, llms-full.txt, and optional plain-language rewrites and narration.",
+        "url": "https://sprezzature.ai/publish.html",
+        "codeRepository": "https://github.com/warith-harchaoui/sprezzature",
+        "author": {"@type": "Person", "name": "Warith HARCHAOUI", "url": "https://www.linkedin.com/in/warith-harchaoui/"}
+      },
+      {
+        "@type": "HowTo",
+        "name": "How to publish a static site with sprezzature-publish",
+        "step": [
+          {"@type": "HowToStep", "position": 1, "text": "Ask: 'build my site from this Markdown folder'. Point the skill at your content directory."},
+          {"@type": "HowToStep", "position": 2, "text": "The skill converts each .md file to HTML, injects canonical URLs, Open Graph tags, and Schema.org JSON-LD."},
+          {"@type": "HowToStep", "position": 3, "text": "Supply one logo image. The skill generates the full favicon set (16, 32, 48 px, ICO, Apple touch icon, PWA manifest)."},
+          {"@type": "HowToStep", "position": 4, "text": "The skill emits robots.txt, sitemap.xml, llms.txt, and llms-full.txt so search engines and AI crawlers can index the site."},
+          {"@type": "HowToStep", "position": 5, "text": "Optionally ask for plain-language rewrites or narration audio. The skill applies the writing charter via a local model."}
+        ]
+      }
+    ]
+  }
+  </script>
+</head>
+<body class="bg-white text-neutral-900 dark:bg-[#0B0B0C] dark:text-neutral-100 font-sans antialiased">
+  <a href="#main" class="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:top-3 focus:left-3 focus:rounded-lg focus:bg-brand-blue focus:px-4 focus:py-2 focus:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-blue">Skip to content</a>
+  <header class="sticky top-0 z-40 border-b border-neutral-200/70 bg-white/80 backdrop-blur dark:border-neutral-800 dark:bg-[#0B0B0C]/80">
+    <nav class="mx-auto flex max-w-6xl items-center justify-between px-5 py-3" aria-label="Primary">
+      <a href="index.html" class="flex items-center gap-2 rounded font-semibold tracking-tight focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-blue min-h-11"><img src="img/logo-96.png" alt="" width="24" height="24"> Sprezzature</a>
+      <div class="flex items-center gap-3 text-sm sm:gap-4">
+        <a href="index.html#skills" class="hidden rounded px-1 hover:text-brand-linktext focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-blue sm:inline">Skills</a>
+        <a href="figures.html" class="hidden rounded px-1 hover:text-brand-linktext focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-blue sm:inline">Gallery</a>
+        <a href="packages.html" class="hidden rounded px-1 hover:text-brand-linktext focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-blue sm:inline">Packages</a>
+        <a href="case-studies.html" class="hidden rounded px-1 hover:text-brand-linktext focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-blue sm:inline">Case studies</a>
+        <menu class="m-0 hidden list-none items-center gap-2 p-0 sm:flex" aria-label="Project">
+          <li class="flex"><a href="https://github.com/warith-harchaoui/sprezzature" class="rounded px-1 hover:text-brand-linktext focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-blue">⭐️ on GitHub</a></li>
+        </menu><menu class="m-0 flex list-none items-center gap-3 p-0 sm:gap-4" aria-label="Page settings">
+          <li class="flex"><a href="fr/publish.html" aria-label="Version française" title="Version française" class="rounded-full px-2 py-1 text-lg leading-none hover:bg-neutral-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-blue dark:hover:bg-neutral-800">🇫🇷</a></li>
+          <li class="flex"><button id="theme-toggle" type="button" aria-label="Switch theme" class="rounded-full px-2 py-1 text-lg leading-none hover:bg-neutral-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-blue dark:hover:bg-neutral-800 min-h-11">🌞</button></li>
+          <li class="flex"><button id="color-mode-toggle" type="button" aria-label="Switch academic/corporate colors" class="rounded-full px-2 py-1 text-lg leading-none hover:bg-neutral-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-blue dark:hover:bg-neutral-800 min-h-11">🏫</button></li>
+        </menu>
+        <button id="nav-toggle" type="button" aria-controls="nav-mobile" aria-expanded="false"
+          class="flex items-center justify-center rounded-full px-2 py-1 hover:bg-neutral-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-blue dark:hover:bg-neutral-800 min-h-11 sm:hidden"><span class="sr-only">Menu</span><svg width="22" height="22" viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true" focusable="false"><path d="M3 6h16M3 11h16M3 16h16"></path></svg></button>
+      </div>
+    </nav>
+    <div id="nav-mobile" hidden class="border-t border-neutral-200/70 bg-white/95 dark:border-neutral-800 dark:bg-[#0B0B0C]/95 sm:hidden">
+      <ul class="mx-auto flex max-w-6xl flex-col gap-1 px-5 py-3 text-sm">
+        <li><a href="index.html#skills" class="flex items-center rounded-lg px-2 py-2 hover:bg-neutral-100 hover:text-brand-linktext focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-blue dark:hover:bg-neutral-800 min-h-11">Skills</a></li>
+        <li><a href="figures.html" class="flex items-center rounded-lg px-2 py-2 hover:bg-neutral-100 hover:text-brand-linktext focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-blue dark:hover:bg-neutral-800 min-h-11">Gallery</a></li>
+        <li><a href="packages.html" class="flex items-center rounded-lg px-2 py-2 hover:bg-neutral-100 hover:text-brand-linktext focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-blue dark:hover:bg-neutral-800 min-h-11">Packages</a></li>
+        <li><a href="case-studies.html" class="flex items-center rounded-lg px-2 py-2 hover:bg-neutral-100 hover:text-brand-linktext focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-blue dark:hover:bg-neutral-800 min-h-11">Case studies</a></li>
+        <li><a href="https://github.com/warith-harchaoui/sprezzature" class="flex items-center rounded-lg px-2 py-2 hover:bg-neutral-100 hover:text-brand-linktext focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-blue dark:hover:bg-neutral-800 min-h-11">⭐️ on GitHub</a></li>
+      </ul>
+    </div>
+  </header>
+  <main id="main">
+    <section class="mx-auto max-w-4xl px-5 py-14">
+      <p class="font-mono text-sm text-brand-linktext">sprezzature-publish</p>
+      <h1 class="mt-1 font-serif text-4xl font-bold tracking-tight sm:text-5xl">Publishing</h1>
+      <p class="mt-4 text-lg text-neutral-600 dark:text-neutral-300">Turn a folder of Markdown into a static site: per-page meta tags, a full favicon / progressive web app (PWA)-icon set from one logo, robots + sitemap + llms.txt + feeds, plain-language rewrites, and local text-to-speech (TTS) narration.</p>
+      <div class="mt-6 flex flex-wrap gap-3 text-sm">
+        <a href="https://github.com/warith-harchaoui/sprezzature/blob/main/sprezzature-publish/SKILL.md" class="rounded-lg bg-brand-blue px-4 py-2 font-medium text-white hover:bg-brand-navy min-h-11 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-blue">SKILL.md (the agent spec)</a>
+        <a href="https://github.com/warith-harchaoui/sprezzature" class="rounded-lg border border-neutral-300 px-4 py-2 font-medium hover:border-brand-blue dark:border-neutral-600 min-h-11 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-blue">Give a ⭐️ on GitHub</a>
+      </div>
+    </section>
+    <section class="border-t border-neutral-200/70 dark:border-neutral-800">
+      <div class="mx-auto grid max-w-4xl gap-8 px-5 py-12 sm:grid-cols-2">
+        <div>
+          <h2 class="text-lg font-bold">Makes</h2>
+          <ul class="mt-3 list-disc space-y-2 pl-5 text-neutral-600 dark:text-neutral-300">
+          <li>Per-page Open Graph + Twitter Card + Schema.org JSON for Linking Data (JSON-LD)</li>
+          <li>A full favicon / app-icon / PWA-icon set from one logo, plus a webmanifest</li>
+          <li>robots.txt, sitemap.xml, llms.txt, Atom / Really Simple Syndication (RSS), humans.txt</li>
+          <li>Plain-language rewrites and audio (MP3) narration via local open-source (OSS) TTS</li>
+          <li>A read-along bound to that narration, highlighting the sentence being spoken &mdash; and it applies to an existing HTML page with no Markdown behind it</li>
+          </ul>
+        </div>
+        <div>
+          <h2 class="text-lg font-bold">Audits</h2>
+          <ul class="mt-3 list-disc space-y-2 pl-5 text-neutral-600 dark:text-neutral-300">
+          <li>Lint Markdown and catch broken links before publishing</li>
+          <li>Readability / grade-level checks on the copy</li>
+          <li>The audio and the page leave the same Markdown by different roads, so the two sentence lists are compared and the first divergence raises. A read-along one sentence out of step is worse than none: it points at the wrong line, with confidence</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+    <section class="border-t border-neutral-200/70 dark:border-neutral-800">
+      <div class="mx-auto max-w-4xl px-5 py-12">
+        <h2 class="text-lg font-bold">Say one of these</h2>
+        <p class="mt-1 text-sm text-neutral-500 dark:text-neutral-400">The skill triggers itself on phrasing like this, no command to memorize.</p>
+        <div class="mt-4 flex flex-wrap gap-2">
+        <code class="rounded bg-neutral-100 px-2 py-1 text-sm dark:bg-neutral-800">markdown to website</code>
+        <code class="rounded bg-neutral-100 px-2 py-1 text-sm dark:bg-neutral-800">meta tags</code>
+        <code class="rounded bg-neutral-100 px-2 py-1 text-sm dark:bg-neutral-800">OG card</code>
+        <code class="rounded bg-neutral-100 px-2 py-1 text-sm dark:bg-neutral-800">SEO</code>
+        <code class="rounded bg-neutral-100 px-2 py-1 text-sm dark:bg-neutral-800">GEO</code>
+        <code class="rounded bg-neutral-100 px-2 py-1 text-sm dark:bg-neutral-800">favicons</code>
+        <code class="rounded bg-neutral-100 px-2 py-1 text-sm dark:bg-neutral-800">robots.txt</code>
+        <code class="rounded bg-neutral-100 px-2 py-1 text-sm dark:bg-neutral-800">sitemap</code>
+        <code class="rounded bg-neutral-100 px-2 py-1 text-sm dark:bg-neutral-800">llms.txt</code>
+        <code class="rounded bg-neutral-100 px-2 py-1 text-sm dark:bg-neutral-800">Atom feed</code>
+        <code class="rounded bg-neutral-100 px-2 py-1 text-sm dark:bg-neutral-800">plain language</code>
+        <code class="rounded bg-neutral-100 px-2 py-1 text-sm dark:bg-neutral-800">narrate this post</code>
+        <code class="rounded bg-neutral-100 px-2 py-1 text-sm dark:bg-neutral-800">lint markdown</code>
+        </div>
+      </div>
+    </section>
+    <section class="border-t border-neutral-200/70 dark:border-neutral-800">
+      <div class="mx-auto max-w-4xl px-5 py-12">
+        <h2 class="text-lg font-bold">Reference library</h2>
+        <p class="mt-1 text-sm text-neutral-500 dark:text-neutral-400">The knowledge the skill draws on: read them straight from the repo.</p>
+        <div class="mt-4 flex flex-wrap gap-2">
+        <a href="https://github.com/warith-harchaoui/sprezzature/blob/main/sprezzature-publish/references/seo-essentials.md" class="rounded-full border border-neutral-200 px-3 py-1 text-sm hover:border-brand-blue hover:text-brand-linktext dark:border-neutral-700 min-h-11 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-blue">SEO essentials</a>
+        <a href="https://github.com/warith-harchaoui/sprezzature/blob/main/sprezzature-publish/references/meta-tags.md" class="rounded-full border border-neutral-200 px-3 py-1 text-sm hover:border-brand-blue hover:text-brand-linktext dark:border-neutral-700 min-h-11 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-blue">Meta tags</a>
+        <a href="https://github.com/warith-harchaoui/sprezzature/blob/main/sprezzature-publish/references/site-indexes.md" class="rounded-full border border-neutral-200 px-3 py-1 text-sm hover:border-brand-blue hover:text-brand-linktext dark:border-neutral-700 min-h-11 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-blue">Site indexes</a>
+        <a href="https://github.com/warith-harchaoui/sprezzature/blob/main/sprezzature-publish/references/plain-language.md" class="rounded-full border border-neutral-200 px-3 py-1 text-sm hover:border-brand-blue hover:text-brand-linktext dark:border-neutral-700 min-h-11 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-blue">Plain language</a>
+        <a href="https://github.com/warith-harchaoui/sprezzature/blob/main/sprezzature-publish/references/audio-narration.md" class="rounded-full border border-neutral-200 px-3 py-1 text-sm hover:border-brand-blue hover:text-brand-linktext dark:border-neutral-700 min-h-11 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-blue">Narration</a>
+        <a href="https://github.com/warith-harchaoui/sprezzature/blob/main/sprezzature-publish/references/i18n.md" class="rounded-full border border-neutral-200 px-3 py-1 text-sm hover:border-brand-blue hover:text-brand-linktext dark:border-neutral-700 min-h-11 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-blue">i18n</a>
+        <a href="https://github.com/warith-harchaoui/sprezzature/blob/main/sprezzature-publish/references/lint-markdown.md" class="rounded-full border border-neutral-200 px-3 py-1 text-sm hover:border-brand-blue hover:text-brand-linktext dark:border-neutral-700 min-h-11 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-blue">Lint Markdown</a>
+        </div>
+      </div>
+    </section>
+  </main>
+  <footer class="border-t border-neutral-200/70 py-10 dark:border-neutral-800">
+    <div class="mx-auto max-w-6xl px-5 text-sm text-neutral-500 dark:text-neutral-400">
+      <p><a class="underline hover:text-brand-linktext focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-blue" href="index.html">← All skills</a> · Claude / OpenCode skills by <a class="underline hover:text-brand-linktext focus:outline-none focus-visible:ring-brand-blue focus-visible:ring-2" href="https://www.linkedin.com/in/warith-harchaoui/">Warith HARCHAOUI</a>.</p>
+    </div>
+  </footer>
+  <script src="js/theme.js" defer></script>
+  <script src="js/nav.js" defer></script>
+  <script src="js/color-mode.js" defer></script>
+
+</body>
+</html>

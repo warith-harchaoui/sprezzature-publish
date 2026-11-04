@@ -92,6 +92,10 @@ dependencies = [
     # say what it is really for: a file that is not a database, which is a disk
     # and not a release. Raising the floor removed the cause, not the defence.
     "wallet-helper>=1.3.2,<2",
+    # Read by name since 1.4.0: `ctas.yaml`, YAML data files on a site, the
+    # prompts. It arrived only transitively before, through best-engine, and
+    # a dependency nobody declares disappears the day the other one drops it.
+    "pyyaml>=6",
 ]
 
 [project.optional-dependencies]

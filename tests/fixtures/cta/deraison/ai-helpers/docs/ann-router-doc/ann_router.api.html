@@ -1,0 +1,307 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ann_router.api module &mdash; ANN Router Documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=9edc463e" />
+
+  
+    <link rel="shortcut icon" href="../_static/favicon.ico"/>
+    <link rel="canonical" href="https://deraison.ai/ai-helpers/docs/ann-router-doc/ann_router.api.html" />
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="ann_router.base module" href="ann_router.base.html" />
+    <link rel="prev" title="ann_router.backends.turbovec_backend module" href="ann_router.backends.turbovec_backend.html" />
+ 
+ <meta name="description" content="Pick the right approximate-nearest-neighbour backend from measured criteria - exact, HNSW, FAISS, Annoy, Qdrant, pgvector - and say why." />
+ <meta property="og:type" content="website" />
+ <meta property="og:site_name" content="AI Helpers" />
+ <meta property="og:locale" content="en_US" />
+ <meta property="og:title" content="ANN Router" />
+ <meta property="og:description" content="Pick the right approximate-nearest-neighbour backend from measured criteria - exact, HNSW, FAISS, Annoy, Qdrant, pgvector - and say why." />
+ <meta property="og:url" content="https://deraison.ai/ai-helpers/docs/ann-router-doc/" />
+ <meta property="og:image" content="https://deraison.ai/ai-helpers/logo-1200-630.png" />
+ <meta property="og:image:width" content="1200" />
+ <meta property="og:image:height" content="630" />
+ <meta property="og:image:alt" content="AI Helpers — ANN Router" />
+ <meta name="twitter:card" content="summary_large_image" />
+ <meta name="twitter:title" content="ANN Router" />
+ <meta name="twitter:description" content="Pick the right approximate-nearest-neighbour backend from measured criteria - exact, HNSW, FAISS, Annoy, Qdrant, pgvector - and say why." />
+ <meta name="twitter:image" content="https://deraison.ai/ai-helpers/logo-1200-630.png" />
+ <meta name="twitter:image:alt" content="AI Helpers — ANN Router" />
+ <meta name="theme-color" media="(prefers-color-scheme: light)" content="#ffffff" />
+ <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#15181c" />
+ <link rel="icon" href="./../../favicon.ico" sizes="any" />
+ <link rel="icon" type="image/png" sizes="32x32" href="./../../favicon-32x32.png" />
+ <link rel="icon" type="image/png" sizes="16x16" href="./../../favicon-16x16.png" />
+ <link rel="apple-touch-icon" sizes="180x180" href="./../../apple-touch-icon.png" />
+ <link rel="manifest" href="./../../manifest.webmanifest" />
+ <script type="application/ld+json">
+ {
+   "@context": "https://schema.org",
+   "@type": "TechArticle",
+   "name": "ANN Router documentation",
+   "headline": "ANN Router documentation",
+   "description": "Pick the right approximate-nearest-neighbour backend from measured criteria - exact, HNSW, FAISS, Annoy, Qdrant, pgvector - and say why.",
+   "url": "https://deraison.ai/ai-helpers/docs/ann-router-doc/",
+   "inLanguage": "en",
+   "isPartOf": {"@type": "WebSite", "name": "AI Helpers", "url": "https://deraison.ai/ai-helpers/"},
+   "author": {"@type": "Person", "name": "Warith Harchaoui"},
+   "license": "https://opensource.org/licenses/BSD-3-Clause"
+ }
+ </script>
+
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            ANN Router
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">API Reference</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">ann_router</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="ann_router.html">ann_router package</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="ann_router.html#subpackages">Subpackages</a></li>
+<li class="toctree-l3 current"><a class="reference internal" href="ann_router.html#submodules">Submodules</a><ul class="current">
+<li class="toctree-l4 current"><a class="current reference internal" href="#">ann_router.api module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="ann_router.base.html">ann_router.base module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="ann_router.cli.html">ann_router.cli module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="ann_router.config.html">ann_router.config module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="ann_router.detect.html">ann_router.detect module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="ann_router.mcp_server.html">ann_router.mcp_server module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="ann_router.policy.html">ann_router.policy module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="ann_router.registry.html">ann_router.registry module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="ann_router.router.html">ann_router.router module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="ann_router.spec.html">ann_router.spec module</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="ann_router.html#module-ann_router">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">ANN Router</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="modules.html">ann_router</a></li>
+          <li class="breadcrumb-item"><a href="ann_router.html">ann_router package</a></li>
+      <li class="breadcrumb-item active">ann_router.api module</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/ann_router.api.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="module-ann_router.api">
+<span id="ann-router-api-module"></span><h1>ann_router.api module<a class="headerlink" href="#module-ann_router.api" title="Link to this heading"></a></h1>
+<p>FastAPI HTTP surface: the web-API door (optional <code class="docutils literal notranslate"><span class="pre">[api]</span></code> extra).</p>
+<p>The third of ann-router’s five surfaces exposes the router over HTTP so a
+service can ask “which backend for this problem?” (and benchmark/inspect
+backends) without a Python import. FastAPI + uvicorn live behind the <code class="docutils literal notranslate"><span class="pre">[api]</span></code>
+extra, imported lazily here so the core package never pays for a web stack it
+does not use (the same quarantine os-helper applies to its GUI). Every endpoint
+delegates to <code class="xref py py-mod docutils literal notranslate"><span class="pre">ann_router._core_cli</span></code>, so the HTTP behaviour matches the CLI
+and library exactly.</p>
+<p>Each route carries an explicit <code class="docutils literal notranslate"><span class="pre">operation_id</span></code> (<code class="docutils literal notranslate"><span class="pre">route</span></code>/<code class="docutils literal notranslate"><span class="pre">capabilities</span></code>/
+<code class="docutils literal notranslate"><span class="pre">bench</span></code>). This is not just OpenAPI hygiene: <a class="reference internal" href="ann_router.mcp_server.html#module-ann_router.mcp_server" title="ann_router.mcp_server"><code class="xref py py-mod docutils literal notranslate"><span class="pre">ann_router.mcp_server</span></code></a> mounts
+<code class="docutils literal notranslate"><span class="pre">fastapi-mcp</span></code> on a copy of this same app and selects exactly these
+operation ids as the exposed MCP tools, so the id <em>is</em> the tool name an agent
+calls. Rename a route here and the MCP door renames with it, automatically.</p>
+<p>Run it with:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pip</span> <span class="n">install</span> <span class="s1">&#39;ann-router[api]&#39;</span>
+<span class="n">uvicorn</span> <span class="n">ann_router</span><span class="o">.</span><span class="n">api</span><span class="p">:</span><span class="n">app</span> <span class="o">--</span><span class="n">reload</span>   <span class="c1"># or: python -m ann_router.api</span>
+</pre></div>
+</div>
+<p>Consumes: <code class="docutils literal notranslate"><span class="pre">fastapi</span></code> (optional), <code class="docutils literal notranslate"><span class="pre">ann_router._core_cli</span></code>.
+Produces: <code class="xref py py-data docutils literal notranslate"><span class="pre">app</span></code> (the ASGI application), <a class="reference internal" href="#ann_router.api.create_app" title="ann_router.api.create_app"><code class="xref py py-func docutils literal notranslate"><span class="pre">create_app()</span></code></a>.</p>
+<p>Author: Warith Harchaoui &lt;<a class="reference external" href="mailto:warithmetics&#37;&#52;&#48;deraison&#46;ai">warithmetics<span>&#64;</span>deraison<span>&#46;</span>ai</a>&gt;</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="ann_router.api.CriteriaModel">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">ann_router.api.</span></span><span class="sig-name descname"><span class="pre">CriteriaModel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_vectors</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dim</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">target_recall</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.95</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">latency_budget_ms</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">memory_budget_gb</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dynamic</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">metadata_filtering</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">hardware</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'cpu'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">persistence</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">batch_queries</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">metric</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'cosine'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">extra</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ann_router/api.html#CriteriaModel"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ann_router.api.CriteriaModel" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">BaseModel</span></code></p>
+<p>Request body mirroring <a class="reference internal" href="ann_router.spec.html#ann_router.spec.Criteria" title="ann_router.spec.Criteria"><code class="xref py py-class docutils literal notranslate"><span class="pre">ann_router.spec.Criteria</span></code></a>.</p>
+<p>Only <code class="docutils literal notranslate"><span class="pre">n_vectors</span></code> and <code class="docutils literal notranslate"><span class="pre">dim</span></code> are required; the rest carry the same house
+defaults as the dataclass so a minimal request still routes.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>n_vectors</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><em>int</em></a>)</p></li>
+<li><p><strong>dim</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><em>int</em></a>)</p></li>
+<li><p><strong>target_recall</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a>)</p></li>
+<li><p><strong>latency_budget_ms</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a>)</p></li>
+<li><p><strong>memory_budget_gb</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a><em> | </em><em>None</em>)</p></li>
+<li><p><strong>dynamic</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.15)"><em>bool</em></a>)</p></li>
+<li><p><strong>metadata_filtering</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.15)"><em>bool</em></a>)</p></li>
+<li><p><strong>hardware</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a>)</p></li>
+<li><p><strong>persistence</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.15)"><em>bool</em></a>)</p></li>
+<li><p><strong>batch_queries</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.15)"><em>bool</em></a>)</p></li>
+<li><p><strong>metric</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a>)</p></li>
+<li><p><strong>extra</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><em>dict</em></a><em>[</em><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a><em>, </em><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.15)"><em>Any</em></a><em>]</em>)</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ann_router.api.CriteriaModel.batch_queries">
+<span class="sig-name descname"><span class="pre">batch_queries</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.15)"><span class="pre">bool</span></a></span><a class="headerlink" href="#ann_router.api.CriteriaModel.batch_queries" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ann_router.api.CriteriaModel.dim">
+<span class="sig-name descname"><span class="pre">dim</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><span class="pre">int</span></a></span><a class="headerlink" href="#ann_router.api.CriteriaModel.dim" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ann_router.api.CriteriaModel.dynamic">
+<span class="sig-name descname"><span class="pre">dynamic</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.15)"><span class="pre">bool</span></a></span><a class="headerlink" href="#ann_router.api.CriteriaModel.dynamic" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ann_router.api.CriteriaModel.extra">
+<span class="sig-name descname"><span class="pre">extra</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><span class="pre">dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span></span><a class="headerlink" href="#ann_router.api.CriteriaModel.extra" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ann_router.api.CriteriaModel.hardware">
+<span class="sig-name descname"><span class="pre">hardware</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a></span><a class="headerlink" href="#ann_router.api.CriteriaModel.hardware" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ann_router.api.CriteriaModel.latency_budget_ms">
+<span class="sig-name descname"><span class="pre">latency_budget_ms</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><span class="pre">float</span></a></span><a class="headerlink" href="#ann_router.api.CriteriaModel.latency_budget_ms" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ann_router.api.CriteriaModel.memory_budget_gb">
+<span class="sig-name descname"><span class="pre">memory_budget_gb</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><span class="pre">float</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.15)"><span class="pre">None</span></a></span><a class="headerlink" href="#ann_router.api.CriteriaModel.memory_budget_gb" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ann_router.api.CriteriaModel.metadata_filtering">
+<span class="sig-name descname"><span class="pre">metadata_filtering</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.15)"><span class="pre">bool</span></a></span><a class="headerlink" href="#ann_router.api.CriteriaModel.metadata_filtering" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ann_router.api.CriteriaModel.metric">
+<span class="sig-name descname"><span class="pre">metric</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a></span><a class="headerlink" href="#ann_router.api.CriteriaModel.metric" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ann_router.api.CriteriaModel.model_config">
+<span class="sig-name descname"><span class="pre">model_config</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{}</span></span><a class="headerlink" href="#ann_router.api.CriteriaModel.model_config" title="Link to this definition"></a></dt>
+<dd><p>Configuration for the model, should be a dictionary conforming to [<cite>ConfigDict</cite>][pydantic.config.ConfigDict].</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ann_router.api.CriteriaModel.n_vectors">
+<span class="sig-name descname"><span class="pre">n_vectors</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><span class="pre">int</span></a></span><a class="headerlink" href="#ann_router.api.CriteriaModel.n_vectors" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ann_router.api.CriteriaModel.persistence">
+<span class="sig-name descname"><span class="pre">persistence</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.15)"><span class="pre">bool</span></a></span><a class="headerlink" href="#ann_router.api.CriteriaModel.persistence" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ann_router.api.CriteriaModel.target_recall">
+<span class="sig-name descname"><span class="pre">target_recall</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><span class="pre">float</span></a></span><a class="headerlink" href="#ann_router.api.CriteriaModel.target_recall" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ann_router.api.create_app">
+<span class="sig-prename descclassname"><span class="pre">ann_router.api.</span></span><span class="sig-name descname"><span class="pre">create_app</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ann_router/api.html#create_app"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ann_router.api.create_app" title="Link to this definition"></a></dt>
+<dd><p>Build and return the FastAPI application.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The ASGI app with the <code class="docutils literal notranslate"><span class="pre">/route</span></code>, <code class="docutils literal notranslate"><span class="pre">/capabilities</span></code> and <code class="docutils literal notranslate"><span class="pre">/bench</span></code>
+routes wired to the shared core.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>FastAPI</p>
+</dd>
+</dl>
+<p class="rubric">Examples</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">app</span> <span class="o">=</span> <span class="n">create_app</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="p">[</span><span class="n">r</span><span class="o">.</span><span class="n">path</span> <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">app</span><span class="o">.</span><span class="n">routes</span><span class="p">]</span>
+<span class="go">[&#39;/openapi.json&#39;, &#39;/docs&#39;, ..., &#39;/route&#39;, &#39;/capabilities&#39;, &#39;/bench&#39;]</span>
+</pre></div>
+</div>
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="ann_router.backends.turbovec_backend.html" class="btn btn-neutral float-left" title="ann_router.backends.turbovec_backend module" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="ann_router.base.html" class="btn btn-neutral float-right" title="ann_router.base module" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2026, Warith HARCHAOUI.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

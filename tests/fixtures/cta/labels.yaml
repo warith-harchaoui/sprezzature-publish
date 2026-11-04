@@ -1,0 +1,74 @@
+# Ground truth for the CTA detector, labelled by hand once, by reading the
+# pages. The unit is a (page, destination) pair: a destination is a call to
+# action on a page when at least one element there that leads to it is one.
+# Everything not listed under `cta` is a negative. `never` lists the traps the
+# detector fell into first, which must stay out whatever the threshold.
+#
+# The pages are copies of two real sites (sprezzature.ai and deraison.ai)
+# taken on 2026-11-04, plus `deraison/hooks.html`, written for this file
+# after a page that cannot be copied here: an icon-only download button, a
+# search form, a lead form, a book's `/book` URL, a documentation page about
+# newsletters, and an entity-encoded `mailto:`.
+
+top:
+  sprezzature: https://github.com/warith-harchaoui/sprezzature
+  deraison: https://calendly.com/warith-harchaoui/discuter
+
+cta:
+  sprezzature:
+    index.html:
+      - https://github.com/warith-harchaoui/sprezzature  # "Give a ⭐️ on GitHub"
+      - "#skills"  # "Explore the ten skills", the filled hero button
+      - /figures.html  # "See the gallery", the outlined one
+    fr/index.html:
+      - https://github.com/warith-harchaoui/sprezzature
+      - "#skills"
+      - /fr/figures.html
+    publish.html:
+      - https://github.com/warith-harchaoui/sprezzature/blob/main/sprezzature-publish/SKILL.md
+      - https://github.com/warith-harchaoui/sprezzature
+  deraison:
+    layouts/nav.php:
+      - https://calendly.com/warith-harchaoui/discuter
+    layouts/footer_content.php:
+      - https://calendly.com/warith-harchaoui/discuter  # its label is PHP
+    hooks.html:
+      - /hooks.zip  # "⬇", nothing but an aria-label
+      - https://github.com/warith-harchaoui/lnk-hooks
+      - https://buttondown.com/api/emails/embed-subscribe/deraison
+      - mailto:warithmetics@deraison.ai  # entity-encoded in the source
+    ai-helpers/docs/ann-router-doc/ann_router.api.html:
+      - pip install 'ann-router[api]'
+      - mailto:warithmetics@deraison.ai  # the only contact on a doc page
+    ai-helpers/docs/index.html:
+      - pip install audio-helper
+      - https://pypi.org/project/os-helper
+      - https://pypi.org/project/audio-helper
+      - https://pypi.org/project/vocal-helper
+      - https://pypi.org/project/speaker-helper
+      - https://pypi.org/project/discussion-helper
+      - https://pypi.org/project/video-helper
+      - https://pypi.org/project/capture-helper
+      - https://pypi.org/project/youtube-helper
+      - https://pypi.org/project/podcast-helper
+      - https://pypi.org/project/bucket-helper
+      - https://pypi.org/project/sftp-helper
+      - https://pypi.org/project/md2star
+      - https://pypi.org/project/wallet-helper
+      - https://pypi.org/project/standpoint
+      - https://pypi.org/project/best-engine-ai-helper
+      - https://pypi.org/project/ann-router
+      - https://pypi.org/project/elbow-helper
+
+never:
+  sprezzature:
+    index.html: [/packages.html, /maps.html]  # stat tiles
+    fr/index.html: [/fr/packages.html, /fr/maps.html]
+  deraison:
+    hooks.html:
+      - https://tobyord.com/book  # a book, not a booking
+      - /docs/62_newsletter.html  # documentation about newsletters
+      - /en/hooks.html  # the language switch
+      - /blog  # a nav link with a hover background
+    ai-helpers/docs/ann-router-doc/ann_router.api.html:
+      - https://github.com/readthedocs/sphinx_rtd_theme  # Sphinx's footer credit
