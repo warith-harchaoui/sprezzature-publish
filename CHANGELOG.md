@@ -6,6 +6,8 @@ versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [1.4.0] — 2026-11-04
+
 ### Changed — click only, and the container serves `/mcp`
 
 - **Every command is click now.** `sprezzature-publish-lint`, `-html`,
@@ -37,7 +39,6 @@ versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   pages stop sending readers to extras that were folded into the base on
   2026-11-01.
 
-## [1.4.0] — 2026-11-04
 
 ### Added — SEO, GEO and AEO, ordered by the call to action
 
