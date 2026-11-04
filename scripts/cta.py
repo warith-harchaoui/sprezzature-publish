@@ -674,19 +674,25 @@ def partials(pages: list[PageContent]) -> set[str]:
     }
 
 
-def offers(page: PageContent, spec: CtaSpec) -> bool:
-    """True when this file itself offers the declared CTA."""
+def offers(page: PageContent, spec: CtaSpec, *, body_only: bool = False) -> bool:
+    """True when this file itself offers the declared CTA.
+
+    ``body_only`` ignores the header, the nav and the footer: what every
+    page of a site carries.
+    """
+    acts = [
+        a
+        for a in page.actionables
+        if not body_only or a.landmark not in {"header", "nav", "footer"}
+    ]
     if spec.is_command:
         wanted = " ".join(spec.url.split()).lower()
-        return (
-            any(
-                a.kind == "install" and " ".join(a.text.split()).lower().startswith(wanted)
-                for a in page.actionables
-            )
-            or wanted in page.source.lower()
-        )
+        return any(
+            a.kind == "install" and " ".join(a.text.split()).lower().startswith(wanted)
+            for a in acts
+        ) or (not body_only and wanted in page.source.lower())
     target = normalize(spec.url)
-    return any(normalize(a.href, page.path) == target for a in page.actionables if a.href)
+    return any(normalize(a.href, page.path) == target for a in acts if a.href)
 
 
 def carriers(pages: list[PageContent], plan: CtaPlan) -> dict[str, set[str]]:
@@ -719,8 +725,10 @@ def money_pages(pages: list[PageContent], plan: CtaPlan) -> list[str]:
     shell = partials(pages)
     held = carriers(pages, plan)
     # A page carrying only what the shell gives it is every page; it is a
-    # money page only when it holds a CTA itself.
-    own = {p.path for p in pages if any(offers(p, s) for s in plan.ctas)}
+    # money page only when it holds a CTA itself, in its body. A star in the
+    # header of every page makes every page offer it, and none of them is
+    # the page the star is sold on.
+    own = {p.path for p in pages if any(offers(p, s, body_only=True) for s in plan.ctas)}
     landing: set[str] = set()
     for spec in plan.ctas:
         dest = normalize(spec.url)

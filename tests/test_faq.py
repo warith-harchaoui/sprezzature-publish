@@ -153,7 +153,7 @@ def test_a_faq_only_in_markup_becomes_the_visible_section():
 
 def test_the_markup_is_built_from_the_visible_text():
     build = faq.build_faq(site(("index.html", HOME)), PLAN)
-    md = faq.render_markdown(build)
+    md = faq.render_faq_markdown(build)
     ld = json.loads(md.split('<script type="application/ld+json">', 1)[1].split("</script>")[0])
     visible = [line[4:] for line in md.splitlines() if line.startswith("### ")]
     assert [e["name"] for e in ld["mainEntity"]] == visible
@@ -163,7 +163,7 @@ def test_the_markup_is_built_from_the_visible_text():
 
 def test_the_html_fragment_carries_the_same_questions():
     build = faq.build_faq(site(("index.html", HOME)), PLAN)
-    fragment = faq.render_html(build)
+    fragment = faq.render_faq_html(build)
     page = c.read_html(f"<main>{fragment}</main>", "x.html")
     assert [f.question for f in page.jsonld_faq] == [i.question for i in build.items]
     assert not faq.audit_faq([page])

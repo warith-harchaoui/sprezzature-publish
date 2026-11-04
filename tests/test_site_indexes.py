@@ -288,3 +288,59 @@ class TestMain:
         # Auto-detected project name comes from the README's H1.
         llms = (out / "llms.txt").read_text(encoding="utf-8")
         assert llms.startswith("# My Project")
+
+
+# ── llms.txt leads with what the site is for ───────────────────────────────
+
+
+class TestLlmsTxtLeadsWithTheOffer:
+    def test_offer_and_ctas_come_before_any_page(self):
+        body = si.render_llms_txt(
+            "https://acme.test",
+            "Acme",
+            "",
+            {"Pages": [("Notes", "notes.html", "")]},
+            offer="Local captions for teams.",
+            ctas=[
+                ("Book a demo", "https://calendly.com/acme/demo"),
+                ("Install", "pip install acme"),
+            ],
+        )
+        assert body.index("> Local captions for teams.") < body.index("## Next step")
+        assert body.index("[Book a demo](https://calendly.com/acme/demo)") < body.index("## Pages")
+        assert "- Install: `pip install acme`" in body
+
+    def test_without_ctas_the_file_is_unchanged(self):
+        plain = si.render_llms_txt("https://acme.test", "Acme", "Sum.", {"Pages": []})
+        assert "Next step" not in plain
+
+    def test_cta_flag_needs_a_label_and_a_url(self):
+        assert si.parse_cta("Book=https://x.test/?a=b") == ("Book", "https://x.test/?a=b")
+        with pytest.raises(ValueError):
+            si.parse_cta("https://x.test")
+
+    def test_pages_that_carry_a_cta_are_listed_first(self, tmp_path: Path, monkeypatch):
+        (tmp_path / "about.html").write_text("<title>About</title>", encoding="utf-8")
+        (tmp_path / "pricing.html").write_text(
+            '<title>Pricing</title><a href="https://calendly.com/acme/demo">Book</a>',
+            encoding="utf-8",
+        )
+        monkeypatch.setattr(
+            sys,
+            "argv",
+            [
+                "sprezzature-publish-indexes",
+                "--root",
+                str(tmp_path),
+                "--base-url",
+                "https://acme.test",
+                "--offer",
+                "Local captions.",
+                "--cta",
+                "Book a demo=https://calendly.com/acme/demo",
+            ],
+        )
+        assert si.main() == 0
+        llms = (tmp_path / "llms.txt").read_text(encoding="utf-8")
+        assert llms.index("pricing.html") < llms.index("about.html")
+        assert llms.startswith("# ") and "> Local captions." in llms

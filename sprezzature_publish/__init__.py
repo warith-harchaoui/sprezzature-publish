@@ -11,6 +11,10 @@ Two halves, as every brick in this suite has:
 
 * **make** — `md_to_html`, `favicons`, `site_indexes`, `changelog_feed`,
   `meta_from_ollama`, `plain_language`, `narrate_post`, `readalong`.
+* **make + audit, for what the site is for** — `cta` asks which calls to
+  action the site exists for and checks every page against them; `faq`
+  builds the FAQ a site is missing from its own words and audits its
+  markup; `findable` is the one SEO + GEO + AEO report, money pages first.
 * **audit** — `lint_markdown`, which gates the Markdown before any of it
   runs, and fixes what has one safe repair; and `audit_site`, the return
   trip, which opens what was actually emitted — or a site somebody else
@@ -45,7 +49,7 @@ Author
 
 from __future__ import annotations
 
-__version__ = "1.3.0"
+__version__ = "1.4.0"
 __author__ = "Warith HARCHAOUI"
 __email__ = "warithmetics@deraison.ai"
 __license__ = "BSD-3-Clause"
@@ -74,6 +78,19 @@ _EXPORTS: dict[str, str] = {
     "audit_icon_files": "audit_site",
     "plan_insertions": "audit_site",
     "apply_fix": "audit_site",
+    # make + audit — what the site is for. The declared calls to action
+    # come first; the FAQ and the joint report read them.
+    "read_site": "_content",
+    "detect_ctas": "cta",
+    "load_ctas": "cta",
+    "audit_ctas": "cta",
+    "money_pages": "cta",
+    "build_faq": "faq",
+    "audit_faq": "faq",
+    "fix_faq": "faq",
+    "render_faq_markdown": "faq",
+    "render_faq_html": "faq",
+    "findable": "findable",
     # make — pages
     "convert_one": "md_to_html",
     "gather_inputs": "md_to_html",

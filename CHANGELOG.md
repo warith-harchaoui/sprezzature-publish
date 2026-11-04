@@ -6,6 +6,59 @@ versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [1.4.0] — 2026-11-04
+
+### Added — SEO, GEO and AEO, ordered by the call to action
+
+Three tools on one reader, so a site is read once and judged by what it is
+for. The research behind every choice, with its sources, is in
+`references/seo-essentials.md`.
+
+- **`sprezzature-publish-cta`** (MCP `find_calls_to_action`, `/v1/cta`). The
+  declared calls to action are the first input of everything below, **asked,
+  not guessed**: detection offers what the site already links to, the author
+  picks, `ctas.yaml` records it, and every page is checked against it
+  (`CTA000`–`CTA002`). Rules only, prominence judged relative to the page, so
+  Tailwind, Framer's inline styles and Bootstrap read the same. Measured on
+  34 hand-labelled (page, destination) pairs from two real sites: precision
+  and recall 1.00, with recall held per kind so a whole category cannot
+  vanish under a global floor. Path patterns (`/book`, `/pricing`) count only
+  on the site itself: `tobyord.com/book` is a book.
+- **`sprezzature-publish-faq`** (MCP `build_faq`, `/v1/faq`). Most sites have
+  no FAQ, so this **builds** one: questions from a hint file, the site's own
+  FAQs, a buyer's checklist and its question headings, ranked by the CTA;
+  answers grounded in the site's passages (BM25, standard library), drafted
+  by the local model or extracted, and **thrown away if they state a number
+  no cited passage states**. What the site cannot answer goes to a gap
+  report. The `FAQPage` JSON-LD is built from the visible text, never the
+  other way round. Audit `FAQ001`–`FAQ004`; `--fix` rewrites the markup of
+  `.html` pages only.
+- **`sprezzature-publish-findable`** (MCP `report_findability`,
+  `/v1/findable`). One report: the `SITE`, `CTA` and `FAQ` rules plus
+  `FIND001`–`FIND009`, money pages first, each finding tagged `seo`, `geo`
+  and/or `aeo`. A `noindex`, a `nosnippet`, a missing sitemap entry or a
+  canonical pointing elsewhere is an **error on a money page** and a choice
+  anywhere else.
+- **`sprezzature-publish-indexes --offer … --cta LABEL=URL`**: `llms.txt`
+  leads with the offer and a "Next step" section carrying each CTA's own URL,
+  and the pages that carry a CTA come first in `llms.txt` and
+  `llms-full.txt`.
+- One reader for every format a site keeps content in: HTML, PHP templates
+  (code blocks dropped, line numbers kept), Markdown, JSON and YAML data.
+  The booking button of the calibration site lived in `layouts/nav.php`.
+
+### Fixed — claims the sources no longer support
+
+- `FAQPage` is no longer offered to the meta drafter as a `schema_type`, nor
+  listed as a page kind in `references/meta-tags.md`: Google stopped showing
+  FAQ rich results on 2026-05-07.
+- `SITE011` no longer says generative engines read structured data; Google
+  says generative search needs no special markup. `SITE105` no longer calls
+  `llms.txt` the file generative engines look for: Google says it neither
+  helps nor harms.
+- `pyyaml` is a declared base dependency; it arrived only through
+  best-engine.
+
 ### Changed — one `pip install`
 
 **Everything this package does now installs with it.** 9 extras became

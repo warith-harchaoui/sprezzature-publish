@@ -30,6 +30,7 @@ from __future__ import annotations
 import importlib.util
 import tempfile
 from pathlib import Path
+from typing import Any
 
 try:
     from fastapi import FastAPI, HTTPException
@@ -334,3 +335,216 @@ def plain(request: PlainRequest) -> dict:
         ),
         "draft": True,
     }
+
+
+# ── What the site is for: CTAs, FAQ, the joint report ──────────────────────
+
+
+class SitePage(BaseModel):
+    """One file of a site, sent as text."""
+
+    path: str = Field(
+        description="Path relative to the site root, e.g. pricing.html or "
+        "layouts/nav.php. Its suffix picks the reader: html, php, md, json, yaml."
+    )
+    content: str = Field(description="The file's contents.")
+
+
+class SiteRequest(BaseModel):
+    """A site, as its files, and the calls to action it declares."""
+
+    pages: list[SitePage] = Field(description="Every content file worth reading.")
+    ctas: dict | None = Field(
+        default=None,
+        description="The declared CTAs, in the shape of ctas.yaml: offer, "
+        "organization, primary {label, url, audience, stage}, secondary [...]. "
+        "Ask the user for them; without them nothing is ranked by what the "
+        "site is for, and the response says so.",
+    )
+
+
+class FaqRequest(SiteRequest):
+    """A site to draft a FAQ for, or to audit."""
+
+    hints: list[str] = Field(
+        default_factory=list,
+        description="Real questions, optionally 'question,count'; they rank first.",
+    )
+    top: int = Field(default=8, ge=1, le=20, description="Items in the section.")
+    lang: str = Field(default="", description="en or fr; detected when empty.")
+    llm: bool = Field(
+        default=False,
+        description="Draft answers with the local model. Off by default over "
+        "HTTP: the extractive answer is deterministic and costs nothing.",
+    )
+    audit: bool = Field(default=False, description="Audit the existing FAQs instead.")
+
+
+class FindableRequest(SiteRequest):
+    """A site to report on."""
+
+    base_url: str = Field(default="", description="The public origin, when known.")
+
+
+def _read_pages(pages: list[SitePage]) -> list:
+    from sprezzature_publish_scripts._content import read_text
+
+    out = [read_text(p.content, p.path) for p in pages]
+    return [p for p in out if p is not None]
+
+
+def _plan(raw: dict | None) -> Any:
+    from sprezzature_publish_scripts.cta import plan_from_dict
+
+    return plan_from_dict(raw) if raw else None
+
+
+def _findings(findings: list) -> list[dict]:
+    return [
+        {
+            "path": f.path,
+            "line": f.line,
+            "rule": f.rule,
+            "severity": f.severity,
+            "message": f.message,
+            "remedy": f.remedy,
+        }
+        for f in findings
+    ]
+
+
+_NO_CTAS = (
+    "No calls to action were declared. Ask the user which one action the site "
+    "exists for (and any secondary ones), then send them as `ctas`."
+)
+
+
+@app.post(
+    "/v1/cta",
+    tags=["actions"],
+    operation_id="find_calls_to_action",
+    summary="Find a site's calls to action and check every page against the declared ones",
+)
+def find_ctas(request: SiteRequest) -> dict:
+    """Rank the CTAs a site already offers; audit the pages against ``ctas``.
+
+    Detection only proposes. The candidates are what to show the user when
+    asking which CTA the site is for; once ``ctas`` is sent, the findings say
+    which pages lack it.
+    """
+    from dataclasses import asdict
+
+    from sprezzature_publish_scripts.cta import audit_ctas, detect_ctas, money_pages
+
+    pages = _read_pages(request.pages)
+    plan = _plan(request.ctas)
+    body: dict = {"candidates": [asdict(c) for c in detect_ctas(pages)[:10]]}
+    if plan and plan.ctas:
+        body["money_pages"] = money_pages(pages, plan)
+        body["findings"] = _findings(audit_ctas(pages, plan))
+    else:
+        body["note"] = _NO_CTAS
+    return body
+
+
+@app.post(
+    "/v1/faq",
+    tags=["actions"],
+    operation_id="build_faq",
+    summary="Draft the FAQ a site is missing, grounded in its own pages, or audit it",
+)
+def build_faq_route(request: FaqRequest) -> dict:
+    """Draft the FAQ section as Markdown and HTML, with its gap report.
+
+    Every answer comes from a passage of the pages sent, and every number
+    in it from that passage; a question the pages cannot answer is listed
+    under ``gaps``, never answered. With ``audit``, the existing FAQs and
+    their FAQPage markup are checked instead. Nothing is written.
+    """
+    from sprezzature_publish_scripts.faq import (
+        Question,
+        audit_faq,
+        build_faq,
+        faq_jsonld,
+        model_drafter,
+        render_faq_html,
+        render_faq_markdown,
+        stage_of,
+    )
+
+    pages = _read_pages(request.pages)
+    if request.audit:
+        return {"findings": _findings(audit_faq(pages))}
+    plan = _plan(request.ctas)
+    hints = []
+    for raw in request.hints:
+        text, _, count = raw.rpartition(",")
+        if not (text and count.strip().isdigit()):
+            text, count = raw, "0"
+        hints.append(Question(text.strip(), stage_of(text), "hint", int(count)))
+    chat = model_drafter() if request.llm else None
+    built = build_faq(pages, plan, hints, top=request.top, lang=request.lang, chat=chat)
+    body: dict = {
+        "markdown": render_faq_markdown(built),
+        "html": render_faq_html(built),
+        "jsonld": faq_jsonld(built.items),
+        "items": [
+            {
+                "question": i.question,
+                "answer": i.answer,
+                "next_step": i.next_step,
+                "stage": i.stage,
+                "drafted_by": i.drafted_by,
+                "sources": [s.page for s in i.sources],
+                "notes": i.notes,
+            }
+            for i in built.items
+        ],
+        "gaps": [{"question": g.question, "stage": g.stage} for g in built.gaps],
+        "placements": [
+            {"page": p.page, "line": p.line, "reason": p.reason} for p in built.placements
+        ],
+        "draft": True,
+    }
+    if plan is None:
+        body["note"] = _NO_CTAS
+    return body
+
+
+@app.post(
+    "/v1/findable",
+    tags=["actions"],
+    operation_id="report_findability",
+    summary="One SEO, GEO and AEO report on a site, ordered by its calls to action",
+)
+def findable_route(request: FindableRequest) -> dict:
+    """The joint report on the pages sent, money pages first.
+
+    Head rules run on every HTML page sent; the index files (robots.txt,
+    sitemap.xml, llms.txt) are only checked by the command on a folder,
+    since a list of pages has no folder to look in.
+    """
+    from sprezzature_publish_scripts.audit_site import audit_page, scan_page
+    from sprezzature_publish_scripts.findable import findable
+
+    pages = _read_pages(request.pages)
+    heads = []
+    for page in pages:
+        if page.fmt == "html":
+            heads += [
+                f
+                for f in audit_page(
+                    page.path, scan_page(page.source), have_base_url=bool(request.base_url)
+                )
+                if f.rule not in {"SITE013", "SITE014", "SITE015"}
+            ]
+    plan = _plan(request.ctas)
+    report = findable(pages, plan, base_url=request.base_url, head_findings=heads)
+    body: dict = {
+        "declared": report.declared,
+        "money_pages": report.money_pages,
+        "findings": [t.as_dict() for t in report.findings],
+    }
+    if plan is None:
+        body["note"] = _NO_CTAS
+    return body

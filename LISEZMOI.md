@@ -27,6 +27,9 @@ Material, Hugo ou Astro ; celui-ci ne les concurrence pas et le dit.
 |---|---|
 | `sprezzature-publish-lint` | **audit** — lire le Markdown avant que quoi que ce soit ne le rende. Bibliothèque standard seule, quelques millisecondes, taillé pour un crochet de pré-commit. `--fix` répare ce qui a une réparation sûre. |
 | `sprezzature-publish-audit` | **audit** — lire le site *après* qu'il existe : balises du head, Open Graph, liens d'icônes, `robots.txt`, `sitemap.xml`, `llms.txt`. Prend un dossier, une page ou une URL vivante — aucune source Markdown requise. `--fix` réécrit ce qui se dérive, jamais ce qui s'invente. |
+| `sprezzature-publish-cta` | **d'abord** — trouver les appels à l'action que le site offre déjà, demander lesquels il sert, écrire `ctas.yaml`, et vérifier chaque page contre eux. Lit HTML, PHP, Markdown, JSON et YAML. |
+| `sprezzature-publish-faq` | **make** — construire la FAQ qui manque au site à partir de ses propres pages : questions classées par le CTA déclaré, réponses ancrées dans les mots du site, questions auxquelles il ne sait pas encore répondre. **audit** — le balisage `FAQPage` contre la FAQ visible, `--fix` le réécrit. |
+| `sprezzature-publish-findable` | **audit** — un seul rapport SEO + GEO + AEO, pages argent d'abord, chaque constat étiqueté avec tous les buts qu'il sert. `--fix` applique les réparations déterministes. |
 | `sprezzature-publish-html` | Markdown → pages HTML autonomes, diagrammes Mermaid rendus. |
 | `sprezzature-publish-icons` | un logo → favicon, icônes d'application, icônes PWA, et le fragment de `<head>` qui les référence. |
 | `sprezzature-publish-indexes` | `robots.txt`, `sitemap.xml`, `llms.txt`, `llms-full.txt`, Atom, `humans.txt`. |
@@ -36,7 +39,7 @@ Material, Hugo ou Astro ; celui-ci ne les concurrence pas et le dit.
 | `sprezzature-publish-narrate` | narrer un billet avec une voix locale, et écrire la piste temporisée à côté de l'audio. |
 | `sprezzature-publish-readalong` | lier cette narration à la page, pour que la phrase prononcée soit surlignée. |
 
-Une seule porte d'entrée sur les neuf, en click, sous deux noms :
+Une seule porte d'entrée sur les treize, en click, sous deux noms :
 `make-site <outil>` et `sprezzature-publish <outil>` résolvent vers le même
 appelable, donc ils ne peuvent pas diverger. Le jumeau argparse a été retiré
 le 2026-10-25.
@@ -104,6 +107,31 @@ RFC 9309 pour `robots.txt`, sitemaps.org 0.9, ogp.me, les Cards de X,
 JSON-LD 1.1, le Web App Manifest du W3C, le guide d'Apple, RFC 4287 et
 RSS 2.0, llmstxt.org. Les trois règles qui n'en ont aucune le disent.
 La table complète est dans `references/audit-site.md`.
+
+### Mener le lecteur là où le site veut l'emmener
+
+Moteurs de recherche, moteurs génératifs et moteurs de réponse (SEO, GEO,
+AEO) finissent sur la même question : une fois le lecteur arrivé, que
+doit-il faire ? C'est donc la première entrée, demandée et non devinée.
+
+```sh
+make-site cta site/                     # ce que le site propose, puis : lequel sert-il ?
+make-site faq site/ > faq.md            # la FAQ qui manque, en brouillon
+make-site faq site/ --audit --fix       # le FAQPage reconstruit depuis la FAQ visible
+make-site findable site/ --base-url https://exemple.fr
+make-site indexes --root site/ --base-url https://exemple.fr \
+  --offer "Sous-titres locaux pour les équipes." --cta "Réserver une démo=https://cal.com/acme/demo"
+```
+
+Les CTA déclarés (`ctas.yaml`) désignent les *pages argent* : celles qui en
+portent un dans leur corps, et celle où il mène. Un `noindex` y est une
+erreur ; sur un billet, c'est un choix. Chaque réponse de la FAQ vient d'un
+passage du site, et chaque nombre qu'elle contient de ce passage, sinon elle
+n'est pas écrite : une question sans réponse dans le site va au rapport des
+manques. Le balisage `FAQPage` est construit depuis le texte visible, une
+fois par page, et jamais présenté comme un levier de classement : Google ne
+montre plus de résultat enrichi FAQ depuis le 2026-05-07, et les moteurs de
+réponse lisent ce que lit le lecteur.
 
 ### Et, si la page doit être lue à voix haute
 
