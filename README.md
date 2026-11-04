@@ -172,7 +172,7 @@ curl -s localhost:8000/health
 docker compose --profile prose up -d       # adds the local model server
 ```
 
-The model server is a separate profile: three tools of thirteen can use it, and
+The model server is a separate profile: only the tools that ask a local model need it, and
 someone who only wants pages should not be made to run one.
 
 ## What it does not own

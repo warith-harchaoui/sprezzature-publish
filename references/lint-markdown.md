@@ -19,14 +19,14 @@ hosted rendering. The pipeline is reproducible.
 ## Quick start
 
 ```bash
-pip install -r scripts/requirements-lint-md.txt
-python scripts/lint_markdown.py docs/
+pip install sprezzature-publish
+sprezzature-publish-lint docs/
 
 # Render every Mermaid block to a PNG sibling and insert a fallback <img>:
-python scripts/lint_markdown.py --render-mermaid --fix docs/
+sprezzature-publish-lint --render-mermaid --fix docs/
 
 # Add AI suggestions (Mermaid label improvements + LaTeX captions):
-python scripts/lint_markdown.py --ai --ai-lang en docs/intro.md
+sprezzature-publish-lint --ai --ai-lang en docs/intro.md
 ```
 
 Via the unified driver: `sprezzature publish lint-md docs/ --render-mermaid`.
@@ -130,8 +130,8 @@ See `scripts/lint_markdown.py` → `PROMPT_MERMAID_LABELS` and
 ```yaml
 - name: Lint Markdown
   run: |
-    pip install -r sprezzature-publish/scripts/requirements-lint-md.txt
-    python sprezzature-publish/scripts/lint_markdown.py docs/
+    pip install sprezzature-publish
+    sprezzature-publish-lint docs/
 ```
 
 Add `--render-mermaid --fix` if you want CI to commit the rendered PNGs;
