@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+ <meta charset="utf-8">
+ <meta name="viewport" content="width=device-width, initial-scale=1">
+
+ <title>AI Helpers &mdash; API documentation for 17 Python libraries</title>
+ <!-- ~150 characters: long enough to say what the page indexes and for whom,
+      short enough that a search result shows it whole rather than clipped. -->
+ <meta name="description" content="API reference for the 17 AI Helpers Python libraries: audio, speech, video, capture, storage, documents and model selection. Local-first, BSD-3." />
+ <!-- Self-referential: the French page is a translation, not a duplicate of
+      the English one, so each canonical names its own URL and hreflang below
+      declares the pair in both directions. -->
+ <link rel="canonical" href="https://deraison.ai/ai-helpers/docs/" />
+ <link rel="alternate" hreflang="en" href="https://deraison.ai/ai-helpers/docs/" />
+ <link rel="alternate" hreflang="fr" href="https://deraison.ai/ai-helpers/docs/index.fr.html" />
+ <link rel="alternate" hreflang="x-default" href="https://deraison.ai/ai-helpers/docs/" />
+ <meta name="theme-color" media="(prefers-color-scheme: light)" content="#ffffff" />
+ <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#15181c" />
+
+ <meta property="og:type" content="website" />
+ <meta property="og:site_name" content="AI Helpers" />
+ <meta property="og:locale" content="en_US" />
+ <meta property="og:locale:alternate" content="fr_FR" />
+ <meta property="og:title" content="AI Helpers &mdash; API documentation" />
+ <meta property="og:description" content="API reference for the 17 AI Helpers Python libraries: audio, speech, video, capture, storage, documents and model selection." />
+ <meta property="og:url" content="https://deraison.ai/ai-helpers/docs/" />
+ <meta property="og:image" content="https://deraison.ai/ai-helpers/logo-1200-630.png" />
+ <meta property="og:image:type" content="image/png" />
+ <meta property="og:image:width" content="1200" />
+ <meta property="og:image:height" content="630" />
+ <meta property="og:image:alt" content="The AI Helpers logo" />
+ <meta name="twitter:card" content="summary_large_image" />
+ <meta name="twitter:title" content="AI Helpers &mdash; API documentation" />
+ <meta name="twitter:description" content="API reference for the 17 AI Helpers Python libraries: audio, speech, video, capture, storage, documents and model selection." />
+ <meta name="twitter:image" content="https://deraison.ai/ai-helpers/logo-1200-630.png" />
+ <meta name="twitter:image:alt" content="The AI Helpers logo" />
+
+ <link rel="icon" href="../favicon.ico" sizes="any" />
+ <link rel="icon" type="image/png" sizes="32x32" href="../favicon-32x32.png" />
+ <link rel="icon" type="image/png" sizes="16x16" href="../favicon-16x16.png" />
+ <link rel="apple-touch-icon" sizes="180x180" href="../apple-touch-icon.png" />
+ <link rel="manifest" href="../manifest.webmanifest" />
+
+ <script type="application/ld+json">
+ {
+   "@context": "https://schema.org",
+   "@type": "CollectionPage",
+   "name": "AI Helpers API documentation",
+   "description": "API reference for the 17 AI Helpers Python libraries.",
+   "url": "https://deraison.ai/ai-helpers/docs/",
+   "inLanguage": "en",
+   "isPartOf": {"@type": "WebSite", "name": "AI Helpers", "url": "https://deraison.ai/ai-helpers/"},
+   "author": {"@type": "Person", "name": "Warith Harchaoui"},
+   "license": "https://opensource.org/licenses/BSD-3-Clause"
+ }
+ </script>
+
+ <link rel="stylesheet" href="../style.css" />
+
+ <style>
+.image-right {
+    float: right;
+    margin: 0 0 10px 10px;
+    width: 150px;
+}
+ </style>
+
+</head>
+
+
+<body class="stackedit">
+
+ <nav class="page-toggles" aria-label="Language">
+  <a href="index.fr.html" hreflang="fr" lang="fr" aria-label="Lire cette page en français"
+     title="Français">🇫🇷</a>
+ </nav>
+
+ <div class="stackedit__html"><h1><center>AI Helpers &mdash; Documentation</center></h1>
+<p><center>
+API reference for the 17 Python libraries of the suite,<br>
+generated from each package's NumPy-style docstrings.
+ <br>
+ <br>
+Every library is its own package on PyPI &mdash; install by name, for example <code>pip install audio-helper</code>
+ <br>
+ <br>
+ <a href="https://deraison.ai/ai-helpers/">&larr; AI Helpers home</a>
+</center></p>
+
+
+<h2 id="axes">What runs where, and in which language</h2>
+<p class="top-link"><a href='.'>Top</a></p>
+
+<p>
+Three questions decide whether a library fits your constraint, and the answers are measured against the code rather than claimed. They are stated here once so you do not have to read seventeen READMEs to find them.
+</p>
+
+<h3 id="axis-cost">Local and free, or paid cloud</h3>
+
+<p>
+<strong>Sixteen of the seventeen never contact a paid service.</strong> They run
+on your machine with open-source tooling: no account, no API key, no
+per-character or per-token billing. Where a model is involved the weights
+download once, then the work is offline.
+</p>
+
+<p>
+Two of them do reach a remote server, and the distinction matters:
+<strong>bucket-helper</strong> and <strong>sftp-helper</strong> talk to storage
+and servers that are <em>yours</em> — an S3 bucket, a host you have an account
+on. That is your infrastructure, not a third-party tariff; their whole job is
+moving data to a place you chose.
+</p>
+
+<p>
+<strong>best-engine-ai-helper is the only one that can call a paid cloud</strong>,
+and only when you ask it to. Its default path is the local model. A cloud
+provider is reached only if you name an engine that declares an
+<code>api_key_env</code> field <em>and</em> set that environment variable; the
+key is read from the environment at call time and never written to disk. So the
+paid path exists, it is opt-in, and it is one explicit gesture away — never a
+default that bills you by surprise.
+</p>
+
+<h3 id="axis-time">Offline, or real time</h3>
+
+<p>
+Batch and streaming are different objectives, not settings on a dial. Offline
+work has no deadline, so quality is the only thing to maximise. Real-time work
+has a hard feasibility boundary: the engine must produce faster than playback
+consumes, which is a real-time factor below 1 — and below about 0.8 once you
+leave margin for the first chunk and for jitter.
+</p>
+
+<p>
+The libraries that genuinely stream, verified by the shape of their public API
+rather than by their prose:
+<strong>capture-helper</strong> (<code>iter_camera_frames</code>,
+<code>iter_mic_audio</code>), <strong>podcast-helper</strong>
+(<code>extract_audio_stream</code>), <strong>video-helper</strong>
+(<code>extract_frames</code>, <code>iter_frame_optical_flow</code>),
+<strong>speaker-helper</strong> (<code>Speaker.stream</code>) and
+<strong>vocal-helper</strong> (<code>Pipeline.run</code>, live, beside an
+<code>OfflinePipeline</code> that is explicitly the batch twin).
+<strong>discussion-helper</strong> is real-time by construction — it is a
+conversation loop — and it drives those two rather than streaming itself.
+</p>
+
+<p>
+<strong>speaker-helper is where the two objectives visibly diverge</strong>, and
+its router picks by condition instead of pretending one engine wins both. For
+streaming it chooses <code>kokoro</code>, the only engine whose real-time factor
+is measured under the ceiling: the router refuses to claim an engine keeps up if
+it was never timed. The two halves of that choice come from different places,
+and the router records which: speed is timed on your machine, while quality is
+ranked by a <code>public_elo</code> — a human-preference arena score measured
+elsewhere, by other people, because preference is not something a laptop can
+measure. For offline, where speed is disregarded entirely, it chooses
+<code>kyutai</code> in French and <code>chatterbox</code> in English, ranked on
+the engine <code>prior</code> rather than on an arena. Everything else in the suite
+is batch, which is not a limitation but the honest shape of converting a file.
+</p>
+
+<h3 id="axis-language">Languages</h3>
+
+<p>
+Most of the suite is language-agnostic: resampling a WAV, compressing a video or
+hashing a folder does not care what language is in the file. Language becomes a
+real parameter only where meaning is involved, and there the libraries say which
+ones they cover rather than implying all of them.
+</p>
+
+<p>
+<strong>vocal-helper</strong> identifies the language it hears and transcribes
+it; <strong>speaker-helper</strong> ships female default voices per language and
+routes per language, with French and English as the measured pair and a
+multilingual engine behind the others; <strong>discussion-helper</strong>
+inherits both. <strong>md2star</strong> localises the documents it produces —
+the bibliography heading follows the document's own language.
+<strong>standpoint</strong> writes its analysis in French or English. Everything
+user-facing across the suite exists in both languages, which is why every page
+here has a French twin.
+</p>
+
+<h2 id="contents">Contents</h2>
+<p class="top-link"><a href='.'>Top</a></p>
+
+<ul>
+<li><a href="#axes">What runs where, and in which language</a>
+  <ul>
+    <li><a href="#axis-cost">Local and free, or paid cloud</a></li>
+    <li><a href="#axis-time">Offline, or real time</a></li>
+    <li><a href="#axis-language">Languages</a></li>
+  </ul>
+</li>
+<li><a href="#core">Core</a>
+  <ul>
+  <li><a href="#os-helper">os-helper</a></li>
+  </ul>
+</li>
+<li><a href="#audio-voice">Audio &amp; Voice</a>
+  <ul>
+  <li><a href="#audio-helper">audio-helper</a></li>
+  <li><a href="#vocal-helper">vocal-helper</a></li>
+  <li><a href="#speaker-helper">speaker-helper</a></li>
+  <li><a href="#discussion-helper">discussion-helper</a></li>
+  </ul>
+</li>
+<li><a href="#video-capture">Video &amp; Capture</a>
+  <ul>
+  <li><a href="#video-helper">video-helper</a></li>
+  <li><a href="#capture-helper">capture-helper</a></li>
+  </ul>
+</li>
+<li><a href="#acquisition">Acquisition</a>
+  <ul>
+  <li><a href="#youtube-helper">youtube-helper</a></li>
+  <li><a href="#podcast-helper">podcast-helper</a></li>
+  </ul>
+</li>
+<li><a href="#storage-transfer">Storage &amp; Transfer</a>
+  <ul>
+  <li><a href="#bucket-helper">bucket-helper</a></li>
+  <li><a href="#sftp-helper">sftp-helper</a></li>
+  </ul>
+</li>
+<li><a href="#misc">Misc</a>
+  <ul>
+  <li><a href="#md2star">md2star</a></li>
+  <li><a href="#wallet-helper">wallet-helper</a></li>
+  <li><a href="#standpoint">standpoint</a></li>
+  <li><a href="#best-engine-ai-helper">best-engine-ai-helper</a></li>
+  <li><a href="#ann-router">ann-router</a></li>
+  <li><a href="#elbow-helper">elbow-helper</a></li>
+  </ul>
+</li>
+</ul>
+
+
+<h2 id="core">Core</h2>
+<p class="top-link"><a href='.'>Top</a></p>
+
+<h3 id="os-helper">os-helper</h3>
+<p>
+<a href="os-helper-doc/">
+<img src="logos/os-helper.png" width="200" class="image-right" alt="os-helper logo">
+</a>
+Cross-platform file, system, hash, config and timing/profiling utilities — the base every other helper builds on.
+</p>
+<p class="helper-links">
+  <a href="os-helper-doc/">📃 Docs</a> ·
+  <a href="https://pypi.org/project/os-helper/" target="_blank">📦 PyPI</a> ·
+  <a href="https://github.com/warith-harchaoui/os-helper" target="_blank">🐙 GitHub</a>
+</p>
+
+
+<h2 id="audio-voice">Audio &amp; Voice</h2>
+<p class="top-link"><a href='.'>Top</a></p>
+
+<h3 id="audio-helper">audio-helper</h3>
+<p>
+<a href="audio-helper-doc/">
+<img src="logos/audio-helper.png" width="200" class="image-right" alt="audio-helper logo">
+</a>
+Load, convert, split and concatenate audio; optional source separation.
+</p>
+<p class="helper-links">
+  <a href="audio-helper-doc/">📃 Docs</a> ·
+  <a href="https://pypi.org/project/audio-helper/" target="_blank">📦 PyPI</a> ·
+  <a href="https://github.com/warith-harchaoui/audio-helper" target="_blank">🐙 GitHub</a>
+</p>
+
+<h3 id="vocal-helper">vocal-helper</h3>
+<p>
+<a href="vocal-helper-doc/">
+<img src="logos/vocal-helper.png" width="200" class="image-right" alt="vocal-helper logo">
+</a>
+Live PCM → Voice Activity Detection → online speaker diarization → Speech to Text → optional LLM summary.
+</p>
+<p class="helper-links">
+  <a href="vocal-helper-doc/">📃 Docs</a> ·
+  <a href="https://pypi.org/project/vocal-helper/" target="_blank">📦 PyPI</a> ·
+  <a href="https://github.com/warith-harchaoui/vocal-helper" target="_blank">🐙 GitHub</a>
+</p>
+
+<h3 id="speaker-helper">speaker-helper</h3>
+<p>
+<a href="speaker-helper-doc/">
+<img src="logos/speaker-helper.png" width="200" class="image-right" alt="speaker-helper logo">
+</a>
+Speech synthesis in your own process: say a sentence, stream a reply, or narrate a document with the timed track that lets a page follow along. Every engine is local and free — no API key, no per-character billing, offline once the weights land. The router picks by condition: streaming favours speed (kokoro, RTF under 0.8), offline favours quality (kyutai for French, chatterbox for English). A pronunciation lexicon states once how a word is said. The inverse of vocal-helper: text in, speech out.
+</p>
+<p class="helper-links">
+  <a href="speaker-helper-doc/">📃 Docs</a> ·
+  <a href="https://pypi.org/project/speaker-helper/" target="_blank">📦 PyPI</a> ·
+  <a href="https://github.com/warith-harchaoui/speaker-helper" target="_blank">🐙 GitHub</a>
+</p>
+
+<h3 id="discussion-helper">discussion-helper</h3>
+<p>
+<a href="discussion-helper-doc/">
+<img src="logos/discussion-helper.png" width="200" class="image-right" alt="discussion-helper logo">
+</a>
+Hold a spoken conversation at the microphone: listen, answer, speak — and stop the moment the user cuts in. The loop that knows whose turn it is.
+</p>
+<p class="helper-links">
+  <a href="discussion-helper-doc/">📃 Docs</a> ·
+  <a href="https://pypi.org/project/discussion-helper/" target="_blank">📦 PyPI</a> ·
+  <a href="https://github.com/warith-harchaoui/discussion-helper" target="_blank">🐙 GitHub</a>
+</p>
+
+
+<h2 id="video-capture">Video &amp; Capture</h2>
+<p class="top-link"><a href='.'>Top</a></p>
+
+<h3 id="video-helper">video-helper</h3>
+<p>
+<a href="video-helper-doc/">
+<img src="logos/video-helper.png" width="200" class="image-right" alt="video-helper logo">
+</a>
+Video conversion, handling and frame extraction.
+</p>
+<p class="helper-links">
+  <a href="video-helper-doc/">📃 Docs</a> ·
+  <a href="https://pypi.org/project/video-helper/" target="_blank">📦 PyPI</a> ·
+  <a href="https://github.com/warith-harchaoui/video-helper" target="_blank">🐙 GitHub</a>
+</p>
+
+<h3 id="capture-helper">capture-helper</h3>
+<p>
+<a href="capture-helper-doc/">
+<img src="logos/capture-helper.png" width="200" class="image-right" alt="capture-helper logo">
+</a>
+Camera and microphone capture with a uniform streaming interface.
+</p>
+<p class="helper-links">
+  <a href="capture-helper-doc/">📃 Docs</a> ·
+  <a href="https://pypi.org/project/capture-helper/" target="_blank">📦 PyPI</a> ·
+  <a href="https://github.com/warith-harchaoui/capture-helper" target="_blank">🐙 GitHub</a>
+</p>
+
+
+<h2 id="acquisition">Acquisition</h2>
+<p class="top-link"><a href='.'>Top</a></p>
+
+<h3 id="youtube-helper">youtube-helper</h3>
+<p>
+<a href="youtube-helper-doc/">
+<img src="logos/youtube-helper.png" width="200" class="image-right" alt="youtube-helper logo">
+</a>
+yt-dlp-based media acquisition — download and stream from YouTube and hundreds of other sites.
+</p>
+<p class="helper-links">
+  <a href="youtube-helper-doc/">📃 Docs</a> ·
+  <a href="https://pypi.org/project/youtube-helper/" target="_blank">📦 PyPI</a> ·
+  <a href="https://github.com/warith-harchaoui/youtube-helper" target="_blank">🐙 GitHub</a>
+</p>
+
+<h3 id="podcast-helper">podcast-helper</h3>
+<p>
+<a href="podcast-helper-doc/">
+<img src="logos/podcast-helper.png" width="200" class="image-right" alt="podcast-helper logo">
+</a>
+Universal audio-stream consumer.
+</p>
+<p class="helper-links">
+  <a href="podcast-helper-doc/">📃 Docs</a> ·
+  <a href="https://pypi.org/project/podcast-helper/" target="_blank">📦 PyPI</a> ·
+  <a href="https://github.com/warith-harchaoui/podcast-helper" target="_blank">🐙 GitHub</a>
+</p>
+
+
+<h2 id="storage-transfer">Storage &amp; Transfer</h2>
+<p class="top-link"><a href='.'>Top</a></p>
+
+<h3 id="bucket-helper">bucket-helper</h3>
+<p>
+<a href="bucket-helper-doc/">
+<img src="logos/bucket-helper.png" width="200" class="image-right" alt="bucket-helper logo">
+</a>
+S3-compatible object storage: upload, download, mirror and stage-and-share patterns.
+</p>
+<p class="helper-links">
+  <a href="bucket-helper-doc/">📃 Docs</a> ·
+  <a href="https://pypi.org/project/bucket-helper/" target="_blank">📦 PyPI</a> ·
+  <a href="https://github.com/warith-harchaoui/bucket-helper" target="_blank">🐙 GitHub</a>
+</p>
+
+<h3 id="sftp-helper">sftp-helper</h3>
+<p>
+<a href="sftp-helper-doc/">
+<img src="logos/sftp-helper.png" width="200" class="image-right" alt="sftp-helper logo">
+</a>
+SFTP: upload, download, mirror.
+</p>
+<p class="helper-links">
+  <a href="sftp-helper-doc/">📃 Docs</a> ·
+  <a href="https://pypi.org/project/sftp-helper/" target="_blank">📦 PyPI</a> ·
+  <a href="https://github.com/warith-harchaoui/sftp-helper" target="_blank">🐙 GitHub</a>
+</p>
+
+
+<h2 id="misc">Misc</h2>
+<p class="top-link"><a href='.'>Top</a></p>
+
+<h3 id="md2star">md2star</h3>
+<p>
+<a href="md2star-doc/">
+<img src="logos/md2star.png" width="200" class="image-right" alt="md2star logo">
+</a>
+Markdown → DOCX/PPTX/PDF bridge on Pandoc, with curated styling, Mermaid rendering and bibliography support.
+</p>
+<p class="helper-links">
+  <a href="md2star-doc/">📃 Docs</a> ·
+  <a href="https://pypi.org/project/md2star/" target="_blank">📦 PyPI</a> ·
+  <a href="https://github.com/warith-harchaoui/md2star" target="_blank">🐙 GitHub</a>
+</p>
+
+<h3 id="wallet-helper">wallet-helper</h3>
+<p>
+<a href="wallet-helper-doc/">
+<img src="logos/wallet-helper.png" width="200" class="image-right" alt="wallet-helper logo">
+</a>
+Never run the same heavy call twice: persistent, content-addressed memoization + single-flight. A toolbox, close in spirit to os-helper.
+</p>
+<p class="helper-links">
+  <a href="wallet-helper-doc/">📃 Docs</a> ·
+  <a href="https://pypi.org/project/wallet-helper/" target="_blank">📦 PyPI</a> ·
+  <a href="https://github.com/warith-harchaoui/wallet-helper" target="_blank">🐙 GitHub</a>
+</p>
+
+<h3 id="standpoint">standpoint</h3>
+<p>
+<a href="standpoint-doc/">
+<img src="logos/standpoint.png" width="200" class="image-right" alt="standpoint logo">
+</a>
+Turn a comparison table into a labelled 2D positioning map, a written analysis and a YAML of coordinates — PCA perceptual maps, one command.
+</p>
+<p class="helper-links">
+  <a href="standpoint-doc/">📃 Docs</a> ·
+  <a href="https://pypi.org/project/standpoint/" target="_blank">📦 PyPI</a> ·
+  <a href="https://github.com/warith-harchaoui/standpoint" target="_blank">🐙 GitHub</a>
+</p>
+
+<h3 id="best-engine-ai-helper">best-engine-ai-helper</h3>
+<p>
+<a href="best-engine-ai-helper-doc/">
+<img src="logos/best-engine-ai-helper.png" width="200" class="image-right" alt="best-engine-ai-helper logo">
+</a>
+Pick and pull the best local LLM / VLM for the current machine's hardware — memory-aware model selection over Ollama.
+</p>
+<p class="helper-links">
+  <a href="best-engine-ai-helper-doc/">📃 Docs</a> ·
+  <a href="https://pypi.org/project/best-engine-ai-helper/" target="_blank">📦 PyPI</a> ·
+  <a href="https://github.com/warith-harchaoui/best-engine-ai-helper" target="_blank">🐙 GitHub</a>
+</p>
+
+<h3 id="ann-router">ann-router</h3>
+<p>
+<a href="ann-router-doc/">
+<img src="logos/ann-router.png" width="200" class="image-right" alt="ann-router logo">
+</a>
+Route to the right approximate-nearest-neighbour backend (exact/turbovec/HNSW/FAISS/Annoy/Qdrant/pgvector) from measured problem criteria, with a justified, discussable rationale.
+</p>
+<p class="helper-links">
+  <a href="ann-router-doc/">📃 Docs</a> ·
+  <a href="https://pypi.org/project/ann-router/" target="_blank">📦 PyPI</a> ·
+  <a href="https://github.com/warith-harchaoui/ann-router" target="_blank">🐙 GitHub</a>
+</p>
+
+<h3 id="elbow-helper">elbow-helper</h3>
+<p>
+<a href="elbow-helper-doc/">
+<img src="logos/elbow-helper.png" width="200" class="image-right" alt="elbow-helper logo">
+</a>
+Noise-robust knee/elbow detection: reports a knee with uncertainty, or explicitly abstains rather than guessing.
+</p>
+<p class="helper-links">
+  <a href="elbow-helper-doc/">📃 Docs</a> ·
+  <a href="https://pypi.org/project/elbow-helper/" target="_blank">📦 PyPI</a> ·
+  <a href="https://github.com/warith-harchaoui/elbow-helper" target="_blank">🐙 GitHub</a>
+</p>
+
+
+<h2 id="links">Links</h2>
+<p class="top-link"><a href='.'>Top</a></p>
+
+<p>
+Generated with Sphinx (autodoc + napoleon, Read the Docs theme) from each package's NumPy-style docstrings.
+</p>
+
+<p>
+<a href="https://deraison.ai/ai-helpers/">AI Helpers home</a> &middot;
+<a href="https://github.com/warith-harchaoui/ai-helpers" target="_blank">ai-helpers on GitHub</a> &middot;
+<a href="https://pypi.org/user/warith-harchaoui/" target="_blank">PyPI</a>
+</p>
+
+</div>
+
+</body>
+
+</html>
