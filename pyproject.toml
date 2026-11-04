@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "sprezzature-publish"
-version = "1.3.0"
+version = "1.4.0"
 description = "A folder of Markdown becomes a site somebody can find: pages, meta tags, a favicon set from one logo, the indexes crawlers and language models look for, and an optional narrated read-along."
 readme = "README.md"
 # `<3.14` since 2026-11-01, when the extras were folded into the base. The
@@ -145,6 +145,9 @@ make-site = "sprezzature_publish.cli:main"
 sprezzature-publish = "sprezzature_publish.cli:main"
 sprezzature-publish-lint = "sprezzature_publish_scripts.lint_markdown:main"
 sprezzature-publish-audit = "sprezzature_publish_scripts.audit_site:main"
+sprezzature-publish-cta = "sprezzature_publish_scripts.cta:main"
+sprezzature-publish-faq = "sprezzature_publish_scripts.faq:main"
+sprezzature-publish-findable = "sprezzature_publish_scripts.findable:main"
 sprezzature-publish-html = "sprezzature_publish_scripts.md_to_html:main"
 sprezzature-publish-icons = "sprezzature_publish_scripts.favicons:main"
 sprezzature-publish-indexes = "sprezzature_publish_scripts.site_indexes:main"

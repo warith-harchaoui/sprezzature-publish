@@ -537,7 +537,7 @@ def _has_vocabulary(text: str, vocabulary: tuple[str, ...]) -> bool:
 
 
 def ground(
-    question: Question, index: Index, product: str, *, threshold: float = 0.3
+    question: Question, index: Index, product: str, *, threshold: float = 0.0
 ) -> list[Source]:
     """The passages that answer ``question``, or none.
 
@@ -546,8 +546,9 @@ def ground(
     when, for a checklist question, it uses the vocabulary an answer needs:
     "How much does it cost?" is not answered by a passage that never speaks
     of price, licence or payment. A free-text question needs half its own
-    words in the passage instead: BM25 scores alone are not comparable
-    between a three-page site and a thousand-page one.
+    words in the passage instead. BM25 scores alone are not comparable
+    between a one-page site, where every word's weight is near zero, and a
+    thousand-page one, so no score threshold applies by default.
     """
     product_terms = set(terms(product))
     query = [t for t in terms(question.text) if t not in product_terms]
@@ -901,7 +902,7 @@ def _jsonld_script(node: dict[str, Any]) -> str:
     return f'<script type="application/ld+json">\n{body}\n</script>'
 
 
-def render_markdown(build: FaqBuild) -> str:
+def render_faq_markdown(build: FaqBuild) -> str:
     """The section in Markdown, with its JSON-LD as a raw HTML block."""
     lines = [f"## {HEADING.get(build.lang, HEADING['en'])}", ""]
     for item in build.items:
@@ -921,7 +922,7 @@ def _md_inline_to_html(markdown: str) -> str:
     return re.sub(r"`([^`]+)`", r"<code>\1</code>", out)
 
 
-def render_html(build: FaqBuild) -> str:
+def render_faq_html(build: FaqBuild) -> str:
     """The section as an HTML fragment to paste where :class:`Placement` says."""
     lines = [
         '<section id="faq" aria-labelledby="faq-title">',
@@ -1225,8 +1226,8 @@ def cli(
             click.echo(render_findings(findings) if findings else "Every FAQ is consistent.")
         return 1 if any(f.severity == ERROR for f in findings) else 0
 
-    path = ctas_path or (site / "ctas.yaml")
-    plan = load_ctas(path) if path.is_file() else None
+    ctas_file = ctas_path or (site / "ctas.yaml")
+    plan = load_ctas(ctas_file) if ctas_file.is_file() else None
     if plan is None:
         click.echo(
             "No ctas.yaml: questions are ranked without the site's calls to action, and "
@@ -1242,9 +1243,9 @@ def cli(
         payload["jsonld"] = faq_jsonld(build.items)
         text = json.dumps(payload, indent=2, ensure_ascii=False)
     elif fmt == "html":
-        text = render_html(build)
+        text = render_faq_html(build)
     else:
-        text = render_markdown(build)
+        text = render_faq_markdown(build)
     if output:
         output.write_text(text + "\n", encoding="utf-8")
         click.echo(f"→ Wrote {output} — a draft: read every answer before publishing.", err=True)

@@ -440,9 +440,19 @@ def render_llms_txt(
     project_name: str,
     summary: str,
     sections: dict[str, list[tuple[str, str, str]]],
+    *,
+    offer: str = "",
+    ctas: list[tuple[str, str]] | None = None,
 ) -> str:
     """
     Render an llms.txt file per https://llmstxt.org/.
+
+    When the site declares what it offers and what a reader should do, the
+    file **leads with it**: the offer as the summary, then a "Next step"
+    section with each call to action's own URL (or install command), before
+    any page. An agent acting for a reader can then hand over the link
+    itself. Google says llms.txt neither helps nor harms its own ranking;
+    the reader here is every other agent.
 
     Parameters
     ----------
@@ -455,6 +465,12 @@ def render_llms_txt(
     sections : dict
         Map from H2 heading to a list of ``(name, url, description)``
         link entries. ``description`` may be empty.
+    offer : str, optional
+        One sentence saying what is offered; used as the summary when
+        ``summary`` is empty, and prepended to it otherwise.
+    ctas : list of (str, str), optional
+        ``(label, url)`` per call to action, primary first. A ``url`` with
+        a space and no scheme is an install command and is printed as code.
 
     Returns
     -------
@@ -462,8 +478,23 @@ def render_llms_txt(
         Markdown document body.
     """
     lines: list[str] = [f"# {project_name}", ""]
-    if summary:
-        lines.append(f"> {summary}")
+    quote = " ".join(x for x in (offer.strip(), summary.strip()) if x)
+    if quote:
+        lines.append(f"> {quote}")
+        lines.append("")
+    if ctas:
+        lines.append("## Next step")
+        lines.append("")
+        for label, url in ctas:
+            if " " in url and not re.match(r"^[a-z][a-z0-9+.-]*:", url, re.I):
+                lines.append(f"- {label}: `{url}`")
+            else:
+                full = (
+                    url
+                    if re.match(r"^[a-z][a-z0-9+.-]*:", url, re.I)
+                    else _format_url(base_url, Path(url.lstrip("/")))
+                )
+                lines.append(f"- [{label}]({full})")
         lines.append("")
     for heading, entries in sections.items():
         lines.append(f"## {heading}")
@@ -478,6 +509,25 @@ def render_llms_txt(
                 lines.append(f"- [{name}]({full})")
         lines.append("")
     return "\n".join(lines).rstrip() + "\n"
+
+
+def carries_cta(path: Path, urls: list[str]) -> bool:
+    """True when the page's source names one of the CTA destinations."""
+    if not urls:
+        return False
+    try:
+        text = path.read_text(encoding="utf-8", errors="ignore")
+    except OSError:
+        return False
+    return any(u and u in text for u in urls)
+
+
+def parse_cta(value: str) -> tuple[str, str]:
+    """``LABEL=URL`` → ``(label, url)``; the URL may itself contain ``=``."""
+    label, sep, url = value.partition("=")
+    if not sep or not label.strip() or not url.strip():
+        raise ValueError(f"--cta expects LABEL=URL, got {value!r}")
+    return label.strip(), url.strip()
 
 
 # ── llms-full.txt ──────────────────────────────────────────────────────────
@@ -973,6 +1023,19 @@ def main() -> int:
         help="Site summary used in llms.txt blockquote.",
     )
     p.add_argument(
+        "--offer",
+        default="",
+        help="One sentence saying what the site offers. llms.txt leads with it.",
+    )
+    p.add_argument(
+        "--cta",
+        action="append",
+        default=[],
+        metavar="LABEL=URL",
+        help="A call to action, primary first; repeat for several. llms.txt lists "
+        "them before any page, and the pages that carry them come first.",
+    )
+    p.add_argument(
         "--no-llms-full",
         action="store_true",
         dest="no_llms_full",
@@ -1008,6 +1071,11 @@ def main() -> int:
         "enclosure 'length' attribute. Defaults to --root.",
     )
     args = p.parse_args()
+    try:
+        ctas: list[tuple[str, str]] = [parse_cta(v) for v in args.cta]
+    except ValueError as exc:
+        p.error(str(exc))
+    cta_urls: list[str] = [url for _, url in ctas]
 
     root: Path = args.root.resolve()
     out_dir: Path = (args.out or root).resolve()
@@ -1045,12 +1113,16 @@ def main() -> int:
 
     # 3. llms.txt
     sections: dict[str, list[tuple[str, str, str]]] = {"Pages": []}
-    for page in pages:
+    # Money pages first: the ones that carry a declared CTA.
+    ordered = sorted(pages, key=lambda rel: not carries_cta(root / rel, cta_urls))
+    for page in ordered:
         title = _read_title(root / page)
         desc = _read_description(root / page)
         sections["Pages"].append((title, page.as_posix(), desc))
     (out_dir / "llms.txt").write_text(
-        render_llms_txt(base_url, project_name, args.summary, sections),
+        render_llms_txt(
+            base_url, project_name, args.summary, sections, offer=args.offer, ctas=ctas
+        ),
         encoding="utf-8",
     )
     print(f"→ Wrote {out_dir / 'llms.txt'}")
@@ -1062,13 +1134,14 @@ def main() -> int:
         # boilerplate — the classic llms-full.txt bloat. Priority order
         # (README / index first, then the rest) so any budget truncation
         # keeps the pages that matter.
-        def _priority(rel: Path) -> tuple[int, str]:
+        def _priority(rel: Path) -> tuple[int, int, str]:
+            money = 0 if carries_cta(root / rel, cta_urls) else 1
             name = rel.name.lower()
             if name in {"readme.md", "index.md"} and rel.parent == Path("."):
-                return (0, rel.as_posix())
+                return (money, 0, rel.as_posix())
             if rel.parent == Path("."):
-                return (1, rel.as_posix())
-            return (2, rel.as_posix())
+                return (money, 1, rel.as_posix())
+            return (money, 2, rel.as_posix())
 
         md_pages: list[Path] = sorted(
             (p for p in pages if p.suffix.lower() == ".md"), key=_priority
@@ -1082,7 +1155,7 @@ def main() -> int:
             body, dropped = render_llms_full_txt(
                 base_url,
                 project_name,
-                args.summary,
+                " ".join(x for x in (args.offer, args.summary) if x),
                 docs,
                 max_bytes=max_bytes,
             )

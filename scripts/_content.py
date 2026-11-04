@@ -123,6 +123,11 @@ SKIP_FILES: frozenset[str] = frozenset(
         "_config.yml",
         "pubspec.yaml",
         ".pre-commit-config.yaml",
+        # This package's own input: the declared CTAs are what the site is
+        # measured against, not a page of it.
+        "ctas.yaml",
+        "ctas.yml",
+        "ctas.json",
     }
 )
 
@@ -749,7 +754,7 @@ def read_markdown(text: str, path: str = "") -> PageContent:
     """
     body = _FRONTMATTER.sub("", text, count=1)
     try:
-        import markdown
+        import markdown  # type: ignore[import-untyped]
 
         rendered = markdown.markdown(body, extensions=["fenced_code", "tables", "md_in_html"])
     except ImportError:  # pragma: no cover - markdown is a base dependency
@@ -757,8 +762,9 @@ def read_markdown(text: str, path: str = "") -> PageContent:
     page = read_html("<main>" + rendered + "</main>", path, "html")
     page.fmt, page.source = "md", text
     lines = text.splitlines()
-    for record in [*page.passages, *page.actionables, *page.faq]:
-        needle = getattr(record, "question", None) or getattr(record, "text", "")
+    records: list[Passage | Actionable | FaqItem] = [*page.passages, *page.actionables, *page.faq]
+    for record in records:
+        needle = str(getattr(record, "question", None) or getattr(record, "text", ""))
         record.line = _line_of(lines, needle) or record.line
     if page.faq:
         page.faq_heading_line = _line_of(lines, "#", pattern=FAQ_HEADING) or 0

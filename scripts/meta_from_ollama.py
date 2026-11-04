@@ -148,7 +148,7 @@ Return a single JSON object, no prose around it, with exactly these keys:
   twitter_title      Same content as og_title.
   twitter_description Same content as og_description.
   schema_type        One of: WebSite, Article, NewsArticle, BlogPosting,
-                     Product, Person, Recipe, Event, FAQPage,
+                     Product, Person, Recipe, Event,
                      LocalBusiness, Organization.
   keywords_hint      Array of 3–8 short keywords for the author's reference.
                      These are NOT meant to be emitted as <meta name="keywords">.

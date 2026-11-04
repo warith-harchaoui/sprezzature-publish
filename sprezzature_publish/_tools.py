@@ -30,6 +30,21 @@ TOOLS: dict[str, tuple[str, str]] = {
         "head meta, icon links and crawler indexes, and repair with --fix "
         "what can be derived rather than invented.",
     ),
+    "cta": (
+        "cta",
+        "Find the calls to action a site already offers, ask which ones it "
+        "exists for, write ctas.yaml, and check every page against them.",
+    ),
+    "faq": (
+        "faq",
+        "Build the FAQ a site is missing from its own words, answers grounded "
+        "in its pages, and audit the FAQPage markup against the visible text.",
+    ),
+    "findable": (
+        "findable",
+        "One SEO + GEO + AEO report ordered by the declared calls to action, "
+        "money pages first, every finding tagged with the goals it serves.",
+    ),
     "html": (
         "md_to_html",
         "Markdown → HTML pages, with the Mermaid diagrams rendered.",

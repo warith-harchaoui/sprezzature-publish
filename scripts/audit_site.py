@@ -404,8 +404,9 @@ def audit_page(where: str, facts: PageFacts, *, have_base_url: bool) -> list[Fin
         add(
             "SITE011",
             WARNING,
-            "No JSON-LD block. Generative engines read structured data to "
-            "decide what a page *is* before deciding whether to cite it.",
+            "No JSON-LD block. It earns the rich results Google still shows "
+            "(Product, Organization, Event...); Google says generative search "
+            "needs no special markup, so this is a classic-search gap only.",
             "sprezzature-publish-meta <page>   # returns schema_type",
         )
     if "theme-color" not in facts.names:
@@ -577,8 +578,9 @@ def audit_indexes(root: Path, base_url: str) -> list[Finding]:
                 0,
                 "SITE105",
                 WARNING,
-                "No llms.txt. It is the one artifact generative engines look "
-                "for by name, and it needs a summary a person writes.",
+                "No llms.txt. Agents other than Google's look for it by name "
+                "(Google says it neither helps nor harms), and it needs a "
+                "summary a person writes.",
                 gen,
             )
         )
@@ -890,7 +892,7 @@ def audit_remote_indexes(origin: str) -> list[Finding]:
                 0,
                 "SITE105",
                 WARNING,
-                "No llms.txt at the origin — the one artifact generative engines look for by name.",
+                "No llms.txt at the origin — the file agents other than Google's look for by name.",
                 "",
             )
         )

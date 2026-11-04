@@ -24,6 +24,9 @@ Astro instead; this does not compete with them and says so.
 |---|---|
 | `sprezzature-publish-lint` | **audit** — read the Markdown before anything renders it. Standard library only, milliseconds, pre-commit shaped. `--fix` repairs what has one safe repair. |
 | `sprezzature-publish-audit` | **audit** — read the site *after* it exists: head meta, Open Graph, icon links, `robots.txt`, `sitemap.xml`, `llms.txt`. Takes a directory, a page or a live URL — no Markdown source required. `--fix` writes back what can be derived rather than invented. |
+| `sprezzature-publish-cta` | **first** — find the calls to action a site already offers, ask which ones it is for, write `ctas.yaml`, and check every page against them. Reads HTML, PHP, Markdown, JSON and YAML. |
+| `sprezzature-publish-faq` | **make** — build the FAQ a site is missing from its own pages: questions ranked by the declared CTA, answers grounded in the site's words, the questions it cannot answer yet. **audit** — the `FAQPage` markup against the visible FAQ, `--fix` rewrites it. |
+| `sprezzature-publish-findable` | **audit** — one SEO + GEO + AEO report, money pages first, each finding tagged with every goal it serves. `--fix` applies the deterministic repairs. |
 | `sprezzature-publish-html` | Markdown → standalone HTML pages, Mermaid diagrams rendered. |
 | `sprezzature-publish-icons` | one logo → favicon, app icons, PWA icons, and the `<head>` snippet that references them. |
 | `sprezzature-publish-indexes` | `robots.txt`, `sitemap.xml`, `llms.txt`, `llms-full.txt`, Atom, `humans.txt`. |
@@ -48,7 +51,7 @@ documentation — WHATWG HTML, [RFC 6596](https://datatracker.ietf.org/doc/html/
 says so instead of pretending: see `references/audit-site.md`, which carries
 the table rule by rule and is the thing to cite when a finding is disputed.
 
-One front door over all nine, in click, under two names: `make-site <tool>`
+One front door over all thirteen, in click, under two names: `make-site <tool>`
 and `sprezzature-publish <tool>` resolve to the same callable, so they cannot
 drift. The argparse twin was removed on 2026-10-25.
 
@@ -100,6 +103,30 @@ sprezzature-publish-audit https://example.com/about                         # a 
 sprezzature-publish-meta site/index.html     # asks a local model
 ```
 
+### Lead readers to what the site is for
+
+Search, generative and answer engines (SEO, GEO, AEO) all end on one
+question: once a reader arrives, what should they do? So that is the first
+input, asked rather than guessed.
+
+```sh
+sprezzature-publish-cta site/                    # what the site links to, then: which one is it for?
+sprezzature-publish-faq site/ > faq.md           # the FAQ the site is missing, as a draft
+sprezzature-publish-faq site/ --audit --fix      # FAQPage markup rebuilt from the visible FAQ
+sprezzature-publish-findable site/ --base-url https://example.com
+sprezzature-publish-indexes --root site/ --base-url https://example.com \
+  --offer "Local captions for teams." --cta "Book a demo=https://cal.com/acme/demo"
+```
+
+The declared CTAs (`ctas.yaml`) decide the *money pages*: the pages that
+carry one in their body, and the page it lands on. A `noindex` there is an
+error; on a blog post it is a choice. Every FAQ answer comes from a passage
+of the site, and every number in it from that passage, or it is not
+written: a question the site cannot answer goes to a gap report instead.
+`FAQPage` markup is built from the visible text, once per page, and never
+claimed to rank: Google stopped showing FAQ rich results on 2026-05-07, and
+answer engines read what a reader reads.
+
 ### And, if the page should be read aloud
 
 ```sh
@@ -129,8 +156,11 @@ uvicorn sprezzature_publish.api:app --port 8000
 curl -s localhost:8000/health
 ```
 
-Three routes — lint, render, plain-language — because those are the ones
-that cross a network boundary cleanly: text in, text out. The favicon set is
+Seven routes — lint, audit, render, plain-language, CTAs, FAQ and the joint
+findability report — because those are the ones that cross a network
+boundary cleanly: text in, text out. The site-level three take the pages as
+`[{path, content}]` and the declared CTAs as a parameter, and say so in the
+response when the CTAs are missing. The favicon set is
 a folder of binaries keyed by filename and stays a command rather than being
 offered here with an invented download protocol.
 
@@ -142,7 +172,7 @@ curl -s localhost:8000/health
 docker compose --profile prose up -d       # adds the local model server
 ```
 
-The model server is a separate profile: two tools of nine need it, and
+The model server is a separate profile: three tools of thirteen can use it, and
 someone who only wants pages should not be made to run one.
 
 ## What it does not own
