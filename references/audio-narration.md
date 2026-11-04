@@ -26,23 +26,25 @@ baseline for long-form text. The cases where this earns its keep:
 ## Quick start
 
 ```bash
-# 1. Install one engine (both are MIT for code AND weights)
-pip install -r sprezzature-publish/scripts/requirements-narrate-chatterbox.txt
-python3 sprezzature-publish/scripts/install_narrate.py --engine chatterbox
+# 1. One install; the voices come with sprezzature-audio, a base dependency.
+pip install sprezzature-publish
+sprezzature-audio-install-voice --engine kokoro      # model files, once
 
-# 2. Pick a built-in voice (or skip to clone a custom voice below)
-python3 sprezzature-publish/scripts/pick_voice.py --engine chatterbox --sample
-# Listen to out/voice-samples/chatterbox/*.wav, decide.
+# 2. Listen before choosing (optional)
+sprezzature-audio-voice --engine kokoro --sample
 
-# 3. Narrate a post
-python3 sprezzature-publish/scripts/narrate_post.py \
-    --engine chatterbox \
-    --voice default \
-    posts/2026-06-21-hello.md
+# 3. Narrate a post (Markdown, or an HTML page with --scope)
+sprezzature-publish-narrate posts/2026-06-21-hello.md --out-dir site/audio/
+sprezzature-publish-narrate page.html --scope article --audio-format mp3 --bitrate 64k
 
-# 4. The result + a sha256-keyed manifest land under
-#    out/audio/narration.wav + out/audio/manifest.json
+# 4. The audio, its timed track and a sha256-keyed manifest land in --out-dir.
 ```
+
+Leave `--engine` unset. The router in `speaker-helper` picks the engine from
+the language and the offline condition, which is where that decision
+belongs; naming one overrides it on purpose. `--voice` left empty lets each
+engine use its default (for Kokoro, the voice that speaks the detected
+language). `--lexicon words.yaml` fixes the words no engine can guess.
 
 ## Cloning your own voice
 
@@ -59,10 +61,8 @@ Illinois BIPA and similar laws).
 arecord -d 20 -f cd -r 24000 -c 1 my-voice.wav   # Linux
 # Or: any QuickTime / Voice Memos / Audacity export to WAV.
 
-# 2. Pass it as --voice-sample to narrate_post.py
-python3 sprezzature-publish/scripts/narrate_post.py \
-    --engine chatterbox \
-    --voice-sample my-voice.wav \
+# 2. Pass it as --voice-sample
+sprezzature-publish-narrate --engine chatterbox --voice-sample my-voice.wav \
     posts/2026-06-21-hello.md
 ```
 
@@ -73,53 +73,18 @@ expressive output but is more sensitive to noise in the reference.
 
 ## Engine matrix
 
-| Engine | Code lic. | Weights lic. | Built-in voices | Clone | Strength |
-|---|---|---|---|---|---|
-| **OpenVoice v2** (MyShell) | MIT | MIT | 5+, multi-lang | Yes | Cross-lingual, preserves accent of the sample. |
-| **ChatterboxTTS** (Resemble) | MIT | MIT | 1 default, lib via WAV files | Yes | More expressive (continuous `exaggeration` dial). |
-| ~~F5-TTS~~ | MIT | **CC-BY-NC-4.0** | — | Yes | Excluded: non-commercial weights. |
-| ~~XTTS-v2~~ (Coqui) | MIT | **CPML non-commercial** | — | Yes | Excluded: non-commercial + project shut down 2024-01. |
-| ElevenLabs | proprietary | proprietary | many | Yes | API-only, paid. Not shipped; documented as a hook for those who accept SaaS. |
+| Engine | Code lic. | Weights lic. | Clone | Strength |
+|---|---|---|---|---|
+| **Kokoro** (82 M parameters) | Apache-2.0 | Apache-2.0 | No | The default: no torch, runs on ONNX, fast on a laptop CPU. |
+| **OpenVoice v2** (MyShell) | MIT | MIT | Yes | Cross-lingual, keeps the accent of the sample. |
+| **ChatterboxTTS** (Resemble) | MIT | MIT | Yes | More expressive (continuous `exaggeration` dial); not deterministic, so one synthesis per line. |
+| ~~F5-TTS~~ | MIT | **CC-BY-NC-4.0** | Yes | Excluded: non-commercial weights. |
+| ~~XTTS-v2~~ (Coqui) | MIT | **CPML non-commercial** | Yes | Excluded: non-commercial, project shut down 2024-01. |
 
-**Rule of thumb:** pick **OpenVoice v2** for multi-lingual content
-where you want the cloned voice to sound consistent across languages.
-Pick **ChatterboxTTS** for English-only content where expressiveness
-matters (essays with mood swings, opinion pieces). Both are
-acceptable defaults; the narration manifest records which one
-produced each clip so you can A/B.
-
-### Installation gotcha: OpenVoice package rename
-
-Between mid-2025 and mid-2026 the upstream `myshell-ai/OpenVoice`
-repo renamed the `pyproject.toml` package name from `openvoice` to
-`myshell-openvoice` without changing the import path. Modern pip
-rejects the mismatch:
-
-```text
-Requested myshell-openvoice from git+https://github.com/myshell-ai/OpenVoice.git@main
-has inconsistent name: expected 'openvoice', but metadata has 'myshell-openvoice'.
-ERROR: No matching distribution found for openvoice (unavailable)
-```
-
-The pinned requirement in
-`sprezzature-publish/scripts/requirements-narrate-openvoice.txt` still uses
-the old name. Two workable fixes locally:
-
-1. **Pin a pre-rename commit.** Replace `@main` in the requirements
-   file with a commit SHA from before the rename (any commit on the
-   `main` branch tagged `v2.x.x` works). This is the reproducible
-   path; the SECURITY.md "Supply-chain notes" line about pinning
-   minor versions applies here too.
-2. **Use the upstream package name.** Edit the requirements file
-   line to `myshell-openvoice @ git+…@main`. Pip then accepts the
-   install. The import path inside `narrate_openvoice.py` (`import
-   openvoice` / `from openvoice import ...`) is unchanged.
-
-The skill's `install_narrate.py` script does **not** call pip; it
-only downloads the v2 checkpoint files into the expected layout, so
-it's unaffected. The pip-install step is on you (or your
-requirements pin) until the OpenVoice maintainers republish under a
-stable name.
+The engines, their installation and their known traps live in
+`sprezzature-audio`; this package calls them as subprocesses so their
+imports never enter its graph. The manifest records which engine produced
+each clip.
 
 ## Hints derived from structure
 
@@ -177,7 +142,7 @@ structural defaults; the pipeline never crashes on a missing daemon.
 **Inspect the enriched plan before committing GPU time:**
 
 ```bash
-python3 sprezzature-publish/scripts/narrate_post.py \
+sprezzature-publish-narrate \
     --ai-hints --ai-hints-only \
     posts/2026-06-21-hello.md | jq
 ```
@@ -551,21 +516,10 @@ that isn't yours:
 
 ## What CI does not do here
 
-The narration pipeline is **not exercised in CI** because it requires
-~1 GB of model weights and minutes of CPU/GPU per post. The
-deterministic tests cover the pure-Python parts (segment extraction,
-pronunciation overrides, manifest cache, RSS enclosure injection,
-emotion→engine-dial mapping). Engine wrappers are smoke-tested via
-the orchestrator's mock-subprocess path; actual synthesis is a local
-developer / production task.
-
-Concretely, `.github/workflows/ci.yml` installs every per-skill
-`requirements-*.txt` so the Ollama-backed scripts import cleanly
-during collection, **except**
-`requirements-narrate-openvoice.txt` and
-`requirements-narrate-chatterbox.txt`, which are skipped explicitly.
-Both engine wrappers use `importlib` for lazy imports inside the
-synthesis path, so collection succeeds without the heavy ML
-dependencies. Skipping them also avoids the upstream OpenVoice
-package-rename trap (see "Installation gotcha" above) blocking
-unrelated CI runs.
+Synthesis is **not exercised in CI**: it needs model weights and minutes of
+CPU per post. The deterministic tests cover the pure-Python parts (segment
+extraction, pronunciation overrides, manifest cache, feed enclosures,
+emotion to engine-dial mapping) and the orchestrator through a mocked
+subprocess. One guard checks that every engine the `speaker-helper` router
+can answer is one this package can invoke, so a catalogue that grows next
+door is noticed here. Actual synthesis is a local task.

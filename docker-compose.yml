@@ -32,7 +32,7 @@ services:
 
   ollama:
     image: ollama/ollama:latest
-    # Only started with `--profile prose`, because two of nine tools need it.
+    # Only started with `--profile prose`, because only the tools that ask a local model need it.
     profiles: ["prose"]
     ports:
       - "11434:11434"
