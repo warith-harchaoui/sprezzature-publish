@@ -74,7 +74,9 @@ def list_tools() -> None:
             mark = "ready"
         except ImportError:
             mark = "unavailable"
-        summary = summary_text.split(".")[0]
+        # The first sentence ends at a full stop followed by a space; a bare
+        # "." would cut robots.txt and ctas.yaml in half.
+        summary = summary_text.split(". ")[0].rstrip(".")
         click.echo(f"  {name:<{width}}  {mark:<14}  {summary}.")
 
 

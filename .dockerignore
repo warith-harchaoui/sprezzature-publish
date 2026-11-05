@@ -1,0 +1,18 @@
+# What `docker build` sends as its context. The Dockerfile copies the tree and
+# runs `pip install "."`, which needs the package, scripts/, assets/,
+# pyproject.toml, README.md and LICENSE, and nothing below. Without this file
+# the context carried the git history and the gitignored .private/ notes, and
+# `COPY . .` baked both into an image layer.
+.git
+.private
+.claude
+.venv
+dist
+build
+*.egg-info
+**/__pycache__
+.pytest_cache
+.ruff_cache
+.mypy_cache
+.DS_Store
+tests
