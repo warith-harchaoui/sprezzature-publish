@@ -102,7 +102,7 @@ try:
 except ImportError as exc:  # pragma: no cover - exercised by a bare install
     raise ImportError(_missing_click_message()) from exc
 
-SKILL_VERSION = "1.4.0"
+SKILL_VERSION = "1.4.1"
 
 
 def _version() -> str:

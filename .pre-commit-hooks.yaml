@@ -4,7 +4,7 @@
 #
 #   repos:
 #     - repo: https://github.com/warith-harchaoui/sprezzature-publish
-#       rev: v1.4.0
+#       rev: v1.4.1
 #       hooks:
 #         - id: sprezzature-publish-lint
 #
