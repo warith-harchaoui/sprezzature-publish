@@ -37,6 +37,33 @@ versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   `pip install` does not have; `-narrate`, `-readalong` and `-changelog`
   show their examples under their command names.
 
+### Fixed
+
+- **speaker-helper 0.15 turned the suite red without touching it.** Its
+  catalogue gained `audio8` (Edge0's Audio8-TTS-Realistic, a French-only
+  operating point, MLX on Apple Silicon behind speaker-helper's `[audio8]`
+  extra), and sprezzature-audio ships no wrapper for it, so
+  `test_every_engine_the_router_can_answer_is_one_this_package_can_invoke`
+  failed. `audio8` is now named in `NOT_WRAPPED_ON_PURPOSE` with that reason;
+  no wrapper is added.
+
+### Removed
+
+- **`scripts/requirements-*.txt`**, five files nothing installed from: their
+  contents have been base dependencies since 2026-11-01, and the only
+  pointers to them were two docstrings and an error message, now saying so.
+  `MANIFEST.in` and the package data stop shipping them.
+- **The "needs [extra]" branch of `sprezzature-publish tools`.** There is no
+  extra left to name, so it could only print `ready` or `unavailable`, which
+  it still does; a test now runs the listing.
+
+### Added
+
+- **`tests/test_the_light_tools_stay_light.py`.** `CODING.md` promises that
+  `lint_markdown`, `site_indexes` and, now written down, `audit_site` import
+  only click and the standard library at module level. Since every heavier
+  package is in the base install, nothing caught a slipped import any more.
+
 ## [1.4.0] — 2026-11-04
 
 ### Changed — click only, and the container serves `/mcp`

@@ -208,3 +208,22 @@ def test_an_unknown_name_is_an_attribute_error_not_an_import_error() -> None:
 
     with pytest.raises(AttributeError):
         sprezzature_publish.definitely_not_a_tool
+
+
+def test_the_tools_listing_names_every_tool_and_finds_it_ready() -> None:
+    """``sprezzature-publish tools`` answers for each tool, and here each one runs.
+
+    There is no extra left to name, so a tool that does not import is a broken
+    install, and the listing says ``unavailable`` rather than an extra to add.
+    """
+    from click.testing import CliRunner
+
+    from sprezzature_publish._tools import TOOLS
+    from sprezzature_publish.cli import main
+
+    result = CliRunner().invoke(main, ["tools"])
+    assert result.exit_code == 0, result.output
+    rows = [line.split() for line in result.output.splitlines() if line.strip()]
+    assert [row[0] for row in rows] == list(TOOLS)
+    assert all(row[1] == "ready" for row in rows), result.output
+    assert "needs [" not in result.output

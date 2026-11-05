@@ -43,7 +43,7 @@ Exit code
 Notes
 -----
 * Python 3.10+. Requires the ``markdown`` PyPI package (small, MIT).
-* Mermaid rendering needs ``mmdc`` (see ``requirements-lint-md.txt``).
+* Mermaid rendering needs ``mmdc``, a base dependency like ``markdown``.
 
 Author
 ------
@@ -360,7 +360,8 @@ def convert_one(
             src,
             out_dir / f"{src.stem}.html",
             False,
-            "missing dependency: `pip install markdown` (see requirements-md-to-html.txt)",
+            "missing dependency: markdown is a base dependency, so this install is broken: "
+            "`pip install --force-reinstall sprezzature-publish`",
         )
 
     out_dir.mkdir(parents=True, exist_ok=True)
