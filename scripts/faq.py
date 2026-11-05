@@ -142,9 +142,50 @@ def terms(text: str) -> list[str]:
     return out
 
 
+#: Thousands groups: one to three digits, then groups of exactly three.
+_THOUSANDS = re.compile(r"\d{1,3}(?:[\s.,]\d{3})+")
+#: A number that names something rather than counts it: a standard
+#: (``ISO 3166``, ``RFC 9110``). Not a fact anyone could find false.
+_NAMED = re.compile(r"\b(?:ISO|IEC|RFC|EN|IEEE|ECMA)[\s/-]*$")
+
+
+def _canonical_number(raw: str) -> str:
+    """One spelling per number: ``1 885`` = ``1,885`` = ``1885``; ``3,5`` = ``3.5``.
+
+    Every separator used to be dropped, so the Python version ``3.10`` was
+    read as three hundred and ten and reported as a figure no other page
+    states. Separators are thousands only when the groups after them are
+    three digits; otherwise the last one is a decimal point, and a string with
+    several (``1.11.0``) is a version, kept whole.
+    """
+    raw = re.sub(r"\s+", " ", raw.strip())
+    if _THOUSANDS.fullmatch(raw):
+        return re.sub(r"[\s.,]", "", raw)
+    seps = re.findall(r"[\s.,]", raw)
+    if len(seps) == 1:
+        return raw.replace(",", ".").replace(" ", "")
+    return raw.replace(" ", "")
+
+
 def numbers(text: str) -> set[str]:
-    """Numbers in ``text``, separators removed: ``1 885`` and ``1,885`` are one."""
-    return {re.sub(r"[\s.,]", "", m.group(0)) for m in _NUMBER.finditer(text)}
+    """Numbers in ``text``, one spelling each: ``1 885`` and ``1,885`` are one."""
+    return {_canonical_number(m.group(0)) for m in _NUMBER.finditer(text)}
+
+
+def claimed_numbers(text: str) -> set[str]:
+    """The numbers in ``text`` that state a fact a reader could check.
+
+    Leaves out a single digit (an exit code, a step, "one of three"), which
+    every page states in passing, and a number that is part of a standard's
+    name. FAQ001 asks for a source; neither has one to give.
+    """
+    out = set()
+    for m in _NUMBER.finditer(text):
+        n = _canonical_number(m.group(0))
+        if len(n) == 1 or _NAMED.search(text[: m.start()]):
+            continue
+        out.add(n)
+    return out
 
 
 def sentences(text: str) -> list[str]:
@@ -978,7 +1019,18 @@ def render_report(build: FaqBuild) -> str:
 
 
 def _same(a: str, b: str) -> bool:
-    return " ".join(terms(a)) == " ".join(terms(b))
+    """Whether two answers say the same words, markup aside on *both* sides.
+
+    The JSON-LD side has its tags stripped when it is read; the visible side
+    is text the parser already decoded, so an answer quoting an element --
+    "a clickable ``&lt;div&gt;``" -- kept ``<div>`` there and lost it in the
+    markup, and every such answer was reported as disagreeing with itself.
+    """
+
+    def words(s: str) -> str:
+        return " ".join(terms(re.sub(r"<[^>]+>", " ", s)))
+
+    return words(a) == words(b)
 
 
 #: Past these, an answer engine quotes a fragment or nothing: the drafting
@@ -1051,7 +1103,7 @@ def audit_faq(pages: list[PageContent], organization: str = "") -> list[Finding]
             marked[fold(f.question)].append(page.path)
         for item in page.faq:
             others = [s for s in index_sources if s.page != page.path]
-            loose = numbers(item.answer) - {n for s in others for n in numbers(s.text)}
+            loose = claimed_numbers(item.answer) - {n for s in others for n in numbers(s.text)}
             if loose and others:
                 findings.append(
                     Finding(

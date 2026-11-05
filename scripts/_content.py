@@ -872,10 +872,27 @@ def read_data(obj: Any, path: str = "", fmt: str = "json") -> PageContent:
 # ── The site ───────────────────────────────────────────────────────────────
 
 
+def _is_repository_note(path: Path, root: Path) -> bool:
+    """A ``BUILD.md`` or ``NOTES.md`` beside the assets, written for whoever edits them.
+
+    Upper-case Markdown names are the repository convention for notes to a
+    maintainer, and one sitting in ``css/`` is not a page anyone visits; it was
+    told it offered none of the site's calls to action. ``README.md`` and
+    ``INDEX.md`` stay pages, and so does anything at the root, where a
+    Markdown site keeps its real ones.
+    """
+    if path.suffix.lower() not in (".md", ".markdown") or path.parent == root:
+        return False
+    stem = path.stem
+    return stem.isupper() and stem not in ("README", "INDEX")
+
+
 def read_file(path: Path, root: Path) -> PageContent | None:
     """Read one file under ``root``, or ``None`` when it is not content."""
     fmt = FORMATS.get(path.suffix.lower())
     if fmt is None or path.name.lower() in SKIP_FILES or ".min." in path.name.lower():
+        return None
+    if _is_repository_note(path, root):
         return None
     try:
         if path.stat().st_size > MAX_BYTES:
