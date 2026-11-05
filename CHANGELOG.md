@@ -18,6 +18,14 @@ versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- `meta`, `plain`, `faq`, `narrate --ai-hints` and `lint --ai` now send every
+  model call to the server `OLLAMA_URL` names, through
+  `best_engine_ai_helper.llm.chat(engine=...)`. The error message named
+  `OLLAMA_URL` while `chat()` resolved its own server; `lint --ai` posted to
+  Ollama by hand, outside best-engine altogether. Floor
+  `best-engine-ai-helper>=1.11.0`, the first with `engine=`.
+- `sprezzature-publish -V` was a usage error; the front door now answers
+  `-V` and `--version` like the thirteen tools.
 - The last answer of a heading-based FAQ ran on into the call to action
   after it; it now ends when the FAQ's container closes.
 - A question written as a heading inside `<summary>` was read twice.

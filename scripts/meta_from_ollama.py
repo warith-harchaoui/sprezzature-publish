@@ -108,6 +108,7 @@ from _ollama import (  # noqa: E402
     LANG_INSTRUCTIONS,
     OLLAMA_URL,
     detect_lang,
+    ollama_engine,
     pick_default_model,
 )
 from _wallet import memoized  # noqa: E402
@@ -459,7 +460,9 @@ def _cli(
         """The whole expensive call, so the single-flight actually encloses it."""
         prompt = build_prompt(goal, page_text, site_name, resolved_lang)
         try:
-            raw: str = str(_llm_chat(prompt, model=resolved_model))
+            raw: str = str(
+                _llm_chat(prompt, model=resolved_model, engine=ollama_engine(resolved_model))
+            )
         except RuntimeError as exc:
             # best_engine_ai_helper.llm.chat wraps connection/HTTP failures into
             # RuntimeError (not requests.exceptions.*) regardless of backend.

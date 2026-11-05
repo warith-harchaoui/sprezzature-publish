@@ -53,7 +53,7 @@ machine.
         "which is what a build script should call."
     ),
 )
-@click.version_option(package_name="sprezzature-publish")
+@click.version_option(None, "-V", "--version", package_name="sprezzature-publish")
 def main() -> None:  # pragma: no cover - click dispatches
     """Front door over the thirteen tools this package ships."""
 

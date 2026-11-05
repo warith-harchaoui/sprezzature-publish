@@ -203,9 +203,9 @@ DEFAULT_VOICE: dict[str, str] = {
 #: user-selectable; ``OLLAMA_MODEL`` is honoured only as a test seam.
 DEFAULT_LLM_MODEL: str = os.environ.get("OLLAMA_MODEL", "qwen3-vl:8b")
 
-#: Ollama daemon URL (shared default with alt_from_ollama / meta_from_ollama).
-OLLAMA_URL: str = os.environ.get("OLLAMA_URL", "http://localhost:11434")
-
+#: Ollama daemon URL and the ``engine=`` that sends the call there, from the
+#: one module every tool here reads them from.
+from _ollama import OLLAMA_URL, ollama_engine  # noqa: E402,F401
 
 # ── LLM enrichment (optional, opt-in via --ai-hints) ──────────────────────
 
@@ -251,7 +251,14 @@ def _llm_classify_segment(
         "Reply with the JSON object only."
     )
     try:
-        text: str = str(_llm_chat(user_prompt, system=LLM_SYSTEM_PROMPT, model=model)).strip()
+        text: str = str(
+            _llm_chat(
+                user_prompt,
+                system=LLM_SYSTEM_PROMPT,
+                model=model,
+                engine=ollama_engine(model),
+            )
+        ).strip()
         return json.loads(text) if text else {}
     except Exception:
         # ConnectionError, Timeout, JSONDecodeError — fail soft.
@@ -319,7 +326,12 @@ def _math_narrator(model: str) -> MathNarrator:
 
     def narrate(latex: str, lang: str) -> str | None:
         prompt = render_prompt("latex_caption", prompts_dir=prompts, latex_src=latex, lang=lang)
-        answer = str(_llm_chat(prompt, model=model)).strip().strip('"').strip()
+        answer = (
+            str(_llm_chat(prompt, model=model, engine=ollama_engine(model)))
+            .strip()
+            .strip('"')
+            .strip()
+        )
         return answer or None
 
     return narrate

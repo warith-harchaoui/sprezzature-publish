@@ -79,7 +79,10 @@ dependencies = [
     # measured, so neither spelling fails loudly on the wrong version.
     "sprezzature-audio>=1.9.0",
     "langdetect>=1.0.9",
-    "best-engine-ai-helper>=1.4",
+    # 1.11.0 is the first whose `chat()` takes `engine=`, which is how every
+    # call here reaches the server `OLLAMA_URL` names rather than its own
+    # default; on 1.10 the argument is a TypeError at the first model call.
+    "best-engine-ai-helper>=1.11.0",
     # The floor is 1.3.2 and it is load-bearing. Up to and including 1.3.1,
     # `SqliteLedger.__init__` ran `PRAGMA journal_mode=WAL`, which needs
     # exclusive access to the file, and SQLite answers a journal-mode change

@@ -38,11 +38,11 @@ Usage
 -----
 ::
 
-    python scripts/lint_markdown.py docs/intro.md
-    python scripts/lint_markdown.py docs/                   # walks the dir
-    python scripts/lint_markdown.py --render-mermaid docs/  # write PNG siblings
-    python scripts/lint_markdown.py --fix docs/             # apply safe rewrites
-    python scripts/lint_markdown.py --ai docs/intro.md      # add Ollama suggestions
+    sprezzature-publish-lint docs/intro.md
+    sprezzature-publish-lint docs/                   # walks the dir
+    sprezzature-publish-lint --render-mermaid docs/  # write PNG siblings
+    sprezzature-publish-lint --fix docs/             # apply safe rewrites
+    sprezzature-publish-lint --ai docs/intro.md      # add Ollama suggestions
 
 Exit code
 ---------
@@ -476,12 +476,11 @@ def process_mermaid_blocks(
 
 # ── Optional Ollama-assisted suggestions ──────────────────────────────────
 
-# These imports are deferred — the script must run without `requests` or
-# `_ollama.py` available (those are needed only with --ai).
+# These imports are deferred — the script must run without the prompt
+# templates or `_ollama.py` available (those are needed only with --ai).
 try:
     sys.path.insert(0, str(Path(__file__).resolve().parent))
-    import requests  # type: ignore
-    from _ollama import OLLAMA_URL, pick_default_model  # type: ignore
+    from _ollama import ollama_engine, pick_default_model  # type: ignore
     from _prompts import render as render_prompt  # type: ignore
 
     HAVE_AI = True
@@ -494,24 +493,28 @@ except ImportError:
 # returns an empty result when the model drifts off-contract.
 
 
+def _ask(prompt: str, model: str) -> str:
+    """One call to the local model, through best-engine-ai-helper like every other.
+
+    This was the one tool in the package that posted to Ollama's HTTP API
+    itself: the same server, but outside the routing every other call takes.
+    """
+    from best_engine_ai_helper.llm import chat
+
+    return str(chat(prompt, model=model, engine=ollama_engine(model))).strip()
+
+
 def ai_suggest_mermaid(mermaid_src: str, model: str) -> list[dict] | None:
     """Ask the local LLM for accessible Mermaid node labels; ``None`` if unavailable."""
     if not HAVE_AI:
         return None
-    payload = {
-        "model": model,
-        "prompt": render_prompt(
-            "mermaid_labels",
-            prompts_dir=Path(__file__).resolve().parent / "prompts",
-            mermaid_src=mermaid_src,
-        ),
-        "stream": False,
-        "options": {"temperature": 0.2},
-    }
+    prompt = render_prompt(
+        "mermaid_labels",
+        prompts_dir=Path(__file__).resolve().parent / "prompts",
+        mermaid_src=mermaid_src,
+    )
     try:
-        r = requests.post(f"{OLLAMA_URL}/api/generate", json=payload, timeout=60)
-        r.raise_for_status()
-        body = r.json().get("response", "").strip()
+        body = _ask(prompt, model)
         # Strict parse — the prompt asked for a JSON array only.
         return json.loads(body)
     except Exception:  # pylint: disable=broad-except
@@ -522,21 +525,14 @@ def ai_caption_latex(latex_src: str, lang: str, model: str) -> str | None:
     """Ask the local LLM for a plain-language caption of a LaTeX block; ``None`` if unavailable."""
     if not HAVE_AI:
         return None
-    payload = {
-        "model": model,
-        "prompt": render_prompt(
-            "latex_caption",
-            prompts_dir=Path(__file__).resolve().parent / "prompts",
-            latex_src=latex_src,
-            lang=lang,
-        ),
-        "stream": False,
-        "options": {"temperature": 0.2},
-    }
+    prompt = render_prompt(
+        "latex_caption",
+        prompts_dir=Path(__file__).resolve().parent / "prompts",
+        latex_src=latex_src,
+        lang=lang,
+    )
     try:
-        r = requests.post(f"{OLLAMA_URL}/api/generate", json=payload, timeout=60)
-        r.raise_for_status()
-        return r.json().get("response", "").strip().strip('"').strip()
+        return _ask(prompt, model).strip('"').strip()
     except Exception:  # pylint: disable=broad-except
         return None
 
@@ -591,7 +587,7 @@ def lint_file(
     if ai:
         if not HAVE_AI:
             ai_notes.append(
-                "(--ai requested but `requests` or `_ollama.py` is not importable; skipped)"
+                "(--ai requested but `_ollama.py` or the prompts are not importable; skipped)"
             )
         else:
             model = ai_model or pick_default_model()

@@ -243,3 +243,20 @@ def test_the_tools_listing_keeps_a_file_name_whole() -> None:
     assert result.exit_code == 0, result.output
     assert "robots.txt" in result.output
     assert "ctas.yaml" in result.output
+
+
+@pytest.mark.parametrize("flag", ["-V", "--version"])
+def test_the_front_door_answers_both_version_spellings(flag: str) -> None:
+    """``sprezzature-publish -V`` was a usage error while every tool answered it.
+
+    The thirteen tools take ``-V`` and ``--version`` from the shared decorator;
+    the front door declared its version option by hand with ``--version`` only,
+    and was the one command in the suite where ``-V`` failed.
+    """
+    from click.testing import CliRunner
+
+    from sprezzature_publish.cli import main
+
+    result = CliRunner().invoke(main, [flag])
+    assert result.exit_code == 0, result.output
+    assert re.search(r"\d+\.\d+\.\d+", result.output), result.output

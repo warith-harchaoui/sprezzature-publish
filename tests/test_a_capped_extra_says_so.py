@@ -147,7 +147,11 @@ MEASURED_AT_THEIR_FLOOR: dict[tuple[str, str], str] = {
 #:
 #: Each value is ``(the dependency line that carries it, its window)``.
 CAPPED_ONE_HOP_DOWN: dict[tuple[str, str], tuple[str, str]] = {
-    ("best-engine-ai-helper", "1.4"): ("os-helper<3,>=2.3.0", "<3.14,>=3.10"),
+    # Moved from 1.4 to 1.11.0 on 2026-11-05 (first `chat()` with `engine=`).
+    # Re-read off the wheel of the new floor: it names `os-helper<5,>=2.9.0`,
+    # and every os-helper wheel on the simple index, 1.4.2 to 4.1.1, is still
+    # `<3.14,>=3.10` -- the window is unchanged.
+    ("best-engine-ai-helper", "1.11.0"): ("os-helper<5,>=2.9.0", "<3.14,>=3.10"),
 }
 
 #: The minor versions a capped dependency has to be checked against. 3.14 is

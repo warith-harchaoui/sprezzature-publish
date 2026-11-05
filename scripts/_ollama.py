@@ -47,6 +47,18 @@ LANG_INSTRUCTIONS: dict[str, str] = {
 }
 
 
+def ollama_engine(model: str) -> dict:
+    """The ``engine=`` to hand ``best_engine_ai_helper.llm.chat`` for this server.
+
+    Every tool here reads ``OLLAMA_URL`` and says "Cannot reach Ollama at
+    ``OLLAMA_URL``" when the call fails, but ``chat()`` left to itself resolves
+    its own server. With ``OLLAMA_URL`` pointed anywhere but the default, the
+    message named one server and the call went to another — the same split
+    sprezzature-audio and sprezzature-accessibility closed the same way.
+    """
+    return {"backend": "ollama", "base_url": OLLAMA_URL, "llm": {"model": model}}
+
+
 def pick_default_model() -> str:
     """Return the one authorized model tag (``qwen3-vl:8b``).
 
