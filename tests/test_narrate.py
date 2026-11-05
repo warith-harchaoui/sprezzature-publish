@@ -1264,6 +1264,17 @@ class TestTheEngineIsAskedForRatherThanAssumed:
             "everywhere it answered at all and kyutai in no case, which is why "
             "not wrapping it costs nothing"
         ),
+        "audio8": (
+            "entered speaker-helper's catalogue in 0.15 (Edge0's "
+            "Audio8-TTS-Realistic, a 0.6B cloner conditioned on a reference "
+            "recording and its transcript) with one operating point, French, "
+            "its quality a prior and its speed unmeasured. Its only wired "
+            "runtime is MLX through mlx-audio, behind speaker-helper's [audio8] "
+            "extra, darwin only; off a Mac the backend reports itself "
+            "unavailable. sprezzature-audio ships no narrate_audio8 wrapper and "
+            "installs speaker-helper[kokoro,detect,chatterbox,openvoice] "
+            "without that extra, so there is no module here to run it with"
+        ),
     }
 
     def test_every_engine_the_router_can_answer_is_one_this_package_can_invoke(self):

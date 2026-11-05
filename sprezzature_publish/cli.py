@@ -63,20 +63,18 @@ def list_tools() -> None:
     """
     List the tools, and say which ones can run here.
 
-    The second half is the point: "installed" and "will run" are different
-    questions when a tool needs an extra, and a reader should not have to
-    discover the difference from a traceback.
+    Every dependency is a base dependency, so "unavailable" means a broken
+    install, and a reader should learn that here rather than from a
+    traceback halfway through a build.
     """
     width = max(len(name) for name in TOOLS)
-    for name, entry in TOOLS.items():
-        _module, extra = (entry[0], entry[1]) if len(entry) == 3 else (entry[0], "")
-        target = f"sprezzature_publish_scripts.{_module}"
+    for name, (module_name, summary_text) in TOOLS.items():
         try:
-            importlib.import_module(target)
+            importlib.import_module(f"sprezzature_publish_scripts.{module_name}")
             mark = "ready"
         except ImportError:
-            mark = f"needs [{extra}]" if extra else "unavailable"
-        summary = entry[-1].split(".")[0]
+            mark = "unavailable"
+        summary = summary_text.split(".")[0]
         click.echo(f"  {name:<{width}}  {mark:<14}  {summary}.")
 
 

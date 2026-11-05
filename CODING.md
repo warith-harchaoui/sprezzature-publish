@@ -10,7 +10,7 @@ comment saying why the broad catch is intentional.
 
 ## The dependency rule, which is the one that is easy to break
 
-Two tools need only click and the standard library, and that is a
+Three tools need only click and the standard library, and that is a
 published promise rather than an accident:
 
 * `scripts/lint_markdown.py`. It runs in milliseconds in a minimal
@@ -18,10 +18,15 @@ published promise rather than an accident:
   hook. One import of `markdown` or `Pillow` would end that.
 * `scripts/site_indexes.py`. It writes `robots.txt`, `sitemap.xml`,
   `llms.txt`, a feed and `humans.txt`, all of them text.
+* `scripts/audit_site.py`. It reads a built site or a live URL with
+  `html.parser` and `urllib`, and reuses `site_indexes` for its repairs, so
+  it audits a site somebody else built on a machine that has nothing else.
 
 Everything heavier is a base dependency since the extras were folded in on
-2026-11-01, but neither of those two files imports it. A new import in either
-of them is a review question, not a detail.
+2026-11-01, but none of those three files imports it at module level (the
+lint reaches for `mmdc` and a model client only behind `--render-mermaid`
+and `--ai`). A new import in any of them is a review question, not a detail,
+and `tests/test_the_light_tools_stay_light.py` fails on one.
 
 ## The two names share one table
 

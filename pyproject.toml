@@ -178,7 +178,7 @@ packages = ["sprezzature_publish", "sprezzature_publish_scripts"]
 "sprezzature_publish_scripts" = "scripts"
 
 [tool.setuptools.package-data]
-"sprezzature_publish_scripts" = ["prompts/*.yaml", "charters/*", "*.txt"]
+"sprezzature_publish_scripts" = ["prompts/*.yaml", "charters/*"]
 
 [tool.ruff]
 line-length = 100
