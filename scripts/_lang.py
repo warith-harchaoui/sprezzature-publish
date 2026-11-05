@@ -25,12 +25,14 @@ passes the actual content it is working with, whether that is the text
 surrounding an image, a page's HTML, a transcript, or a chart's labels,
 and the language is detected from that content itself.
 
-The `langdetect`_ dependency is optional: it is declared only in the
-``requirements-*.txt`` files of the tools that call an Ollama model
-(where getting the language right matters most). When it is missing,
-detection falls back to whatever the caller explicitly passes as a
-default; the text-extraction half of this module, ``extract_body_text``,
-needs nothing beyond the standard library and always works.
+The `langdetect`_ dependency is part of the base install of every package
+that ships this file: one ``pip install`` brings it, and there are no
+feature extras to choose. The import is still guarded, for the one case
+where it can be absent: a copy run on its own, out of a downloaded zip,
+with nothing but the standard library. There detection falls back to
+whatever the caller explicitly passes as a default; the text-extraction
+half of this module, ``extract_body_text``, needs nothing beyond the
+standard library and always works.
 
 Determinism note. `langdetect`_'s algorithm is randomized: unless told
 otherwise, it starts from a "seed," a fixed starting number fed into its
