@@ -11,7 +11,7 @@
 specification or the search engine's own documentation. Where no such
 document exists, the rule either says so out loud or does not exist. Three
 of the `SITE` rules are deliberately *not* backed by a spec (`SITE004`,
-`SITE016`, `SITE112`), and so are six of the rules that need the calls to
+`SITE016`, `SITE112`), and so are seven of the rules that need the calls to
 action; each one says which and why.
 
 For the wider "what makes a page indexable and helpful for AI search"

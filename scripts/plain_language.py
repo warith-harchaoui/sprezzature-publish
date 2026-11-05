@@ -84,7 +84,7 @@ try:
     from best_engine_ai_helper.llm import chat as _llm_chat
 except ImportError as _exc:  # pragma: no cover - dependency guard
     raise SystemExit(
-        "this tool asks a local model, which is the [prose] extra: "
+        "this tool asks a local model through best-engine-ai-helper, a base dependency, so this install is broken: "
         "pip install 'sprezzature-publish'"
     ) from _exc
 
@@ -254,8 +254,8 @@ def rewrite(
     preserve : list of str or None, optional
         Tokens the model must keep verbatim (brand names, identifiers).
     model : str or None, optional
-        Ollama model tag to use. ``None`` picks the right tag for the
-        current hardware via :func:`pick_default_model`.
+        Ollama model tag to use. ``None`` takes the one model,
+        ``qwen3-vl:8b``, from :func:`pick_default_model`.
 
     Returns
     -------
@@ -302,7 +302,7 @@ def rewrite(
             # regardless of backend, so both cases are one except clause now.
             sys.stderr.write(
                 f"Cannot reach Ollama at {OLLAMA_URL}, or it returned an error: {e}\n"
-                f"Start it with `ollama serve`, then `best-engine-ai-helper pull` for this machine's model.\n"
+                f"Start it with `ollama serve`, then `ollama pull {model}`.\n"
             )
             sys.exit(2)
 

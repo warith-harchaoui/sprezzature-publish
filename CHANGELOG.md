@@ -45,6 +45,44 @@ versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - A question written as a heading inside `<summary>` was read twice.
 - The extractive fallback quoted bibliography notes as answers; passages
   under reference headings no longer enter the corpus.
+- When the model was unreachable, `meta` and `plain` said to run
+  `best-engine-ai-helper pull` "for this machine's model". That pulls the
+  best model for the hardware, while both tools ask for one fixed tag; the
+  hint now names it (`ollama pull qwen3-vl:8b`). `lint --ai-model` said its
+  default was hardware-picked; it is that same tag.
+- Three import guards (`meta`, `plain`, `narrate --ai-hints`) told a reader
+  to install the `[prose]` extra, which no longer exists.
+  `tests/test_no_message_names_a_missing_extra.py` holds every `[name] extra`
+  in the code against `pyproject.toml`.
+
+### Docs — the prose says what the code does
+
+- **The default voice is Chatterbox, not Kokoro.** Left without `--engine`,
+  `narrate` asks speaker-helper's router, which answers Chatterbox in English
+  and in French. README, LISEZMOI, `references/audio-narration.md` and the
+  skill called Kokoro the default and installed its model files, so the
+  documented two lines installed one engine and ran another. They now install
+  `--engine chatterbox` and name Kokoro as the light one, taken on purpose.
+- `references/plain-language.md` said the model is chosen for the machine
+  and pulled by `best-engine-ai-helper pull`; it is `qwen3-vl:8b`, called
+  through best-engine-ai-helper, and pulled with `ollama pull`.
+- `references/audit-site.md` counted six rules needing the CTAs with no spec
+  behind them; with `FAQ005` there are seven.
+- The README figure said the lint has no dependencies and that everything
+  heavier is an extra named after its tool; the lint needs click and the
+  standard library, and there are no feature extras. It also promised an MP3
+  where the default is WAV. Text changed in both languages, figure redrawn.
+- README and LISEZMOI said `requests` is what `lint --ai` uses; it goes
+  through best-engine-ai-helper, imported only under `--ai`. LANDSCAPE and
+  PAYSAGE said a reader who wants only pages never installs a text-to-speech
+  stack; `sprezzature-audio` is a base dependency, so it is installed and
+  never loaded.
+- The lint's docstring promised plain-language suggestions under `--ai` and a
+  `--fix` for code-fence languages; neither exists.
+- The hub's copy of the skill references lagged the package: `audit-site.md`
+  lacked `FAQ005` and the 1.5.0 rewordings, and `faq-aeo.md` was missing. Both
+  are copied over, and the skill lists `faq-aeo.md` and every lint rule
+  family (`MDX`, `MMD`).
 
 ## [1.4.1] — 2026-11-05
 
