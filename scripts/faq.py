@@ -1164,7 +1164,7 @@ def model_drafter(no_cache: bool = False) -> Drafter | None:
         from best_engine_ai_helper.llm import chat as _llm_chat
     except ImportError:  # pragma: no cover - a base dependency
         return None
-    from _ollama import pick_default_model
+    from _ollama import ollama_engine, pick_default_model
     from _wallet import memoized
 
     model = pick_default_model()
@@ -1175,7 +1175,7 @@ def model_drafter(no_cache: bool = False) -> Drafter | None:
             memoized(
                 "faq",
                 digest,
-                lambda: str(_llm_chat(prompt, model=model)),
+                lambda: str(_llm_chat(prompt, model=model, engine=ollama_engine(model))),
                 cache_dir=CACHE_DIR,
                 enabled=not (no_cache or os.environ.get("SPREZZATURE_NO_CACHE")),
             )

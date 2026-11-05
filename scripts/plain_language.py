@@ -96,6 +96,7 @@ from _ollama import (  # noqa: E402
     LANG_INSTRUCTIONS,
     OLLAMA_URL,
     detect_lang,
+    ollama_engine,
     pick_default_model,
 )
 from _wallet import memoized  # noqa: E402
@@ -294,7 +295,7 @@ def rewrite(
         """Rewrite ``text`` through the model, retrying once if it overshoots."""
         prompt = build_prompt(text, target_grade, lang, preserve)
         try:
-            out: str = str(_llm_chat(prompt, model=model)).strip()
+            out: str = str(_llm_chat(prompt, model=model, engine=ollama_engine(model))).strip()
         except RuntimeError as e:
             # best_engine_ai_helper.llm.chat wraps both connection failures and
             # HTTP error responses into RuntimeError (not requests.exceptions.*)
@@ -314,7 +315,7 @@ def rewrite(
                 f"Keep it to AT MOST {int(len(text) * MAX_LENGTH_FACTOR)} characters.\n"
             )
             try:
-                out = str(_llm_chat(tighter, model=model)).strip()
+                out = str(_llm_chat(tighter, model=model, engine=ollama_engine(model))).strip()
             except RuntimeError:
                 # If the retry fails, keep the over-long rewrite — it is still
                 # better than the original marketing copy in most cases.
