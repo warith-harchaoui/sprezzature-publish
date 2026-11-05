@@ -20,6 +20,9 @@ versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- `changelog` wrote its feed to `~/web` by default: the path still assumed
+  the module lived inside the hub. It now defaults to the hub's `web/` beside
+  this clone.
 - `meta`, `plain` and `faq` asked the model, in their language line, to
   write "the alt text in English" (or in French, and so on): the line was
   copied from the alt-text tool. It now asks for prose in that language.
