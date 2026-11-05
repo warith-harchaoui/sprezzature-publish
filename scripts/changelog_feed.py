@@ -77,20 +77,46 @@ from site_indexes import _today_iso, render_atom, render_rss  # noqa: E402
 
 # ── Package registry ─────────────────────────────────────────────────────
 
-#: Directory names (siblings of the monorepo root, one level up) that
-#: carry a release-worthy CHANGELOG.md. ``sprezzature`` itself (the
-#: monorepo / skills repo) is included; ``sprezzature-local`` is skipped
-#: because it is deleted — see :data:`RETIRED_PACKAGES`.
+#: Directory names (siblings of the hub, one level up) that carry a
+#: release-worthy CHANGELOG.md, used when the hub's ``SKILLS.txt`` cannot be
+#: read. ``sprezzature`` itself (the hub) is included; ``sprezzature-local``
+#: is skipped because it is deleted — see :data:`RETIRED_PACKAGES`.
+#:
+#: This list was the only one until 2026-11-05 and stopped at seven bricks:
+#: ui, publish and video, the three added after it, never had an entry in the
+#: feed. :func:`package_repos` now reads the hub's manifest first.
 PACKAGE_REPOS: tuple[str, ...] = (
-    "sprezzature-accessibility",
-    "sprezzature-audio",
+    "sprezzature-ui",
     "sprezzature-cli-gui",
+    "sprezzature-publish",
+    "sprezzature-accessibility",
     "sprezzature-colors",
+    "sprezzature-audio",
+    "sprezzature-ux-laws",
     "sprezzature-figures",
     "sprezzature-maps",
-    "sprezzature-ux-laws",
+    "sprezzature-video",
     "sprezzature",
 )
+
+
+def package_repos(repos_root: Path) -> tuple[str, ...]:
+    """The repositories whose CHANGELOG feeds the site: the bricks, then the hub.
+
+    Read from ``<repos_root>/sprezzature/SKILLS.txt``, the suite's canonical
+    manifest, so a brick added there reaches the feed with no edit here.
+    Falls back to :data:`PACKAGE_REPOS` when the hub is not checked out.
+    """
+    manifest = repos_root / "sprezzature" / "SKILLS.txt"
+    if not manifest.is_file():
+        return PACKAGE_REPOS
+    bricks = [
+        ln.strip()
+        for ln in manifest.read_text(encoding="utf-8").splitlines()
+        if ln.strip() and not ln.lstrip().startswith("#")
+    ]
+    return (*[b for b in bricks if b not in RETIRED_PACKAGES], "sprezzature")
+
 
 #: Packages that no longer exist. Skipping their CHANGELOG is not enough:
 #: their name also appears inside older entries of the repos that did ship,
@@ -539,7 +565,8 @@ def _run(args: SimpleNamespace) -> int:
 
     all_entries: list[ChangelogEntry] = []
     per_package_counts: dict[str, int] = {}
-    for package in PACKAGE_REPOS:
+    packages = package_repos(repos_root)
+    for package in packages:
         changelog_path = repos_root / package / "CHANGELOG.md"
         found = parse_changelog(changelog_path, package)
         per_package_counts[package] = len(found)
@@ -554,9 +581,8 @@ def _run(args: SimpleNamespace) -> int:
 
     feed_title = "Sprezzature — Release notes"
     feed_summary = (
-        "Combined, date-sorted release notes from the sprezzature-* packages "
-        "(accessibility, audio, CLI-to-GUI, colors, figures, maps, UX laws) "
-        "and the main sprezzature skills repository."
+        "Combined, date-sorted release notes from the sprezzature-* "
+        "packages and the sprezzature hub."
     )
 
     if not args.rss_only:
@@ -589,7 +615,7 @@ def _run(args: SimpleNamespace) -> int:
 
     print(
         f"→ {len(all_entries)} entries from {sum(1 for c in per_package_counts.values() if c)} "
-        f"of {len(PACKAGE_REPOS)} packages"
+        f"of {len(packages)} packages"
     )
     for package, count in per_package_counts.items():
         print(f"    {package}: {count}")
