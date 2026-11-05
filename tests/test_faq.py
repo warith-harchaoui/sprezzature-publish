@@ -383,6 +383,23 @@ def test_a_number_inside_code_is_not_a_claim():
     assert claimed == {"42"}
 
 
+def test_a_number_in_an_html_answer_s_code_is_not_a_claim(tmp_path):
+    """The HTML twin of the above: the parser drops tags before FAQ001 reads."""
+    (tmp_path / "index.html").write_text(
+        "<html lang='en'><body><main><h1>Home</h1><p>Nothing to see.</p>"
+        "<h2>FAQ</h2><h3>What does --fix change?</h3>"
+        "<p>It adds <code>min-h-11</code> for Fitts.</p></main></body></html>",
+        "utf-8",
+    )
+    (tmp_path / "other.html").write_text(
+        "<html lang='en'><body><main><h1>Other</h1><p>Words.</p></main></body></html>",
+        "utf-8",
+    )
+    page = next(p for p in c.read_site(tmp_path) if p.path == "index.html")
+    assert page.faq, "the heading FAQ was not read"
+    assert faq.claimed_numbers(page.faq[0].answer, page.literals) == set()
+
+
 def test_a_maintainer_note_beside_the_assets_is_not_a_page(tmp_path):
     """``css/BUILD.md`` was told it offered none of the site's calls to action."""
     (tmp_path / "css").mkdir()

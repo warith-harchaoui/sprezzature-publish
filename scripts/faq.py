@@ -89,7 +89,7 @@ import re
 import sys
 import unicodedata
 from collections import Counter, defaultdict
-from collections.abc import Callable
+from collections.abc import Callable, Iterable
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any
@@ -175,7 +175,7 @@ def numbers(text: str) -> set[str]:
     return {_canonical_number(m.group(0)) for m in _NUMBER.finditer(text)}
 
 
-def claimed_numbers(text: str) -> set[str]:
+def claimed_numbers(text: str, literals: Iterable[str] = ()) -> set[str]:
     """The numbers in ``text`` that state a fact a reader could check.
 
     Leaves out a single digit (an exit code, a step, "one of three"), which
@@ -184,6 +184,10 @@ def claimed_numbers(text: str) -> set[str]:
     give.
     """
     text = _CODE.sub(lambda m: " " * len(m.group(0)), text)
+    # Longest first, so ``min-h-11`` goes whole before any shorter literal
+    # inside it; two characters or fewer would blank half the prose.
+    for lit in sorted((x for x in literals if len(x) > 2), key=len, reverse=True):
+        text = text.replace(lit, " " * len(lit))
     out = set()
     for m in _NUMBER.finditer(text):
         n = _canonical_number(m.group(0))
@@ -1108,7 +1112,9 @@ def audit_faq(pages: list[PageContent], organization: str = "") -> list[Finding]
             marked[fold(f.question)].append(page.path)
         for item in page.faq:
             others = [s for s in index_sources if s.page != page.path]
-            loose = claimed_numbers(item.answer) - {n for s in others for n in numbers(s.text)}
+            loose = claimed_numbers(item.answer, page.literals) - {
+                n for s in others for n in numbers(s.text)
+            }
             if loose and others:
                 findings.append(
                     Finding(

@@ -201,6 +201,10 @@ class PageContent:
     # booking button of a PHP site sits in the nav partial, so a page
     # carries it only through this list.
     includes: list[str] = field(default_factory=list)
+    # The text of every <code> and <pre>: literals a reader copies. An
+    # answer's text arrives here with its tags gone, so this is how FAQ001
+    # still tells the class name ``min-h-11`` from a count of eleven.
+    literals: set[str] = field(default_factory=set)
     source: str = ""  # the text the parser read, kept for --fix
 
     @property
@@ -571,6 +575,8 @@ class _Reader(HTMLParser):
         elif tag in {"pre", "code"} and self._code_buf is not None:
             code = "".join(self._code_buf)
             self._code_buf = None
+            if clean(code):
+                self.page.literals.add(clean(code))
             for m in INSTALL_COMMAND.finditer(code):
                 self.page.actionables.append(
                     Actionable(
