@@ -1,9 +1,10 @@
 """
 The HTTP surface — what a build server, or an agent, calls.
 
-Three routes, chosen for what crosses a network boundary well: text in, text
-out. Linting Markdown, rendering it and rewriting prose at a reading grade
-all have that shape. Generating a favicon set does not — it is a folder of
+Seven routes, chosen for what crosses a network boundary well: text in, text
+out. Linting Markdown, auditing a page, rendering it, rewriting prose at a
+reading grade, and the three site-level reports (calls to action, FAQ,
+findability) all have that shape. Generating a favicon set does not — it is a folder of
 binaries keyed by filename — so it stays a command rather than being offered
 here with an invented download protocol.
 
@@ -273,7 +274,8 @@ def render(request: RenderRequest) -> dict:
     if not _installed("markdown"):
         raise HTTPException(
             status_code=503,
-            detail="rendering needs the [html] extra: pip install 'sprezzature-publish'",
+            detail="rendering needs the markdown package, a base dependency, so this "
+            "install is broken: pip install --force-reinstall sprezzature-publish",
         )
     from sprezzature_publish_scripts.md_to_html import convert_one
 
@@ -321,8 +323,9 @@ def plain(request: PlainRequest) -> dict:
     if not _installed("best_engine_ai_helper"):
         raise HTTPException(
             status_code=503,
-            detail="the plain-language rewrite needs the [prose] extra: "
-            "pip install 'sprezzature-publish'",
+            detail="the plain-language rewrite needs best-engine-ai-helper, a base "
+            "dependency, so this install is broken: "
+            "pip install --force-reinstall sprezzature-publish",
         )
     from sprezzature_publish_scripts.plain_language import rewrite
 

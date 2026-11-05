@@ -479,9 +479,9 @@ _DEFAULT_ROOT: Path = Path(__file__).resolve().parents[2]  # .../sprezzature (mo
     "sprezzature-* package's CHANGELOG.md release notes.",
     epilog="\b\n"
     "Examples:\n"
-    "  changelog_feed.py\n"
-    "  changelog_feed.py --repos-root .. --out ../web\n"
-    "  changelog_feed.py --rss-only\n",
+    "  sprezzature-publish-changelog\n"
+    "  sprezzature-publish-changelog --repos-root .. --out ../web\n"
+    "  sprezzature-publish-changelog --rss-only\n",
 )
 @click.option(
     "--repos-root",

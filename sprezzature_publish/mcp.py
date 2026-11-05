@@ -41,7 +41,8 @@ Then run the MCP server::
 Usage Example
 -------------
 >>> # Register the MCP endpoint in your client. It publishes:
->>> #   health / list_rules / lint_html
+>>> #   health / lint_markdown / audit_site / render_markdown /
+>>> #   rewrite_plainly / find_calls_to_action / build_faq / report_findability
 >>> # ...with the same argument names as the FastAPI routes.
 
 Author

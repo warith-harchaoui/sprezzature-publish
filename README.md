@@ -32,7 +32,7 @@ Astro instead; this does not compete with them and says so.
 | `sprezzature-publish-indexes` | `robots.txt`, `sitemap.xml`, `llms.txt`, `llms-full.txt`, Atom, `humans.txt`. |
 | `sprezzature-publish-meta` | Open Graph, Twitter Card and Schema.org JSON-LD, drafted by a local model. |
 | `sprezzature-publish-plain` | rewrite prose at a target reading grade, keeping the terms you name. |
-| `sprezzature-publish-changelog` | a `CHANGELOG.md` becomes dated posts and a feed. |
+| `sprezzature-publish-changelog` | the `CHANGELOG.md` of every sibling repository under `--repos-root` becomes one Atom and RSS feed, a dated release per entry. |
 | `sprezzature-publish-narrate` | narrate a post with a local voice, and write the timed track beside the audio. |
 | `sprezzature-publish-readalong` | bind that narration to the page, so the sentence being spoken is highlighted. |
 
@@ -86,16 +86,17 @@ is picked up when present, and every rule runs without it.
 ### Gate the Markdown first
 
 ```sh
-sprezzature-publish-lint docs/            # exit 1 on any finding
+sprezzature-publish-lint docs/            # exit 1 on any error; warnings do not fail
 sprezzature-publish-lint docs/ --fix      # repair what has one safe repair
 ```
 
 ### Then build
 
 ```sh
-sprezzature-publish-html README.md docs/ --out site/
+sprezzature-publish-html README.md --out site/
+sprezzature-publish-html docs/ --out site/docs/
 sprezzature-publish-icons logo.png --out site/icons/
-sprezzature-publish-indexes site/ --base-url https://example.com
+sprezzature-publish-indexes --root site/ --base-url https://example.com
 
 # Improve a site that already exists — yours, or somebody else's
 sprezzature-publish-audit public/ --base-url https://example.com            # report
@@ -133,13 +134,13 @@ answer engines read what a reader reads.
 
 ```sh
 sprezzature-publish-narrate post.md --out-dir site/audio/
-sprezzature-publish-readalong site/post.html --narration site/audio/
+sprezzature-publish-readalong site/post.html --narration site/audio/ --out built/
 ```
 
-The voice itself lives in [`speaker-helper`](https://github.com/warith-harchaoui/speaker-helper):
-this package owns the **document** and the **page**, not the engines. Somebody
-who only wants rendered Markdown should not have to install a text-to-speech
-stack to get it.
+The voice itself lives in [`sprezzature-audio`](https://github.com/warith-harchaoui/sprezzature-audio),
+whose engines run on `speaker-helper`: this package owns the **document** and
+the **page**, not the engines. Somebody who only wants rendered Markdown never
+loads a text-to-speech stack to get it.
 
 ### From Python
 
@@ -163,12 +164,15 @@ endpoint is mounted when `sprezzature_publish.mcp` is imported, which is what
 `sprezzature-publish-mcp` does before it binds.
 
 Seven routes — lint, audit, render, plain-language, CTAs, FAQ and the joint
-findability report — because those are the ones that cross a network
-boundary cleanly: text in, text out. The site-level three take the pages as
-`[{path, content}]` and the declared CTAs as a parameter, and say so in the
-response when the CTAs are missing. The favicon set is
-a folder of binaries keyed by filename and stays a command rather than being
-offered here with an invented download protocol.
+findability report — plus `GET /health`, because those are the ones that
+cross a network boundary cleanly: text in, text out. The MCP endpoint
+publishes the same eight as tools, named by their `operation_id`
+(`lint_markdown`, `audit_site`, `render_markdown`, `rewrite_plainly`,
+`find_calls_to_action`, `build_faq`, `report_findability`, `health`). The
+site-level three take the pages as `[{path, content}]` and the declared CTAs
+as a parameter, and say so in the response when the CTAs are missing. The
+favicon set is a folder of binaries keyed by filename and stays a command
+rather than being offered here with an invented download protocol.
 
 ### In containers
 
@@ -192,11 +196,11 @@ someone who only wants pages should not be made to run one.
 captions turn sound into timed text and narration turns text into timed
 sound, so one package owns that modality in both directions. This one owns
 the document and the page, and invokes those as subprocesses so their heavy
-imports never enter its graph.
+imports never enter its graph. It is a base dependency, so the voices arrive
+with `pip install sprezzature-publish`; only the model files are fetched apart.
 
 ```sh
-pip install sprezzature-audio
-sprezzature-audio-install-voice --engine kokoro
+sprezzature-audio-install-voice --engine kokoro    # model files, once
 sprezzature-publish-narrate post.md --out-dir site/audio/
 ```
 

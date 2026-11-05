@@ -14,7 +14,7 @@ follows from it.
 
 ```
 sprezzature suite
-├── sprezzature-publish        ← this package (10 tools, document → site)
+├── sprezzature-publish        ← this package (13 tools, document → site)
 ├── sprezzature-accessibility  (lint the HTML this emits, draft the missing alt)
 ├── sprezzature-audio          (the voices, and the captions audit)
 ├── sprezzature-colors         (contrast and colour-vision deficiency)
@@ -54,8 +54,7 @@ text-to-speech stack.
   no Markdown to go back to, and `sprezzature-publish-audit` wants none: it
   takes a directory, a single file or a live URL, reports what a crawler will
   fail to find, and with `--fix` writes back only what can be derived from
-  what the page already says. It is the tenth tool and the newest: it is in
-  the repository and not yet in the published wheel, which is `1.3.0`.
+  what the page already says. It shipped in `1.4.0`.
 - **The Markdown has to be gated before it renders.** The lint needs
   only click and the standard library, not even an image library, which is
   what lets it sit in a pre-commit hook and run in milliseconds in a minimal container.
@@ -138,8 +137,8 @@ the site directory so nothing depends on an external service. Here,
 correct and also the commonest finding on a new site. `favicons.py` already
 has Pillow, the logo, the background and both theme colours: a `--cards` run
 writing `og/<page>.png` would turn that refusal into a derived repair, which
-is the dividing line `audit_site.py` already draws. Cost: an afternoon inside
-an extra people installing icons already have. What makes it not free: a card
+is the dividing line `audit_site.py` already draws. Cost: an afternoon, and
+no new dependency: Pillow is in the base install. What makes it not free: a card
 needs a bundled font, and a font is a licence question.
 
 **[Hugo](https://gohugo.io/methods/page/alternativeoutputformats/): the
@@ -170,10 +169,11 @@ platform, which declaration is missing and which points at a file that is not
 what it claims. Here: `SITE110` and `SITE111` check the files exist and
 `SITE112` checks the `head.html` snippet was actually pasted, but nothing
 opens an icon to confirm it decodes and is the size the `<link>` declares,
-which is exactly how a hand-copied set fails. Cost: a real objection, not a
-small one. The audit is one of the two tools that run with nothing installed,
-and reading a PNG means Pillow. The shape that survives is an opt-in
-`--check-icons` that names what it needs and skips without it.
+which is exactly how a hand-copied set fails. Cost: smaller than it was.
+The audit imports only click and the standard library, and reading a PNG
+means Pillow; Pillow has been a base dependency since the extras were folded
+in on 2026-11-01, so an opt-in `--check-icons` that imports it lazily costs
+an import, not an install, and the audit stays light for everyone else.
 
 **[starlight-llms-txt](https://delucis.github.io/starlight-llms-txt/)'s
 `llms-small.txt`: refused.** The plugin writes a third, trimmed variant for

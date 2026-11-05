@@ -1,8 +1,9 @@
 # Examples
 
 Every command line below is parsed by `tests/test_the_documented_commands_run.py`,
-which asks each tool's parser whether it accepts the flags on the line. A
-line here that does not run fails the suite.
+which hands it to the tool's own click parser without running the tool: an
+unknown flag, a missing required option or an extra argument fails the
+suite.
 
 ## Gate the Markdown before anything renders it
 
@@ -78,19 +79,24 @@ sprezzature-publish-plain --input copy.md --preserve 'Sprezzature,Tailwind'
 `--preserve` is the flag that matters: brand names and identifiers survive
 the rewrite verbatim.
 
-## A CHANGELOG becomes dated posts and a feed
+## Changelogs become one feed
 
 ```bash
 sprezzature-publish-changelog --repos-root .. --out ../web
 sprezzature-publish-changelog --repos-root .. --out ../web --rss-only
 ```
 
+Every `CHANGELOG.md` in the repositories beside each other under
+`--repos-root` is read, and each dated release heading becomes one entry of
+a combined `feed.atom` / `feed.xml`. An `## [Unreleased]` with no date is
+left out.
+
 ## Read a post aloud, and follow it on the page
 
 ```bash
 sprezzature-publish-narrate post.md --out-dir site/audio/
 sprezzature-publish-narrate site/post.html --scope article --out-dir site/audio/
-sprezzature-publish-readalong site/post.html --narration site/audio/ --out site/
+sprezzature-publish-readalong site/post.html --narration site/audio/ --out built/
 ```
 
 `--scope` on an HTML input is the difference between reading the article
@@ -99,8 +105,8 @@ and reading the header, the nav and the footer along with it.
 ## The two repairs a narrated page needs
 
 ```bash
-sprezzature-publish-readalong site/post.html --strip --out site/
-sprezzature-publish-readalong site/post.html --check
+sprezzature-publish-readalong site/post.html --strip --out drafts/
+sprezzature-publish-readalong site/post.html --narration site/audio/ --check
 ```
 
 `--strip` takes the player back out, which is the first half of correcting
@@ -137,5 +143,7 @@ docker compose up -d
 docker compose --profile prose up -d
 ```
 
-The model server is its own profile: two tools of nine need it, and
-someone who only wants pages should not be made to run one.
+The model server is its own profile: only the tools that ask a local model
+need it (`meta`, `plain` and `faq`, which drafts with the model unless
+`--no-llm`; `lint --ai` and `narrate --ai-hints` when asked), and someone who only wants pages should not
+be made to run one.

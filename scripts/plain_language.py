@@ -15,7 +15,7 @@ fixed cost of a model pull.
 Behavior
 --------
 * Reads input from stdin OR a file (``--input``); writes the rewrite to stdout.
-* Honors ``--lang`` (default: detected from the environment), so French
+* Honors ``--lang`` (default: detected from the text), so French
   in goes French out.
 * Honors ``--target-grade`` (default ``8``) — a hint to the prompt, not a
   hard contract. Output is checked for length; the model is asked again
@@ -301,7 +301,7 @@ def rewrite(
             # regardless of backend, so both cases are one except clause now.
             sys.stderr.write(
                 f"Cannot reach Ollama at {OLLAMA_URL}, or it returned an error: {e}\n"
-                f"Run `python sprezzature-accessibility/scripts/install_alt_ai.py` or `ollama serve`.\n"
+                f"Start it with `ollama serve`, then `best-engine-ai-helper pull` for this machine's model.\n"
             )
             sys.exit(2)
 
@@ -368,7 +368,7 @@ def rewrite(
     "--lang",
     "-l",
     default=None,
-    help="BCP-47 base tag (en, fr, es, …). Default: detect from environment.",
+    help="BCP-47 base tag (en, fr, es, …). Default: detected from the text, the locale as fallback.",
 )
 @click.option(
     "--preserve",

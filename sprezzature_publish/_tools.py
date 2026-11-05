@@ -69,7 +69,8 @@ TOOLS: dict[str, tuple[str, str]] = {
     ),
     "changelog": (
         "changelog_feed",
-        "A CHANGELOG becomes dated posts and a feed.",
+        "Every sibling repository's CHANGELOG.md becomes one dated Atom and RSS "
+        "feed, a release per entry.",
     ),
     "narrate": (
         "narrate_post",

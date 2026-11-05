@@ -30,13 +30,19 @@ door (the argparse twin was dropped on 2026-10-25, and every per-tool
 command and the MCP server moved to click on 2026-11-04) and both resolve
 against one table of tools. A tool added to one and
 not the other is a half-shipped tool, and
-`tests/test_the_surfaces_agree.py` fails on it. Add the entry point in
-`pyproject.toml` and the table picks it up.
+`tests/test_the_surfaces_agree.py` fails on it. The table is `TOOLS` in
+`sprezzature_publish/_tools.py`; the console script in `pyproject.toml` is a
+separate line, and a new tool needs both.
 
 ## Documented commands are tested commands
 
-`tests/test_the_documented_commands_run.py` parses every fenced `bash`
-block in `README.md`, `LISEZMOI.md` and `EXAMPLES.md`, and asks each
-parser whether it accepts the flags on the line. A command line in the
-prose is an instruction to a reader, so it is checked like one. Four lines
-were wrong before that test existed, and reading them had not caught it.
+`tests/test_the_documented_commands_run.py` parses every fenced `bash` or
+`sh` block in `README.md`, `LISEZMOI.md`, `EXAMPLES.md` and
+`references/*.md`, and hands each command line, continuations joined, to
+the tool's own click parser without running it: an unknown flag, a missing
+required option, an extra argument, a command no console script installs,
+or a mode the tool refuses (`readalong --check` with no `--narration`) fails
+the suite. A command line in the prose is an instruction to a reader, so it
+is checked like one. Four lines were wrong before the first version of that
+test existed, and four more passed it while still failing to run, because
+it checked only that each flag existed.

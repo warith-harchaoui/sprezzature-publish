@@ -40,8 +40,9 @@ ruff check .
    shared help shape. No argparse: `tests/test_every_command_is_click.py`
    fails on it.
 2. Register it in `[project.scripts]` in `pyproject.toml` as
-   `sprezzature-publish-<tool>`. Both front doors read that table, so this
-   one line is what puts the tool behind `make-site <tool>` and
+   `sprezzature-publish-<tool>`, and add one entry to `TOOLS` in
+   `sprezzature_publish/_tools.py`. Both front doors read `TOOLS`, so that
+   entry is what puts the tool behind `make-site <tool>` and
    `sprezzature-publish <tool>`.
 3. If it needs anything beyond click and the standard library, add it to
    the base dependencies (there are no extras), and keep it out of the lint
@@ -49,9 +50,10 @@ ruff check .
 4. Add a test in `tests/`: at least one input that should produce output,
    one that should be refused.
 5. Document it in the table in `README.md` and `LISEZMOI.md`, in both
-   languages, and add a worked invocation to `EXAMPLES.md`. The parity test
-   and the documented-commands test both fail if you do one and not the
-   other.
+   languages, and add a worked invocation to `EXAMPLES.md`. The
+   documented-commands test hands every example line to the tool's parser,
+   and fails when the README's examples show a tool the LISEZMOI's do not,
+   or the other way round.
 
 ## Code standards
 
