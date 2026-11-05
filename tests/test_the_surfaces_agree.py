@@ -227,3 +227,19 @@ def test_the_tools_listing_names_every_tool_and_finds_it_ready() -> None:
     assert [row[0] for row in rows] == list(TOOLS)
     assert all(row[1] == "ready" for row in rows), result.output
     assert "needs [" not in result.output
+
+
+def test_the_tools_listing_keeps_a_file_name_whole() -> None:
+    """The summary stops at the end of a sentence, not inside ``robots.txt``.
+
+    The listing cut at the first ".", so ``indexes`` read "robots." and ``cta``
+    "write ctas.".
+    """
+    from click.testing import CliRunner
+
+    from sprezzature_publish.cli import main
+
+    result = CliRunner().invoke(main, ["tools"])
+    assert result.exit_code == 0, result.output
+    assert "robots.txt" in result.output
+    assert "ctas.yaml" in result.output

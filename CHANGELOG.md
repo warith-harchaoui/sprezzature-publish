@@ -6,6 +6,12 @@ versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Fixed — the tools listing
+
+- `sprezzature-publish tools` cut each summary at the first "."; `indexes`
+  read "robots." and `cta` "write ctas.". It now stops at the end of the
+  first sentence, and a test keeps both file names whole.
+
 ### Docs — the prose says what the code does
 
 - **Four documented command lines did not run.** `-html README.md docs/`
