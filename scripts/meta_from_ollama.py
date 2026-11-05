@@ -482,7 +482,7 @@ def _cli(
     except _ModelUnreachable:
         click.echo(
             f"Cannot reach Ollama at {OLLAMA_URL}. "
-            f"Run `python sprezzature-accessibility/scripts/install_alt_ai.py` or `ollama serve`.",
+            f"Start it with `ollama serve`, then `best-engine-ai-helper pull` for this machine's model.",
             err=True,
         )
         return 2

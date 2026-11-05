@@ -15,7 +15,7 @@ chose à dire, parce que tout ce qui suit en découle.
 
 ```
 suite sprezzature
-├── sprezzature-publish        ← ce paquet (10 outils, document → site)
+├── sprezzature-publish        ← ce paquet (13 outils, document → site)
 ├── sprezzature-accessibility  (auditer le HTML produit ici, rédiger l'alt manquant)
 ├── sprezzature-audio          (les voix, et l'audit des sous-titres)
 ├── sprezzature-colors         (contraste et déficience de la vision des couleurs)
@@ -57,8 +57,7 @@ Markdown rendu n'installe jamais une pile de synthèse vocale.
   `sprezzature-publish-audit` n'en demande pas : il prend un répertoire, un
   fichier ou une URL en ligne, dit ce qu'un robot d'indexation ne trouvera
   pas, et avec `--fix` réécrit uniquement ce qui se déduit de ce que la page
-  dit déjà. C'est le dixième outil et le plus récent : il est dans le dépôt
-  et pas encore dans la roue publiée, qui est la `1.3.0`.
+  dit déjà. Il est publié depuis la `1.4.0`.
 - **Le Markdown doit passer un contrôle avant d'être rendu.** L'audit du
   Markdown n'a besoin que de click et de la bibliothèque standard, d'aucune
   bibliothèque d'images, ce qui lui permet de tenir dans un crochet de
@@ -149,8 +148,8 @@ inventer un, ce qui est correct et aussi le constat le plus fréquent sur un
 site neuf. `favicons.py` a déjà Pillow, le logo, le fond et les deux couleurs
 de thème : une exécution `--cards` écrivant `og/<page>.png` transformerait ce
 refus en réparation déduite, ce qui est la ligne de partage que `audit_site.py`
-trace déjà. Coût : un après-midi, dans un extra que les gens qui installent
-les icônes ont déjà. Ce qui l'empêche d'être gratuit : une carte a besoin
+trace déjà. Coût : un après-midi, et
+aucune dépendance de plus : Pillow est dans l'installation de base. Ce qui l'empêche d'être gratuit : une carte a besoin
 d'une fonte embarquée, et une fonte est une question de licence.
 
 **[Hugo](https://gohugo.io/) : le sitemap multilingue.** Hugo écrit des
@@ -184,10 +183,12 @@ n'est pas ce qu'il prétend. Ici : `SITE110` et `SITE111` vérifient que les
 fichiers existent et `SITE112` que l'extrait `head.html` a bien été collé,
 mais rien n'ouvre une icône pour confirmer qu'elle se décode et qu'elle fait
 la taille que le `<link>` déclare, ce qui est exactement la façon dont un jeu
-recopié à la main casse. Coût : une objection réelle, pas petite. L'audit est
-l'un des deux outils qui tournent sans rien d'installé, et lire un PNG veut
-dire Pillow. La forme qui survit est un `--check-icons` facultatif qui nomme
-ce dont il a besoin et s'abstient sans lui.
+recopié à la main casse. Coût : moindre qu'avant. L'audit
+n'importe que click et la bibliothèque standard, et lire un PNG veut dire
+Pillow ; Pillow est une dépendance de base depuis que les extras ont été
+replis le 2026-11-01, donc un `--check-icons` facultatif qui l'importe
+paresseusement coûte un import, pas une installation, et l'audit reste léger
+pour tous les autres.
 
 **Le `llms-small.txt` de
 [starlight-llms-txt](https://delucis.github.io/starlight-llms-txt/) : refusé.**

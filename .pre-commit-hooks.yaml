@@ -4,15 +4,16 @@
 #
 #   repos:
 #     - repo: https://github.com/warith-harchaoui/sprezzature-publish
-#       rev: v1.0.0
+#       rev: v1.4.0
 #       hooks:
 #         - id: sprezzature-publish-lint
 #
-# The lint is stdlib-only, which is the whole reason it belongs in a hook:
-# it runs in milliseconds with nothing installed behind it. Its optional
-# half — checking that external links resolve and that Mermaid blocks parse
-# — needs the [lint] extra, and a hook that reached the network on every
-# commit would not be a hook anyone keeps.
+# The lint needs click and the standard library only, which is the whole
+# reason it belongs in a hook: it runs in milliseconds with nothing heavy
+# behind it. Its optional halves stay off unless asked for: --render-mermaid
+# renders each Mermaid block through mmdc, and --ai asks a local model for
+# suggestions. A hook that did either on every commit would not be a hook
+# anyone keeps. It never reaches the network: links are checked on disk.
 
 - id: sprezzature-publish-lint
   name: sprezzature-publish — Markdown lint (heading order, code-fence languages, local links, LaTeX, Mermaid)

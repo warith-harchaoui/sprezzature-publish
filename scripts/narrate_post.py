@@ -43,40 +43,39 @@ Usage
 
     # No --engine: speaker-helper's router picks the voice, and the
     # language of the whole text, detected once, reads all of it
-    python3 sprezzature-publish/scripts/sprezzature-publish-narrate.py posts/hello.md
+    sprezzature-publish-narrate posts/hello.md
 
     # A page that quotes another language at length, where detection would
     # answer with the quotes rather than with the page
-    python3 sprezzature-publish/scripts/sprezzature-publish-narrate.py \
+    sprezzature-publish-narrate \\
         --lang fr posts/lettre.md
 
     # ChatterboxTTS with a custom voice sample (designer's own voice)
-    python3 sprezzature-publish/scripts/sprezzature-publish-narrate.py \\
+    sprezzature-publish-narrate \\
         --engine chatterbox \\
         --voice-sample voices/me.wav \\
         posts/hello.md
 
     # Enrich segment hints via local Ollama (qwen3-vl:8b, the one model)
-    python3 sprezzature-publish/scripts/sprezzature-publish-narrate.py \\
+    sprezzature-publish-narrate \\
         --engine openvoice --voice base-en-default \\
         --ai-hints \\
         posts/hello.md
 
     # Debug: just print the (enriched) hints, do not call the engine
-    python3 sprezzature-publish/scripts/sprezzature-publish-narrate.py \\
+    sprezzature-publish-narrate \\
         --ai-hints --ai-hints-only posts/hello.md
 
 Requirements
 ------------
-* Python 3.10+; PyYAML is optional (pronunciation override + frontmatter
-  parsing degrade silently when missing).
-* One of the engine wrappers installed. They live in sprezzature-audio,
-  which owns the sound modality in both directions:
-  - ``pip install 'sprezzature-audio'``
-  - ``pip install 'sprezzature-audio'``
-  - ``pip install 'sprezzature-audio'``
+* Python 3.10-3.13. PyYAML, a base dependency, reads the pronunciation
+  overrides and the frontmatter.
+* The engine wrappers live in sprezzature-audio, which owns the sound
+  modality in both directions and is a base dependency. Each engine's model
+  files are fetched once with
+  ``sprezzature-audio-install-voice --engine <kokoro|openvoice|chatterbox>``.
 * A running Ollama daemon if ``--ai-hints`` is passed (the same
-  daemon ``alt_from_ollama.py`` and ``meta_from_ollama.py`` use).
+  daemon ``sprezzature-publish-meta`` uses).
 
 Author
 ------

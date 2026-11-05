@@ -1,5 +1,5 @@
 """
-The five surfaces must describe the same nine tools.
+The five surfaces must describe the same thirteen tools.
 
 This package publishes one toolkit through a library, one front door under two
 spellings plus a command per tool, an HTTP API, an MCP server, and a

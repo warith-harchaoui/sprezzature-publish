@@ -30,7 +30,7 @@ this module is for. The command lines stay the way a person works.
 What it does not own
 --------------------
 The **voices**. Narration synthesis lives in `sprezzature-audio`
-(`sprezzature-audio-narrate-openvoice` and `-chatterbox`), because captions
+(`sprezzature-audio-narrate-kokoro`, `-openvoice` and `-chatterbox`), because captions
 turn sound into timed text and narration turns text into timed sound: one
 package owns that modality in both directions. This one owns the document
 and the page, and invokes those as subprocesses so their heavy imports never
@@ -62,9 +62,9 @@ from typing import Any  # noqa: E402
 #: This is not laziness for its own sake. The tools in this package have
 #: wildly different dependencies — Pillow for the favicon set, a Markdown
 #: engine for the pages, an LLM client for the meta tags and the
-#: plain-language rewrite — and each is an extra. Importing them all eagerly
-#: would make ``import sprezzature_publish`` fail for anyone who installed
-#: the package to lint their Markdown, which needs nothing but the standard
+#: plain-language rewrite. They are all base dependencies now, but importing
+#: them eagerly would make ``import sprezzature_publish`` pay for every one
+#: of them in a process that only lints, which needs click and the standard
 #: library.
 _EXPORTS: dict[str, str] = {
     # audit — the Markdown, before anything renders it

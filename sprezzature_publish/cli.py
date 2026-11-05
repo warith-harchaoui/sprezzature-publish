@@ -39,8 +39,8 @@ Shell completion:
   eval "$(_SPREZZATURE_PUBLISH_COMPLETE=bash_source sprezzature-publish)"   # bash
   eval "$(_SPREZZATURE_PUBLISH_COMPLETE=zsh_source sprezzature-publish)"    # zsh
 
-Run `sprezzature-publish tools` to see which tools are ready on this machine
-and which need an extra installed.
+Run `sprezzature-publish tools` to see which tools import cleanly on this
+machine.
 """
 
 
@@ -55,7 +55,7 @@ and which need an extra installed.
 )
 @click.version_option(package_name="sprezzature-publish")
 def main() -> None:  # pragma: no cover - click dispatches
-    """Front door over the nine tools this package ships."""
+    """Front door over the thirteen tools this package ships."""
 
 
 @main.command(name="tools")
@@ -83,7 +83,7 @@ def list_tools() -> None:
 def _attach(name: str, module_name: str, summary: str) -> None:
     """Register one tool as a click sub-command.
 
-    Built in a loop rather than written out nine times: the catalogue lives
+    Built in a loop rather than written out thirteen times: the catalogue lives
     in one table, and a tool added there appears in both command lines
     without anybody remembering to add it twice.
     """

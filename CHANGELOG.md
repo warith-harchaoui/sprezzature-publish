@@ -6,6 +6,37 @@ versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Docs — the prose says what the code does
+
+- **Four documented command lines did not run.** `-html README.md docs/`
+  (one positional argument, not two), `-indexes site/` (it takes `--root`),
+  and `-readalong` without `--out`, or `--check` without `--narration`, in
+  README, LISEZMOI and EXAMPLES. `tests/test_the_documented_commands_run.py`
+  checked that every flag existed, so all four passed; it now hands each line,
+  continuations joined, to the tool's own click parser, also reads
+  `references/*.md`, and fails on a command no console script installs.
+  `readalong.usage_problem` is the mode check the tool and the test now share.
+- **References caught up with renames and the folded extras.**
+  `sprezzature-publish-md-to-html` and `-narrate-post` became `-html` and
+  `-narrate`; `make-alt`, `alt_from_ollama.py`, `captions_from_whisper.py`
+  and `lint_a11y.py` became the neighbours' console scripts; `mmdc` is a base
+  dependency rather than a requirements file; the lint prompts live in
+  `scripts/prompts/`. Claims with no code behind them are gone: a
+  `--user-agent-block` flag, a "click here" lint rule, a validator rejecting
+  long descriptions, a near-duplicate title check, `--fix` repairing code
+  fence languages.
+- **The voice is `sprezzature-audio`.** README and LISEZMOI sent readers to
+  `speaker-helper`; it is what sprezzature-audio runs on, not the door.
+- **LISEZMOI caught up with README**: Python, HTTP and container sections,
+  eight MCP tools named, French non-breaking spaces. `sprezzature-publish-changelog`
+  is described as what it is, one feed from every sibling repository's
+  changelog, not posts. LANDSCAPE / PAYSAGE count thirteen tools and no
+  longer say the audit is unreleased.
+- Help text and messages: `-plain`, `-meta` and the 503s of `/v1/render`
+  and `/v1/plain` no longer point at extras or a script path that a
+  `pip install` does not have; `-narrate`, `-readalong` and `-changelog`
+  show their examples under their command names.
+
 ## [1.4.0] — 2026-11-04
 
 ### Changed — click only, and the container serves `/mcp`

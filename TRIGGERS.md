@@ -91,7 +91,7 @@ for reading a request back as a tool.
 | `indexes` | "SEO", "sitemap", "robots.txt", "llms.txt", "RSS", "why doesn't Google see it" |
 | `meta` | "the link preview looks wrong", "OG card", "Twitter card", "Schema.org" |
 | `plain` | "simplify this", "write it for a wider audience", "rewrite at grade 8" |
-| `changelog` | "turn my releases into posts", "a feed from my CHANGELOG" |
+| `changelog` | "a feed from my CHANGELOG", "one feed for all my repositories' releases" |
 | `narrate` | "read this post aloud", "podcast my blog", "text to speech" |
 | `readalong` | "highlight the sentence being spoken", "follow along while it reads" |
 
@@ -113,14 +113,16 @@ for reading a request back as a tool.
 | Meta tags | `sprezzature-publish-meta` | none, see below |
 | Narrate a post | `sprezzature-publish-narrate` | none, see below |
 | Bind the narration | `sprezzature-publish-readalong` | none, see below |
-| A CHANGELOG as posts | `sprezzature-publish-changelog` | none, see below |
+| Changelogs as one feed | `sprezzature-publish-changelog` | none, see below |
 
 Seven of the thirteen cross a network boundary cleanly, because they are
-text in and text out, and those seven are the MCP tools: the site's pages go
-in as `[{path, content}]`, the CTAs as a parameter. The other six write a
-folder of files, keyed by filename: an icon set, a sitemap beside the pages
-it indexes, an audio track and its cues. Offering those over MCP would mean
-inventing a download protocol, so they stay commands. Call them with Bash.
+text in and text out, and those seven are the MCP tools, with `health`
+beside them: the site's pages go in as `[{path, content}]`, the CTAs as a
+parameter. The other six stay commands. Five write files keyed by filename:
+an icon set, a sitemap beside the pages it indexes, a feed, an audio track
+and its cues, and offering those over MCP would mean inventing a download
+protocol. The sixth, `meta`, prints JSON for one page from a local model.
+Call them with Bash.
 
 Over MCP the CTAs are a parameter, and their absence comes back as a
 `note` that says to ask. Ask: never fill `ctas` from the candidates on your

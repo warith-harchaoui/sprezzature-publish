@@ -328,8 +328,8 @@ def check(page: Path, narration_dir: Path, *, tolerate: tuple[str, ...] = ()) ->
     help="Add a sentence-by-sentence read-along to an existing HTML page.",
     epilog="\b\n"
     "Examples:\n"
-    "  narrate_post.py page.html --scope article --out-dir audio/\n"
-    "  readalong.py page.html --narration audio/ --scope article --out built/\n",
+    "  sprezzature-publish-narrate page.html --scope article --out-dir audio/\n"
+    "  sprezzature-publish-readalong page.html --narration audio/ --scope article --out built/\n",
 )
 @click.argument("page", type=click.Path(path_type=Path))
 @click.option(
@@ -429,6 +429,28 @@ def main(argv: list[str] | None = None) -> int:
     return run_command(_cli, argv)
 
 
+def usage_problem(
+    *, strip: bool, check: bool, narration_dir: Path | None, out_dir: Path | None
+) -> str | None:
+    """Say what is missing from a combination of flags, or ``None`` when it runs.
+
+    Which flags are required depends on the mode, so click cannot say it: the
+    three modes share one command. Kept apart from :func:`_run` so the test
+    that reads the documented command lines asks the same question the tool
+    does, instead of a copy of it that could drift.
+    """
+    if strip and check:
+        return "--strip and --check do opposite things; pick one"
+    if strip:
+        return None if out_dir is not None else "--strip needs --out"
+    if check:
+        return None if narration_dir is not None else "--check needs --narration"
+    for name, value in (("--narration", narration_dir), ("--out", out_dir)):
+        if value is None:
+            return f"{name} is required"
+    return None
+
+
 def _run(args: SimpleNamespace) -> int:
     """Wire, strip or check the read-along the parsed flags ask for."""
 
@@ -436,14 +458,17 @@ def _run(args: SimpleNamespace) -> int:
         print(f"readalong: no such page: {args.page}", file=sys.stderr)
         return 2
 
-    if args.strip and args.check:
-        print("readalong: --strip and --check do opposite things; pick one", file=sys.stderr)
+    problem = usage_problem(
+        strip=args.strip,
+        check=args.check,
+        narration_dir=args.narration_dir,
+        out_dir=args.out_dir,
+    )
+    if problem:
+        print(f"readalong: {problem}", file=sys.stderr)
         return 2
 
     if args.strip:
-        if args.out_dir is None:
-            print("readalong: --strip needs --out", file=sys.stderr)
-            return 2
         before = args.page.read_text(encoding="utf-8")
         destination = strip(args.page, args.out_dir)
         _, markers = _readalong.strip_player(before)
@@ -451,9 +476,6 @@ def _run(args: SimpleNamespace) -> int:
         return 0
 
     if args.check:
-        if args.narration_dir is None:
-            print("readalong: --check needs --narration", file=sys.stderr)
-            return 2
         try:
             found = check(args.page, args.narration_dir, tolerate=tuple(args.tolerate))
         except FileNotFoundError as missing:
@@ -466,11 +488,6 @@ def _run(args: SimpleNamespace) -> int:
         for line in found:
             print(f"  {line}", file=sys.stderr)
         return 1
-
-    for name, value in (("--narration", args.narration_dir), ("--out", args.out_dir)):
-        if value is None:
-            print(f"readalong: {name} is required", file=sys.stderr)
-            return 2
 
     lang = args.lang
     if lang in ("", "auto"):
