@@ -74,6 +74,7 @@ body, plus the page it lands on.
 | `FAQ002` | `FAQPage` markup has a visible FAQ on the same page | [Google: structured data general guidelines](https://developers.google.com/search/docs/appearance/structured-data/sd-policies) ("don't mark up content that is not visible to readers of the page"). |
 | `FAQ003` | the markup and the visible FAQ say the same thing | Same guidelines. `--fix` rebuilds the markup from the visible text, on `.html` pages only. |
 | `FAQ004` | one question marked up on one page | **No spec.** Repetition across pages is the doorway pattern of [Google's spam policies](https://developers.google.com/search/docs/essentials/spam-policies), in miniature. Warning. |
+| `FAQ005` | an answer is quotable alone: three sentences and 80 words at most, the organisation named in the first sentence | **No spec, a house rule.** It is the drafting prompt's own contract (`prompts/faq_answer.yaml`), applied to answers written by hand. Answer engines lift a sentence or a short passage; see `faq-aeo.md`. Warning. |
 | `FIND001` | no `nosnippet` / `max-snippet:0` | [Google: AI features and your website](https://developers.google.com/search/docs/appearance/ai-features): a page must be "eligible to be shown in Google Search with a snippet". Error on a money page, warning elsewhere. |
 | `FIND002` | a money page is not `noindex` | [Google: robots meta tag](https://developers.google.com/search/docs/crawling-indexing/robots-meta-tag). |
 | `FIND003` | a money page is in `sitemap.xml` | [sitemaps.org 0.9](https://www.sitemaps.org/protocol.html). |

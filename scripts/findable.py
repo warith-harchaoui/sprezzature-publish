@@ -406,7 +406,7 @@ def findable(
     elif root is not None:
         raw += _html_findings(root, base_url=base_url)
     raw += audit_ctas(pages, plan or CtaPlan())
-    raw += faq.audit_faq(pages)
+    raw += faq.audit_faq(pages, organization=plan.organization if plan else "")
     raw += cta_rules(pages, plan, money, root)
 
     money_set = set(money)

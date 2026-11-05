@@ -59,6 +59,9 @@ Audit
 * ``FAQ002`` (error) — a FAQ in JSON-LD only; the page shows none of it.
 * ``FAQ003`` (error) — the JSON-LD and the visible FAQ disagree.
 * ``FAQ004`` (warning) — one question marked up on several pages.
+* ``FAQ005`` (warning) — an answer too long to be quoted whole (more than
+  three sentences or 80 words), or whose first sentence does not name the
+  organisation: engines quote that sentence alone.
 
 ``--fix`` writes only what is deterministic: on ``.html`` pages, the
 ``FAQPage`` block regenerated from the visible FAQ (``FAQ003``). Answers are
@@ -218,6 +221,15 @@ def page_lang(page: PageContent) -> str:
 
 _PLACEHOLDER = re.compile(r"\{\w*\}|%[sd]|\$\{")
 
+#: Headings of reference lists. Their notes describe somebody else's work
+#: ("How Vanna works, how to train it, data security. medium.com"), and on
+#: the calibration site the extractive fallback quoted them as answers.
+REFERENCE_HEADING = re.compile(
+    r"^\s*(bibliograph\w*|r[ée]f[ée]rences?|sources?|notes?|further reading|works cited"
+    r"|lectures?( compl[ée]mentaires?)?|pour aller plus loin)\b",
+    re.I,
+)
+
 
 def is_home(path: str) -> bool:
     """The site's front page, in any of its languages."""
@@ -233,8 +245,8 @@ def corpus(
     FAQ says so is what the gap report exists to catch; data files, whose
     strings are rendered elsewhere and often half a sentence
     (``{0} lignes sur {1}``, from an i18n table, read as prose the first
-    time); and pages in another language, so an English FAQ is not answered
-    in French.
+    time); reference lists, whose notes describe other people's work; and
+    pages in another language, so an English FAQ is not answered in French.
     """
     out: list[Source] = []
     for page in pages:
@@ -248,6 +260,7 @@ def corpus(
             text = clean(p.text)
             if (
                 len(text) < 20
+                or REFERENCE_HEADING.match(p.heading or "")
                 or fold(text) in faq_answers
                 or _PLACEHOLDER.search(text)
                 or "<" in text  # a <video> fallback, markup shown as text
@@ -968,7 +981,20 @@ def _same(a: str, b: str) -> bool:
     return " ".join(terms(a)) == " ".join(terms(b))
 
 
-def audit_faq(pages: list[PageContent]) -> list[Finding]:
+#: Past these, an answer engine quotes a fragment or nothing: the drafting
+#: prompt allows three sentences, and the answers engines lift whole run to
+#: roughly forty to eighty words.
+MAX_SENTENCES, MAX_WORDS = 3, 80
+
+
+def _org_core(organization: str) -> str:
+    """ "Deraison.ai" is written "Deraison" in running text."""
+    return fold(
+        re.sub(r"\.(ai|io|com|org|net|fr|co|app|dev)$", "", organization.strip(), flags=re.I)
+    )
+
+
+def audit_faq(pages: list[PageContent], organization: str = "") -> list[Finding]:
     """Check every FAQ on the site, visible and marked up.
 
     The visible FAQ is the reference: engines read it, and the markup is
@@ -1036,6 +1062,30 @@ def audit_faq(pages: list[PageContent]) -> list[Finding]:
                         f"The answer to {item.question!r} states {', '.join(sorted(loose))}, "
                         "which no other page of the site states.",
                         "cite where the number comes from, or remove it",
+                    )
+                )
+    core = _org_core(organization) if organization else ""
+    for page in pages:
+        for item in page.faq:
+            parts = sentences(item.answer)
+            words = len(item.answer.split())
+            problems = []
+            if len(parts) > MAX_SENTENCES or words > MAX_WORDS:
+                problems.append(f"{len(parts)} sentences, {words} words")
+            if core and parts and core not in fold(parts[0]) and core not in fold(item.question):
+                problems.append(f"the first sentence does not name {organization}")
+            if problems:
+                findings.append(
+                    Finding(
+                        page.path,
+                        item.line,
+                        "FAQ005",
+                        WARNING,
+                        f"The answer to {item.question!r} is hard to quote alone: "
+                        + "; ".join(problems)
+                        + ".",
+                        "answer in the first sentence, naming the organisation; "
+                        "then one supporting fact; three sentences at most",
                     )
                 )
     for question, where in marked.items():
@@ -1220,7 +1270,9 @@ def cli(
             pages = read_site(target)
             for path in written:
                 click.echo(f"→ Rewrote the FAQPage markup of {path}", err=True)
-        findings = audit_faq(pages)
+        ctas_file = ctas_path or (site / "ctas.yaml")
+        plan = load_ctas(ctas_file) if ctas_file.is_file() else None
+        findings = audit_faq(pages, organization=plan.organization if plan else "")
         if fmt == "json":
             click.echo(render_json(findings))
         else:

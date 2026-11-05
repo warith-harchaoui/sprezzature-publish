@@ -355,6 +355,10 @@ class _Reader(HTMLParser):
         self._code_line = 0
         # FAQ shapes.
         self._faq_level = 0  # heading level of the open FAQ section, 0 = none
+        # Depth of the element holding the FAQ heading: when it closes, so does
+        # the section, and the last answer ends there instead of running on into
+        # the call to action that follows it (calibration site, 2026-11-05).
+        self._faq_depth = 0
         self._faq_q: tuple[str, int] | None = None
         self._faq_a: list[str] = []
         self._details: list[dict[str, Any]] = []
@@ -511,6 +515,9 @@ class _Reader(HTMLParser):
                 self._read_jsonld("".join(self._jsonld_buf))
                 self._jsonld_buf = None
             return
+        if self._faq_level and len(self.stack) < self._faq_depth:
+            self._close_faq_question()
+            self._faq_level = 0
         if self._act is not None and len(self.stack) + 1 == self._act_depth:
             self._finish_actionable()
         if self.landmarks and self.landmarks[-1][0] == tag:
@@ -530,9 +537,13 @@ class _Reader(HTMLParser):
             if FAQ_HEADING.match(text):
                 self._close_faq_question()
                 self._faq_level = level
+                self._faq_depth = len(self.stack)
                 if not self.page.faq_heading_line:
                     self.page.faq_heading_line = self._block_line
-            elif self._faq_level and level > self._faq_level:
+            elif self._faq_level and level > self._faq_level and not self._details:
+                # A heading inside <summary> is read by the <details> path,
+                # which knows where the answer ends; reading it here too
+                # counted the question twice.
                 self._close_faq_question()
                 self._faq_q = (text, self._block_line)
             if not self.page.title and level == 1:
