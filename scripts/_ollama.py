@@ -33,17 +33,20 @@ BANNED_PREFIXES: dict[str, tuple[str, ...]] = {
 }
 
 
+#: The language line of a prose prompt (``meta``, ``plain``, ``faq``). It
+#: was copied from the alt-text tool with its wording, so every rewrite, meta
+#: description and FAQ answer was asked to be "the alt text in English".
 LANG_INSTRUCTIONS: dict[str, str] = {
-    "en": "Write the alt text in English.",
-    "fr": "Rédige le texte alternatif en français.",
-    "es": "Escribe el texto alternativo en español.",
-    "de": "Schreibe den Alt-Text auf Deutsch.",
-    "it": "Scrivi il testo alternativo in italiano.",
-    "pt": "Escreva o texto alternativo em português.",
-    "nl": "Schrijf de alternatieve tekst in het Nederlands.",
-    "ar": "اكتب النص البديل باللغة العربية.",
-    "ja": "代替テキストを日本語で書いてください。",
-    "zh": "用中文写替代文本。",
+    "en": "Write in English.",
+    "fr": "Rédige en français.",
+    "es": "Escribe en español.",
+    "de": "Schreibe auf Deutsch.",
+    "it": "Scrivi in italiano.",
+    "pt": "Escreva em português.",
+    "nl": "Schrijf in het Nederlands.",
+    "ar": "اكتب باللغة العربية.",
+    "ja": "日本語で書いてください。",
+    "zh": "用中文写。",
 }
 
 

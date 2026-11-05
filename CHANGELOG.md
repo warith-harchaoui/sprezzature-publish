@@ -20,6 +20,9 @@ versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- `meta`, `plain` and `faq` asked the model, in their language line, to
+  write "the alt text in English" (or in French, and so on): the line was
+  copied from the alt-text tool. It now asks for prose in that language.
 - `meta`, `plain`, `faq`, `narrate --ai-hints` and `lint --ai` now send every
   model call to the server `OLLAMA_URL` names, through
   `best_engine_ai_helper.llm.chat(engine=...)`. The error message named
