@@ -24,6 +24,17 @@ versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   `OLLAMA_URL` while `chat()` resolved its own server; `lint --ai` posted to
   Ollama by hand, outside best-engine altogether. Floor
   `best-engine-ai-helper>=1.11.0`, the first with `engine=`.
+- `audit` and `findable` read a hand-written site as it is: an include
+  fragment (`head.html`) is not a page (`SITE000`); a `noindex` page is not
+  missing from the sitemap (`SITE103`); a sitemap URL is stale only when no
+  file serves it, so a `fr/` tree outside the generator's folders is no
+  longer "gone" (`SITE104`).
+- `faq --audit`: `3.10` is a version, not three hundred and ten; a single
+  digit and a standard's number (`ISO 3166`) are not claims to source
+  (`FAQ001`). An answer quoting an element (`<div>`) no longer disagrees
+  with its own markup (`FAQ003`).
+- Upper-case Markdown notes below the root (`css/BUILD.md`) are not pages;
+  `README.md` and anything at the root still are.
 - `sprezzature-publish -V` was a usage error; the front door now answers
   `-V` and `--version` like the thirteen tools.
 - The last answer of a heading-based FAQ ran on into the call to action

@@ -488,6 +488,56 @@ FEED_NAMES: tuple[str, ...] = ("feed.atom", "atom.xml", "feed.xml", "rss.xml", "
 #: namespace as ``<ns0:loc>``; a pattern anchored on the bare tag matched
 #: nothing, so every sitemap this package writes read as empty and the sync
 #: check reported all of its pages as missing.
+#: A page says it is a document; an include fragment (a shared ``head.html``,
+#: a footer partial) does not. Without this the fragment was audited as a page
+#: with no ``<head>`` (SITE000, an error) and demanded in the sitemap.
+_DOCUMENT_RE = re.compile(r"<!doctype\s+html|<html[\s>]|<body[\s>]", re.I)
+_NOINDEX_RE = re.compile(
+    r"<meta\b(?=[^>]*\bname=[\"']?robots\b)(?=[^>]*\bcontent=[\"'][^\"']*\b(?:noindex|none)\b)[^>]*>",
+    re.I,
+)
+
+
+def is_fragment(path: Path) -> bool:
+    """True for an ``.html`` file that is an include, not a document."""
+    try:
+        head = path.read_text(encoding="utf-8", errors="replace")[:8192]
+    except OSError:
+        return False
+    return not _DOCUMENT_RE.search(head)
+
+
+def is_noindex(path: Path) -> bool:
+    """True for a page whose robots meta asks not to be indexed."""
+    try:
+        head = path.read_text(encoding="utf-8", errors="replace")[:16384]
+    except OSError:
+        return False
+    return bool(_NOINDEX_RE.search(head))
+
+
+def _file_for_url(root: Path, base_url: str, url: str) -> Path | None:
+    """The file under ``root`` a sitemap URL is served from, or ``None``.
+
+    Read off the URL itself rather than off :func:`discover_pages`, whose
+    allowlist of folders is about what to *generate* a sitemap from: a
+    hand-written ``fr/`` tree is not on it, and every one of its URLs was
+    reported as pointing at a page that no longer exists.
+    """
+    prefix = base_url if base_url.endswith("/") else base_url + "/"
+    if not url.startswith(prefix):
+        return None
+    rel = urllib.parse.unquote(url[len(prefix) :].split("#")[0].split("?")[0])
+    candidates = [rel + "index.html"] if rel.endswith("/") or not rel else [rel]
+    if rel and not rel.endswith("/"):
+        candidates += [rel + ".html", rel + "/index.html"]
+    for c in candidates:
+        f = root / c
+        if f.is_file():
+            return f
+    return None
+
+
 LOC_RE = re.compile(r"<(?:[\w.-]+:)?loc>(.*?)</(?:[\w.-]+:)?loc>", re.S)
 
 
@@ -542,9 +592,15 @@ def audit_indexes(root: Path, base_url: str) -> list[Finding]:
         out.append(Finding(where, 0, "SITE102", ERROR, "No sitemap.xml.", gen))
     elif base_url:
         listed = _sitemap_locs(sitemap.read_text(encoding="utf-8", errors="replace"))
-        expected = {_format_url(base_url, p) for p in discover_pages(root)}
+        # A noindexed page is left out of the sitemap on purpose, and a
+        # fragment is not a page: neither is "missing".
+        expected = {
+            _format_url(base_url, p)
+            for p in discover_pages(root)
+            if p.suffix != ".html" or not (is_fragment(root / p) or is_noindex(root / p))
+        }
         missing = sorted(expected - listed)
-        stale = sorted(listed - expected)
+        stale = sorted(u for u in listed - expected if _file_for_url(root, base_url, u) is None)
         if missing:
             shown = ", ".join(missing[:5]) + (" …" if len(missing) > 5 else "")
             out.append(
@@ -829,7 +885,7 @@ def gather_pages(target: Path) -> list[Path]:
         return [target]
     out: list[Path] = []
     for p in target.rglob("*.html"):
-        if p.is_file() and not any(part in EXCLUDE_DIRS for part in p.parts):
+        if p.is_file() and not any(part in EXCLUDE_DIRS for part in p.parts) and not is_fragment(p):
             out.append(p)
     return sorted(out)
 

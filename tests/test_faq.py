@@ -337,3 +337,50 @@ def test_an_answer_that_does_not_name_the_organisation_first_is_a_warning():
         "a.html",
     )
     assert "FAQ005" not in rules(faq.audit_faq([named], organization="Acme"))
+
+
+# ── Seen on a hand-written bilingual site (sprezzature.ai, 2026-11-05) ─────
+
+
+def test_an_answer_quoting_an_element_agrees_with_its_markup(tmp_path):
+    """The visible answer is decoded text, ``<div>`` included; the markup side
+    had its "tags" stripped, so the two were reported as disagreeing."""
+    answer = "It flags a clickable <div> with no keyboard access."
+    text = (
+        f"<html><head>{_ld(('What does it flag?', answer))}</head><body><main>"
+        "<h2>FAQ</h2><h3>What does it flag?</h3>"
+        "<p>It flags a clickable &lt;div&gt; with no keyboard access.</p></main></body></html>"
+    )
+    (tmp_path / "a.html").write_text(text, encoding="utf-8")
+    assert "FAQ003" not in rules(faq.audit_faq(c.read_site(tmp_path)))
+
+
+@pytest.mark.parametrize(
+    ("spelled", "canonical"),
+    [
+        ("1 885", "1885"),
+        ("1,885", "1885"),
+        ("1.885.000", "1885000"),
+        ("3.10", "3.10"),
+        ("3,5", "3.5"),
+        ("1.11.0", "1.11.0"),
+    ],
+)
+def test_a_version_is_not_read_as_a_thousand(spelled, canonical):
+    assert faq.numbers(f"Python {spelled} here") == {canonical}
+
+
+def test_a_digit_and_a_standard_name_are_not_claims():
+    claimed = faq.claimed_numbers("Exit code 0, keyed on ISO 3166, for 42 countries.")
+    assert claimed == {"42"}
+
+
+def test_a_maintainer_note_beside_the_assets_is_not_a_page(tmp_path):
+    """``css/BUILD.md`` was told it offered none of the site's calls to action."""
+    (tmp_path / "css").mkdir()
+    (tmp_path / "css" / "BUILD.md").write_text("# Build\n\nRun the compiler.\n", "utf-8")
+    (tmp_path / "docs").mkdir()
+    (tmp_path / "docs" / "README.md").write_text("# Docs\n\nRead me.\n", "utf-8")
+    (tmp_path / "NOTES.md").write_text("# Notes\n\nAt the root: a page.\n", "utf-8")
+    names = sorted(p.path for p in c.read_site(tmp_path))
+    assert names == ["NOTES.md", "docs/README.md"]

@@ -364,9 +364,9 @@ def test_the_reference_cites_no_rule_that_no_longer_exists():
 @pytest.mark.parametrize(
     "target",
     [
-        "https://[",       # ValueError: Invalid IPv6 URL
-        "http://a b/",     # http.client.InvalidURL — not a ValueError
-        "https://",        # no host at all
+        "https://[",  # ValueError: Invalid IPv6 URL
+        "http://a b/",  # http.client.InvalidURL — not a ValueError
+        "https://",  # no host at all
     ],
 )
 def test_a_typed_url_that_is_not_a_url_comes_back_as_a_failed_fetch(target: str) -> None:
@@ -381,3 +381,44 @@ def test_a_typed_url_that_is_not_a_url_comes_back_as_a_failed_fetch(target: str)
     No network: every one of these dies in URL parsing, before a socket.
     """
     assert au.fetch(target) == (0, "")
+
+
+# ── Seen on a hand-written bilingual site (sprezzature.ai, 2026-11-05) ─────
+
+_DOC = (
+    '<!doctype html><html lang="en"><head><title>T</title>{extra}</head>'
+    "<body><main><p>Hi.</p></main></body></html>"
+)
+
+
+def test_the_sitemap_check_reads_the_site_as_it_is(tmp_path: Path):
+    """A ``fr/`` tree is not in the generator's allowlist of folders, yet its
+    pages exist; a noindexed page is left out of the sitemap on purpose; a
+    ``<head>``-only include is not a page at all."""
+    (tmp_path / "index.html").write_text(_DOC.format(extra=""), encoding="utf-8")
+    (tmp_path / "gone.html").write_text(
+        _DOC.format(extra='<meta name="robots" content="noindex, follow">'), encoding="utf-8"
+    )
+    (tmp_path / "head.html").write_text('<link rel="icon" href="/favicon.ico">\n', "utf-8")
+    (tmp_path / "fr").mkdir()
+    (tmp_path / "fr" / "index.html").write_text(_DOC.format(extra=""), encoding="utf-8")
+    (tmp_path / "robots.txt").write_text("Sitemap: https://example.com/sitemap.xml\n", "utf-8")
+    (tmp_path / "sitemap.xml").write_text(
+        "<urlset><url><loc>https://example.com/</loc></url>"
+        "<url><loc>https://example.com/fr/</loc></url></urlset>",
+        encoding="utf-8",
+    )
+    found = rules(au.audit_indexes(tmp_path, "https://example.com"))
+    assert "SITE103" not in found
+    assert "SITE104" not in found
+    assert "head.html" not in [p.name for p in au.gather_pages(tmp_path)]
+
+
+def test_a_sitemap_entry_with_no_file_is_still_stale(tmp_path: Path):
+    (tmp_path / "index.html").write_text(_DOC.format(extra=""), encoding="utf-8")
+    (tmp_path / "sitemap.xml").write_text(
+        "<urlset><url><loc>https://example.com/</loc></url>"
+        "<url><loc>https://example.com/fr/old.html</loc></url></urlset>",
+        encoding="utf-8",
+    )
+    assert "SITE104" in rules(au.audit_indexes(tmp_path, "https://example.com"))
