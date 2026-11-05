@@ -470,7 +470,11 @@ def build_posts(
     return posts, entry_ids, entry_links
 
 
-_DEFAULT_ROOT: Path = Path(__file__).resolve().parents[2]  # .../sprezzature (monorepo root)
+#: The hub checkout, beside this one: ``~/sprezzature-publish`` →
+#: ``~/sprezzature``. This module lived inside the hub until the split, where
+#: ``parents[2]`` was the hub; outside it, that lands on the folder holding the
+#: clones, and the feed went to ``<that folder>/web``, another site entirely.
+_DEFAULT_ROOT: Path = Path(__file__).resolve().parents[1].parent / "sprezzature"
 
 
 @sprezzature_command(
