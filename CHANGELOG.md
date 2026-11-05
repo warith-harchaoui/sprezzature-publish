@@ -32,8 +32,8 @@ versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   file serves it, so a `fr/` tree outside the generator's folders is no
   longer "gone" (`SITE104`).
 - `faq --audit`: `3.10` is a version, not three hundred and ten; a single
-  digit and a standard's number (`ISO 3166`) are not claims to source
-  (`FAQ001`). An answer quoting an element (`<div>`) no longer disagrees
+  digit, a standard's number (`ISO 3166`) and a number inside code
+  (`min-h-11`) are not claims to source (`FAQ001`). An answer quoting an element (`<div>`) no longer disagrees
   with its own markup (`FAQ003`).
 - Upper-case Markdown notes below the root (`css/BUILD.md`) are not pages;
   `README.md` and anything at the root still are.
