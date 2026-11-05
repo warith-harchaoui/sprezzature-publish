@@ -20,6 +20,9 @@ versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- `changelog` listed seven bricks by hand: ui, publish and video, added
+  later, never had an entry in the sprezzature.ai feed. The list now comes
+  from the hub's `SKILLS.txt`.
 - `changelog` wrote its feed to `~/web` by default: the path still assumed
   the module lived inside the hub. It now defaults to the hub's `web/` beside
   this clone.
