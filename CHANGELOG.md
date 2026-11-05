@@ -6,6 +6,24 @@ versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added: lessons from a real site (deraison.ai, 2026-11-05)
+
+- `FAQ005` (warning): an answer longer than three sentences or 80 words, or
+  whose first sentence does not name the organisation from `ctas.yaml`.
+  `audit_faq(pages, organization=...)`; `faq --audit` and `findable` pass it.
+- `references/faq-aeo.md`: one FAQ per money page, never the same question
+  twice, markup on the page it describes; the anatomy of an answer; the
+  questions a services firm is asked; the calibration site and what is
+  still open.
+
+### Fixed
+
+- The last answer of a heading-based FAQ ran on into the call to action
+  after it; it now ends when the FAQ's container closes.
+- A question written as a heading inside `<summary>` was read twice.
+- The extractive fallback quoted bibliography notes as answers; passages
+  under reference headings no longer enter the corpus.
+
 ## [1.4.1] — 2026-11-05
 
 ### Fixed — the tools listing

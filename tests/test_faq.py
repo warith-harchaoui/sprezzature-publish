@@ -274,3 +274,66 @@ def test_a_number_no_other_page_states_is_a_warning():
 )
 def test_numbers_are_compared_without_their_separators(text, expected):
     assert faq.numbers(text) == expected
+
+
+# ── Lessons from a real site (deraison.ai, 2026-11-05) ───────────────────
+
+# The shape a hand-built FAQ takes: each question an <h3> inside a
+# <summary>, the section closed by a call to action with no heading of its
+# own, then the site's footer.
+ACCORDION = """<!doctype html><html lang="fr"><body><main>
+<section id="faq"><h2>Questions fréquentes</h2>
+<details open><summary><h3>Que fait Acme ?</h3></summary><p>Acme fait des sous-titres.</p></details>
+<details><summary><h3>Combien coûte Acme ?</h3></summary><p>Acme est gratuit.</p></details>
+<div><p>Prêt ?</p><a href="https://calendly.com/acme">Réserver un appel</a></div>
+</section></main>
+<footer><h2>Parlons de votre projet</h2><p>Écrivez-nous.</p></footer></body></html>
+"""
+
+
+def test_the_last_answer_ends_with_its_section():
+    """The CTA after the last question is not part of its answer."""
+    page = c.read_html(ACCORDION, "index.html")
+    found = {f.question: f.answer for f in page.faq}
+    assert found["Combien coûte Acme ?"] == "Acme est gratuit."
+    assert all("Réserver" not in a for a in found.values())
+
+
+def test_a_question_inside_a_summary_is_read_once():
+    page = c.read_html(ACCORDION, "index.html")
+    questions = [f.question for f in page.faq]
+    assert questions.count("Que fait Acme ?") == 1
+
+
+def test_a_bibliography_never_answers_a_question():
+    """Extracted answers came from reference notes on the calibration site."""
+    page = c.read_html(
+        "<main><h1>Acme</h1><p>Acme turns recorded speech into captions locally.</p>"
+        "<h2>Bibliography</h2><p>How Acme works, how to train it, data security. medium.com</p>"
+        "</main>",
+        "index.html",
+    )
+    texts = [s.text for s in faq.corpus([page])]
+    assert any("captions locally" in t for t in texts)
+    assert not any("medium.com" in t for t in texts)
+
+
+def test_an_answer_too_long_to_quote_is_a_warning():
+    long = " ".join(["Acme does one more thing here."] * 5)
+    page = c.read_html(f"<main><h2>FAQ</h2><h3>What is Acme?</h3><p>{long}</p></main>", "a.html")
+    assert "FAQ005" in rules(faq.audit_faq([page]))
+
+
+def test_an_answer_that_does_not_name_the_organisation_first_is_a_warning():
+    page = c.read_html(
+        "<main><h2>FAQ</h2><h3>What happens when I book?</h3>"
+        "<p>You pick a slot. A quote follows.</p></main>",
+        "a.html",
+    )
+    assert "FAQ005" in rules(faq.audit_faq([page], organization="Acme"))
+    named = c.read_html(
+        "<main><h2>FAQ</h2><h3>What happens when I book?</h3>"
+        "<p>To book a call with Acme, you pick a slot. A quote follows.</p></main>",
+        "a.html",
+    )
+    assert "FAQ005" not in rules(faq.audit_faq([named], organization="Acme"))
