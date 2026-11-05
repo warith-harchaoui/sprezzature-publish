@@ -78,8 +78,8 @@ The lint needing **only click and the standard library** is deliberate, and
 it is the reason this package is worth putting in a pre-commit hook: it runs
 in milliseconds, with no image library and no model client behind it. The
 rest of the package is installed beside it, since there are no extras any
-more, and the lint does not depend on it: `requests`, which only `--ai` uses,
-is picked up when present, and every rule runs without it.
+more, and the lint does not depend on it: `best-engine-ai-helper`, which only
+`--ai` uses, is imported when `--ai` asks for it, and every rule runs without it.
 
 ## Use
 
@@ -200,15 +200,18 @@ imports never enter its graph. It is a base dependency, so the voices arrive
 with `pip install sprezzature-publish`; only the model files are fetched apart.
 
 ```sh
-sprezzature-audio-install-voice --engine kokoro    # model files, once
+sprezzature-audio-install-voice --engine chatterbox    # model files, once
 sprezzature-publish-narrate post.md --out-dir site/audio/
 ```
 
-No voice is named above and none needs to be: the default engine reads the
-text, works out what language it is in, and picks the voice that speaks it.
-That is not a convenience — the detected language is what the phonemiser
-works from, so a French page read as English is not French in an American
-accent, it is an American spelling the words out.
+No engine is named on the second line and none needs to be: speaker-helper's
+router picks it from the language and the offline condition, and today it
+answers Chatterbox in English and in French, which is why that is the one to
+install. `--engine kokoro` takes the light one on purpose: it reads the text,
+works out what language it is in, and picks the voice that speaks it. That is
+not a convenience — the detected language is what its phonemiser works from,
+so a French page read as English is not French in an American accent, it is
+an American spelling the words out.
 
 ## See also
 

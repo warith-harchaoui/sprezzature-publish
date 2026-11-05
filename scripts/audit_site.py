@@ -132,7 +132,7 @@ Exit code
 
 Notes
 -----
-* Python 3.10+, standard library only. Fetching a URL uses ``urllib``.
+* Python 3.10+, click and the standard library only. Fetching a URL uses ``urllib``.
 * Idempotent: running ``--fix`` twice changes nothing the second time.
 
 Author

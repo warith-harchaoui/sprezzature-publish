@@ -37,11 +37,11 @@ en:
           note: a local voice, cues timed to the audio, and the sentence being spoken highlighted as it is read
       result:
         label: A folder you can deploy
-        note: pages, icons, indexes, a feed, and an MP3 beside its WebVTT
+        note: pages, icons, indexes, a feed, and an audio track beside its WebVTT
     - title: "Audit: before it exists, and after"
       steps:
         - label: Lint the Markdown first
-          note: before anything renders it. Standard library, milliseconds, pre-commit shaped.
+          note: before anything renders it. Click and the standard library, milliseconds, pre-commit shaped.
         - label: Read the built site back
           note: "head meta, Open Graph, icon links, robots.txt, sitemap.xml, llms.txt. A directory, a single page, or a live URL, with no Markdown source required."
         - label: Cite a specification, or say there is none
@@ -51,8 +51,8 @@ en:
         note: "--fix writes back what can be derived. Anything a model would have to invent is reported, not written, and on a remote URL nothing is repaired at all."
   outcome:
     label: A site a search engine, a language model and a reader can each find their way through
-    note: "The voices are not here. Narration synthesis lives in sprezzature-audio, which owns that modality in both directions, and is invoked as a subprocess so its heavy imports never enter this dependency graph."
-  footer: The lint has no dependencies at all, which is what makes it worth a pre-commit hook. Everything heavier is an extra named after the tool that needs it, so an install says what it is for.
+    note: "The voices are not here. Narration synthesis lives in sprezzature-audio, which owns that modality in both directions, and is invoked as a subprocess so its heavy imports never enter this process."
+  footer: The lint needs only click and the standard library, which is what makes it worth a pre-commit hook. Everything heavier arrives with the same pip install, since there are no feature extras, and the lint never imports it.
 
 fr:
   title: Comment fonctionne sprezzature-publish
@@ -83,11 +83,11 @@ fr:
           note: une voix locale, des repères calés sur l'audio, et la phrase prononcée mise en évidence au fil de la lecture
       result:
         label: Un dossier prêt à déployer
-        note: les pages, les icônes, les index, le flux, et un MP3 à côté de son WebVTT
+        note: les pages, les icônes, les index, le flux, et une piste audio à côté de son WebVTT
     - title: "Contrôler : avant qu'il existe, et après"
       steps:
         - label: Relire le Markdown d'abord
-          note: avant tout rendu. Bibliothèque standard, quelques millisecondes, taillé pour le pre-commit.
+          note: avant tout rendu. Click et la bibliothèque standard, quelques millisecondes, taillé pour le pre-commit.
         - label: Relire le site construit
           note: "métadonnées d'en-tête, Open Graph, liens d'icônes, robots.txt, sitemap.xml, llms.txt. Un dossier, une page seule, ou une adresse en ligne, sans exiger de source Markdown."
         - label: Citer une spécification, ou dire qu'il n'y en a pas
@@ -97,5 +97,5 @@ fr:
         note: "--fix réécrit ce qui se déduit. Ce qu'un modèle devrait inventer est rapporté, pas écrit, et sur une adresse distante rien n'est réparé du tout."
   outcome:
     label: Un site où un moteur de recherche, un modèle de langue et un lecteur trouvent chacun leur chemin
-    note: "Les voix ne sont pas ici. La synthèse de narration vit dans sprezzature-audio, qui possède cette modalité dans les deux sens, et elle est appelée en sous-processus pour que ses imports lourds n'entrent jamais dans ce graphe de dépendances."
-  footer: Le linter n'a aucune dépendance, ce qui en fait un bon crochet de pre-commit. Tout ce qui est plus lourd est une option nommée d'après l'outil qui en a besoin, pour qu'une installation dise à quoi elle sert.
+    note: "Les voix ne sont pas ici. La synthèse de narration vit dans sprezzature-audio, qui possède cette modalité dans les deux sens, et elle est appelée en sous-processus pour que ses imports lourds n'entrent jamais dans ce processus."
+  footer: Le linter n'a besoin que de click et de la bibliothèque standard, ce qui en fait un bon crochet de pre-commit. Tout ce qui est plus lourd arrive avec le même pip install, puisqu'il n'y a plus d'extra de fonctionnalité, et le linter ne l'importe jamais.

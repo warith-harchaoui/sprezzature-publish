@@ -52,7 +52,7 @@ if TYPE_CHECKING:
     # NotRequired` therefore raises ImportError on 3.10 — and `from __future__
     # import annotations` does not help, because that line is a runtime import
     # and not an annotation. It took `scripts/md_to_html.py` down with it,
-    # which is the `[html]` extra, not just the narration path.
+    # which is the HTML renderer, not just the narration path.
     #
     # Imported only for the type checker: PEP 563 keeps the class body's
     # annotations as strings, so nothing resolves this name at runtime on any

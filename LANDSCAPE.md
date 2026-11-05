@@ -41,8 +41,9 @@ every image inside the page to the other one.
 which owns the sound modality in both directions. Captions turn recorded
 speech into timed text; narration turns written text into timed sound. This
 package does not synthesise a single sample. It invokes that one as a
-subprocess, so a reader who only wants rendered Markdown never installs a
-text-to-speech stack.
+subprocess, so a reader who only wants rendered Markdown never loads a
+text-to-speech stack. It is installed all the same: `sprezzature-audio` is a
+base dependency, voices included, and only the model files come apart.
 
 ## When to choose it
 

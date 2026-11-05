@@ -23,8 +23,6 @@ sprezzature skill. Three jobs:
 AI-assisted suggestions (optional). When ``--ai`` is set and a local
 Ollama daemon is reachable, the script asks the default model for:
 
-- Plain-language alternatives for sentences with three or more long
-  words.
 - Mermaid diagram label improvements (clarity, parallel structure).
 - Captions for LaTeX blocks (a sentence-long description for
   screen-reader users) — only when the block has no preceding
@@ -32,7 +30,8 @@ Ollama daemon is reachable, the script asks the default model for:
 
 The AI step **never** mutates the source. It prints suggestions; you
 apply them by hand. The deterministic rules can rewrite (``--fix``)
-trailing whitespace and missing code-block language hints.
+trailing whitespace and, with ``--render-mermaid``, insert the PNG
+sibling references; nothing else.
 
 Usage
 -----
@@ -719,7 +718,7 @@ def _lint_standalone_mermaid(
     "--ai-model",
     "ai_model",
     default="",
-    help="Override the Ollama model tag. Default: hardware-picked.",
+    help="Override the Ollama model tag. Default: qwen3-vl:8b.",
 )
 def _cli(**options: Any) -> int:
     """Click command body: the flags arrive as keywords, the work is :func:`_run`."""

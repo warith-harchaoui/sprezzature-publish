@@ -68,8 +68,8 @@ délibéré, et c'est la raison pour laquelle ce paquet vaut la peine d'être mi
 dans un crochet de pré-commit : il tourne en quelques millisecondes, sans
 bibliothèque d'images ni client de modèle derrière lui. Le reste du paquet
 s'installe à côté, puisqu'il n'y a plus d'extras, et le lint n'en dépend
-pas : `requests`, dont seul `--ai` se sert, est pris s'il est là, et chaque
-règle tourne sans lui.
+pas : `best-engine-ai-helper`, dont seul `--ai` se sert, n'est importé que
+quand `--ai` le demande, et chaque règle tourne sans lui.
 
 ## Utilisation
 
@@ -211,11 +211,19 @@ obligé d'en faire tourner un.
 - **Le contraste et les couleurs** — `sprezzature-colors`.
 - **Les figures** — `sprezzature-figures`.
 
-Aucune voix n'est nommée et aucune n'a besoin de l'être : le moteur par
-défaut lit le texte, reconnaît sa langue et choisit la voix qui la parle. Ce
-n'est pas un confort : la langue détectée est ce dont part le phonétiseur, et
-une page française lue comme de l'anglais n'est pas du français avec un
-accent américain, c'est un Américain qui épelle les mots.
+```sh
+sprezzature-audio-install-voice --engine chatterbox    # les fichiers de modèle, une fois
+sprezzature-publish-narrate post.md --out-dir site/audio/
+```
+
+Aucun moteur n'est nommé sur la deuxième ligne et aucun n'a besoin de l'être : le
+routeur de speaker-helper le choisit d'après la langue et la condition hors
+ligne, et il répond aujourd'hui Chatterbox en anglais comme en français, d'où
+le moteur à installer. `--engine kokoro` prend le moteur léger exprès : il lit
+le texte, reconnaît sa langue et choisit la voix qui la parle. Ce n'est pas
+un confort : la langue détectée est ce dont part son phonétiseur, et une page
+française lue comme de l'anglais n'est pas du français avec un accent
+américain, c'est un Américain qui épelle les mots.
 
 La frontière vaut d'être dite : ce paquet décide **quoi** publier et
 **comment la page est faite**. Ce que la page contient d'audio, d'images ou de

@@ -59,8 +59,9 @@ app = FastAPI(
     ),
 )
 
-#: Which optional halves this deployment actually has. Probed rather than
-#: assumed, because the extras are the whole point of the packaging.
+#: Which halves this deployment actually has. Both are base dependencies since
+#: the extras were folded in; probed rather than assumed, so a broken install
+#: says which half is missing instead of failing inside a route.
 _FEATURES: dict[str, str] = {
     "html": "markdown",
     "prose": "best_engine_ai_helper",

@@ -119,7 +119,7 @@ def _llm_chat(*args: Any, **kwargs: Any) -> Any:
         from best_engine_ai_helper.llm import chat
     except ImportError as exc:  # pragma: no cover - dependency guard
         raise SystemExit(
-            "--ai-hints asks a local model, which is the [prose] extra: "
+            "--ai-hints asks a local model through best-engine-ai-helper, a base dependency, so this install is broken: "
             "pip install 'sprezzature-publish'. Without it the "
             "narration still works — the structural hints are the baseline."
         ) from exc

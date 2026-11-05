@@ -44,7 +44,9 @@ qui possède la modalité sonore dans les deux sens. Les sous-titres
 transforment de la parole enregistrée en texte daté ; la narration transforme
 du texte écrit en son daté. Ce paquet ne synthétise pas un seul échantillon.
 Il appelle l'autre en sous-processus, pour qu'un lecteur qui veut seulement du
-Markdown rendu n'installe jamais une pile de synthèse vocale.
+Markdown rendu ne charge jamais une pile de synthèse vocale. Elle est
+installée quand même : `sprezzature-audio` est une dépendance de base, voix
+comprises, et seuls les fichiers de modèles viennent à part.
 
 ## Quand la choisir
 

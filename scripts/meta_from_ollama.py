@@ -96,7 +96,7 @@ try:
     from best_engine_ai_helper.llm import chat as _llm_chat
 except ImportError as _exc:  # pragma: no cover - dependency guard
     raise SystemExit(
-        "this tool asks a local model, which is the [prose] extra: "
+        "this tool asks a local model through best-engine-ai-helper, a base dependency, so this install is broken: "
         "pip install 'sprezzature-publish'"
     ) from _exc
 
@@ -485,7 +485,7 @@ def _cli(
     except _ModelUnreachable:
         click.echo(
             f"Cannot reach Ollama at {OLLAMA_URL}. "
-            f"Start it with `ollama serve`, then `best-engine-ai-helper pull` for this machine's model.",
+            f"Start it with `ollama serve`, then `ollama pull {resolved_model}`.",
             err=True,
         )
         return 2
