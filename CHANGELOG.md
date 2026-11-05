@@ -6,6 +6,8 @@ versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [1.5.0] — 2026-11-05
+
 ### Added: lessons from a real site (deraison.ai, 2026-11-05)
 
 - `FAQ005` (warning): an answer longer than three sentences or 80 words, or
