@@ -147,6 +147,9 @@ _THOUSANDS = re.compile(r"\d{1,3}(?:[\s.,]\d{3})+")
 #: A number that names something rather than counts it: a standard
 #: (``ISO 3166``, ``RFC 9110``). Not a fact anyone could find false.
 _NAMED = re.compile(r"\b(?:ISO|IEC|RFC|EN|IEEE|ECMA)[\s/-]*$")
+#: Code, in Markdown or HTML: ``min-h-11`` is a class name and ``--classes 12``
+#: an invocation, literals a reader copies rather than facts a page sources.
+_CODE = re.compile(r"`[^`\n]*`|<code\b[^>]*>.*?</code>", re.S | re.I)
 
 
 def _canonical_number(raw: str) -> str:
@@ -177,8 +180,10 @@ def claimed_numbers(text: str) -> set[str]:
 
     Leaves out a single digit (an exit code, a step, "one of three"), which
     every page states in passing, and a number that is part of a standard's
-    name. FAQ001 asks for a source; neither has one to give.
+    name, or a number inside code. FAQ001 asks for a source; none has one to
+    give.
     """
+    text = _CODE.sub(lambda m: " " * len(m.group(0)), text)
     out = set()
     for m in _NUMBER.finditer(text):
         n = _canonical_number(m.group(0))

@@ -375,6 +375,14 @@ def test_a_digit_and_a_standard_name_are_not_claims():
     assert claimed == {"42"}
 
 
+def test_a_number_inside_code_is_not_a_claim():
+    """``min-h-11`` in a ux-laws answer was asked for a source, as a figure."""
+    claimed = faq.claimed_numbers(
+        "It adds `min-h-11` for Fitts, runs <code>--classes 12</code>, for 42 countries."
+    )
+    assert claimed == {"42"}
+
+
 def test_a_maintainer_note_beside_the_assets_is_not_a_page(tmp_path):
     """``css/BUILD.md`` was told it offered none of the site's calls to action."""
     (tmp_path / "css").mkdir()
