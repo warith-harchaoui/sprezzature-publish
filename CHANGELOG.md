@@ -6,6 +6,14 @@ versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Fixed
+
+- **`findable` recognises a site served under a directory.** `_page_url`
+  wrote `/index.html` where the sitemap and the canonical say `/saggio/`,
+  so FIND003 and FIND004 fired on every page of deraison.ai/saggio. The
+  prefix comes from `--base-url`, or from the sitemap when every address
+  lives under one directory whose home page is listed.
+
 ## [1.5.0] — 2026-11-05
 
 ### Added: lessons from a real site (deraison.ai, 2026-11-05)
