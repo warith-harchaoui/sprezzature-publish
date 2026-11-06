@@ -6,6 +6,8 @@ versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [1.5.1] — 2026-11-06
+
 ### Fixed
 
 - **`findable` recognises a site served under a directory.** `_page_url`
