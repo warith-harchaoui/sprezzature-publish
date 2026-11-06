@@ -75,6 +75,38 @@ def test_a_canonical_pointing_elsewhere_is_an_error(tmp_path):
     assert not rule_on(ok, "FIND004", "index.html")
 
 
+def test_a_site_served_under_a_directory_matches_its_own_sitemap_and_canonical(tmp_path):
+    # deraison.ai/saggio/: the folder says /index.html, the sitemap and the
+    # canonical say /saggio/. Both rules used to fire on every money page.
+    (tmp_path / "sitemap.xml").write_text(
+        "<urlset><url><loc>https://acme.test/docs/</loc></url>"
+        "<url><loc>https://acme.test/docs/post.html</loc></url></urlset>",
+        encoding="utf-8",
+    )
+    head = '<link rel="canonical" href="https://acme.test/docs/">'
+    (tmp_path / "index.html").write_text(MONEY.format(head=head), encoding="utf-8")
+    (tmp_path / "post.html").write_text(POST.format(head=""), encoding="utf-8")
+    pages = read_site(tmp_path)
+    for base_url in ("https://acme.test/docs/", ""):  # stated, then read off the sitemap
+        report = fd.findable(pages, PLAN, root=tmp_path, base_url=base_url)
+        assert not rule_on(report, "FIND003", "index.html"), base_url
+        assert not rule_on(report, "FIND004", "index.html"), base_url
+    elsewhere = '<link rel="canonical" href="https://acme.test/docs/other.html">'
+    (tmp_path / "index.html").write_text(MONEY.format(head=elsewhere), encoding="utf-8")
+    report = fd.findable(
+        read_site(tmp_path), PLAN, root=tmp_path, base_url="https://acme.test/docs/"
+    )
+    assert rule_on(report, "FIND004", "index.html")
+
+
+def test_a_sitemap_spread_over_the_host_infers_no_directory():
+    assert fd._site_prefix("", {"/", "/a.html", "/b/c.html"}) == ""
+    assert fd._site_prefix("", {"/post.html"}) == ""  # one page, not a directory
+    assert fd._site_prefix("", {"/docs/a.html", "/docs/b.html"}) == ""  # home not listed
+    assert fd._site_prefix("", {"/docs", "/docs/a.html"}) == "/docs"
+    assert fd._site_prefix("https://acme.test/docs/", None) == "/docs"
+
+
 def test_money_page_findings_come_first_and_carry_their_goals(tmp_path):
     report = build(tmp_path)
     assert report.money_pages == ["index.html"]

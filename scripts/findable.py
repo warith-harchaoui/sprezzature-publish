@@ -161,9 +161,34 @@ class Report:
 # ── The rules that need the CTAs ───────────────────────────────────────────
 
 
-def _page_url(path: str) -> str:
-    """``fr/index.html`` → ``/fr``, ``a/b.html`` → ``/a/b.html``."""
-    return normalize("/" + path)
+def _page_url(path: str, prefix: str = "") -> str:
+    """``fr/index.html`` → ``/fr``, ``a/b.html`` → ``/a/b.html``.
+
+    ``prefix`` is the path the site is served under (``/docs`` for a site at
+    ``https://example.org/docs/``), which the sitemap and the canonicals
+    spell and the folder on disk does not.
+    """
+    return normalize(prefix + "/" + path)
+
+
+def _site_prefix(base_url: str, sitemap: set[str] | None) -> str:
+    """The path a site is served under: from ``base_url``, else from its sitemap.
+
+    Without a base URL, a sitemap whose every address sits under one
+    directory says where the site lives, provided it lists that directory's
+    home and at least one page below it. Anything less certain answers
+    ``""``, the host root.
+    """
+    if base_url:
+        return urllib.parse.urlsplit(base_url).path.rstrip("/")
+    if not sitemap:
+        return ""
+    first = {path.split("/")[1] for path in sitemap}
+    if len(first) != 1 or "" in first:
+        return ""
+    prefix = "/" + first.pop()
+    under = [path for path in sitemap if path.startswith(prefix + "/")]
+    return prefix if prefix in sitemap and under else ""
 
 
 def _sitemap_paths(root: Path) -> set[str] | None:
@@ -195,13 +220,18 @@ def _has_fact(page: PageContent) -> bool:
 
 
 def cta_rules(
-    pages: list[PageContent], plan: CtaPlan | None, money: list[str], root: Path | None
+    pages: list[PageContent],
+    plan: CtaPlan | None,
+    money: list[str],
+    root: Path | None,
+    base_url: str = "",
 ) -> list[Finding]:
     """``FIND001`` to ``FIND009``: the findability of what the site is for."""
     out: list[Finding] = []
     money_set = set(money)
     shell = partials(pages)
     sitemap = _sitemap_paths(root) if root is not None else None
+    prefix = _site_prefix(base_url, sitemap)
 
     for page in pages:
         if not page.is_page or page.path in shell:
@@ -234,7 +264,7 @@ def cta_rules(
                     "remove noindex from this page",
                 )
             )
-        if sitemap is not None and _page_url(page.path) not in sitemap:
+        if sitemap is not None and _page_url(page.path, prefix) not in sitemap:
             out.append(
                 Finding(
                     page.path,
@@ -247,7 +277,8 @@ def cta_rules(
             )
         if page.canonical:
             target = normalize(urllib.parse.urlsplit(page.canonical).path or "/")
-            if target not in {_page_url(page.path), _page_url(page.path).removesuffix(".html")}:
+            own = _page_url(page.path, prefix)
+            if target not in {own, own.removesuffix(".html")}:
                 out.append(
                     Finding(
                         page.path,
@@ -285,9 +316,10 @@ def cta_rules(
 
     if plan and plan.organization and money_set:
         name = plan.organization.lower()
-        targets = {_page_url(m) for m in money_set} | {
-            _page_url(m).removesuffix(".html") for m in money_set
-        }
+        # A link is spelled from the folder (``/b.html``) when relative and
+        # from the host (``/docs/b.html``) when absolute: both reach the page.
+        spelled = {_page_url(m) for m in money_set} | {_page_url(m, prefix) for m in money_set}
+        targets = spelled | {url.removesuffix(".html") for url in spelled}
         hosts = site_hosts(pages)
         for page in pages:
             if not page.is_page or page.path in shell or page.path in money_set:
@@ -407,7 +439,7 @@ def findable(
         raw += _html_findings(root, base_url=base_url)
     raw += audit_ctas(pages, plan or CtaPlan())
     raw += faq.audit_faq(pages, organization=plan.organization if plan else "")
-    raw += cta_rules(pages, plan, money, root)
+    raw += cta_rules(pages, plan, money, root, base_url)
 
     money_set = set(money)
     tagged = [
