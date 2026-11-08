@@ -17,15 +17,15 @@ The lint needs only click and the standard library, so this is the one
 worth putting in a pre-commit hook: no image library, no model client,
 milliseconds.
 
-## Render the Mermaid blocks while linting
+## Redraw a diagram the lint reports
+
+A Mermaid block is reported as `MMD001`. Write the arrows as rows, draw them
+with `sprezzature-figures`, embed the SVG, and delete the block:
 
 ```bash
-sprezzature-publish-lint docs/ --render-mermaid --out-dir docs/diagrams/
-sprezzature-publish-lint docs/ --render-mermaid --fix
+printf 'source,target\nDraft,Review\nReview,Publish\n' > flow.csv
+sprezzature-figures render flowchart --data flow.csv --out docs/flow.svg
 ```
-
-With `--fix`, the PNG sibling reference is inserted next to the block. The
-repair is idempotent and never invents content.
 
 ## Markdown to pages
 

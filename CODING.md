@@ -24,8 +24,7 @@ published promise rather than an accident:
 
 Everything heavier is a base dependency since the extras were folded in on
 2026-11-01, but none of those three files imports it at module level (the
-lint reaches for `mmdc` and a model client only behind `--render-mermaid`
-and `--ai`). A new import in any of them is a review question, not a detail,
+lint reaches for a model client only behind `--ai`). A new import in any of them is a review question, not a detail,
 and `tests/test_the_light_tools_stay_light.py` fails on one.
 
 ## The two names share one table

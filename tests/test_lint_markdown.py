@@ -28,8 +28,7 @@ def test_lint_public_fixture_runs() -> None:
     """The Gettysburg fixture should at minimum parse and exit 0 or 1."""
     proc = _run(str(FIXTURE))
     # The fixture intentionally contains an empty-alt image and a
-    # mermaid block. Empty alt is INFO (no exit flip). Without
-    # --render-mermaid we don't try to render. Exit 0 expected.
+    # mermaid block. Empty alt is INFO and MMD001 a warning (no exit flip).
     assert proc.returncode in (0, 1), (
         f"unexpected exit {proc.returncode}\nstdout:\n{proc.stdout}\nstderr:\n{proc.stderr}"
     )
@@ -70,12 +69,11 @@ def test_link_syntax_in_code_span_is_not_a_broken_link(tmp_path: Path) -> None:
     assert "MD050" in proc.stdout and proc.returncode == 1
 
 
-def test_lint_help_advertises_mermaid_and_ai() -> None:
+def test_lint_help_names_the_mermaid_rule_and_ai() -> None:
     proc = _run("-h")
     assert proc.returncode == 0
-    assert "Mermaid" in proc.stdout
+    assert "MMD001" in proc.stdout
     assert "--ai" in proc.stdout
-    assert "--render-mermaid" in proc.stdout
 
 
 def test_version_flag() -> None:
@@ -102,9 +100,6 @@ def test_prompts_load_without_pyyaml() -> None:
     # that loaded it through a different skill's scripts/ — pass the dir
     # explicitly so this test is order-independent.
     prompts_dir = REPO_ROOT / "scripts" / "prompts"
-    mermaid = load_prompt("mermaid_labels", prompts_dir=prompts_dir)
     latex = load_prompt("latex_caption", prompts_dir=prompts_dir)
-    assert "Reply with a JSON array" in mermaid["output_contract"]
     assert "Plain UTF-8 text" in latex["output_contract"]
-    assert mermaid["rules_numbered"].startswith("1.")
     assert latex["rules_numbered"].startswith("1.")

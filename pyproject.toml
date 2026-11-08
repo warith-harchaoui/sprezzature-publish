@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "sprezzature-publish"
-version = "1.5.2"
+version = "1.6.0"
 description = "A folder of Markdown becomes a site somebody can find: pages, meta tags, a favicon set from one logo, the indexes crawlers and language models look for, and an optional narrated read-along."
 readme = "README.md"
 # `<3.14` since 2026-11-01, when the extras were folded into the base. The
@@ -62,7 +62,6 @@ dependencies = [
     "uvicorn[standard]>=0.30",
     "pydantic>=2.0",
     "markdown>=3.5",
-    "mmdc>=0.3",
     "Pillow>=10.0.0",
     "requests>=2.31",
     "fastapi-mcp>=0.3",

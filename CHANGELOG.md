@@ -6,19 +6,30 @@ versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
-## [1.5.2] — 2026-11-08
+## [1.6.0] — 2026-11-08
+
+### Removed
+
+- **Mermaid is gone.** `mmdc` could compute a wrong viewBox, and the diagram
+  came out cropped and without its labels. The `mmdc` dependency,
+  `render_mermaid_block`, `have_python_mmdc`, `have_node_mmdc`, the
+  `--render-mermaid` option and `--out-dir` (it only named where those PNGs
+  went), the `lint_file(render_mermaid=, out_dir=)` arguments, the
+  `.mmd` / `.mermaid` files in the lint and the pre-commit hook, the
+  Mermaid-label prompt of `lint --ai`, and the `html` PNG rendering.
+
+### Changed
+
+- **`MMD001` changes meaning.** It was an error, "failed to render". It is
+  now a warning on every fenced Mermaid block, which says to draw the
+  diagram with `sprezzature-figures render flowchart` and embed the SVG. The
+  exit code does not move.
+- `sprezzature-publish-html` leaves a Mermaid block on the page as code and
+  says so in the result for that file. The route `POST /v1/html` no longer
+  answers 502 about a diagram.
 
 ### Fixed
 
-- **A Mermaid block reported as rendered now has a file behind it.** Since
-  `mmdc` 0.6, `render()` returns a lazy diagram and ignores `output_path=`,
-  so `lint --render-mermaid` and `html` said "rendered" and wrote no PNG.
-  The bytes are now written, and an empty result is a failure (`MMD001`).
-  With `mmdc` 0.7.0 a diagram can still come out cropped and without its
-  labels: look at the PNG.
-- `lint --render-mermaid --out-dir DIR --fix` inserted a bare file name,
-  which the next lint reported as a dead link (`MD050`). The reference is now
-  relative to the Markdown file.
 - `lint_file(path)` and `convert_one(src, out_dir)`, the calls the package
   docstring shows, raised `TypeError`: their options now have defaults.
 - The MCP server announced its description as its version, because

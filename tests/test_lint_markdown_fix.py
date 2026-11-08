@@ -2,9 +2,7 @@
 Tests for the ``lint_markdown --fix`` mode — specifically the new
 MD009 trailing-whitespace stripper.
 
-The existing ``--fix`` flag in ``lint_markdown.py`` was scoped to
-Mermaid PNG insertions on ``--render-mermaid``. v0.12.0 extends it
-to also fix MD009 (trailing whitespace) so the markdown lint gains
+``--fix`` strips MD009 (trailing whitespace), so the markdown lint has
 parity with the other auditors' ``--fix`` modes.
 
 Covers:

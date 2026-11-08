@@ -20,7 +20,6 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 SCRIPT = REPO_ROOT / "scripts" / "md_to_html.py"
 
 sys.path.insert(0, str(REPO_ROOT / "scripts"))
-from md_to_html import _mermaid_alt  # noqa: E402
 
 
 def _run(target: Path, out: Path) -> subprocess.CompletedProcess[str]:
@@ -63,18 +62,3 @@ def test_language_is_detected_not_assumed(tmp_path: Path) -> None:
     _run(src, out)
     html = (out / "doc.html").read_text(encoding="utf-8")
     assert 'lang="fr"' in html
-
-
-def test_mermaid_alt_prefers_author_text_then_kind() -> None:
-    """accDescr > accTitle > diagram-kind fallback; never 'Mermaid diagram'."""
-    assert (
-        _mermaid_alt("graph TD\n  accDescr: The full build pipeline\n  A-->B")
-        == "The full build pipeline"
-    )
-    assert (
-        _mermaid_alt("flowchart LR\n  accTitle: Request lifecycle\n  A-->B") == "Request lifecycle"
-    )
-    assert _mermaid_alt("sequenceDiagram\n  A->>B: hi") == "sequence diagram (diagram source below)"
-    # An %%{init}%% directive line must not be mistaken for the diagram kind.
-    assert _mermaid_alt("%%{init: {}}%%\nflowchart LR\n A-->B").startswith("flowchart")
-    assert "Mermaid diagram" not in _mermaid_alt("flowchart LR\n A-->B")

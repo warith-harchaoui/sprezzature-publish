@@ -29,7 +29,7 @@ Astro instead; this does not compete with them and says so.
 | `sprezzature-publish-cta` | **first** — find the calls to action a site already offers, ask which ones it is for, write `ctas.yaml`, and check every page against them. Reads HTML, PHP, Markdown, JSON and YAML. |
 | `sprezzature-publish-faq` | **make** — build the FAQ a site is missing from its own pages: questions ranked by the declared CTA, answers grounded in the site's words, the questions it cannot answer yet. **audit** — the `FAQPage` markup against the visible FAQ, `--fix` rewrites it. |
 | `sprezzature-publish-findable` | **audit** — one SEO + GEO + AEO report, money pages first, each finding tagged with every goal it serves. `--fix` applies the deterministic repairs. |
-| `sprezzature-publish-html` | Markdown → standalone HTML pages, Mermaid diagrams rendered. |
+| `sprezzature-publish-html` | Markdown → standalone HTML pages, math typeset by KaTeX. |
 | `sprezzature-publish-icons` | one logo → favicon, app icons, PWA icons, and the `<head>` snippet that references them. |
 | `sprezzature-publish-indexes` | `robots.txt`, `sitemap.xml`, `llms.txt`, `llms-full.txt`, Atom, `humans.txt`. |
 | `sprezzature-publish-meta` | Open Graph, Twitter Card and Schema.org JSON-LD, drafted by a local model. |

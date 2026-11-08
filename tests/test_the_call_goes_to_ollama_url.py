@@ -66,7 +66,7 @@ def test_lint_ai_calls_ollama_url_through_best_engine(elsewhere) -> None:
     import best_engine_ai_helper.llm as llm
 
     with patch.object(llm, "chat", wraps=llm.chat) as chat:
-        lint_markdown.ai_suggest_mermaid("graph TD; A-->B", "qwen3-vl:8b")
+        lint_markdown.ai_caption_latex("E = mc^2", "en", "qwen3-vl:8b")
     assert chat.called, "lint --ai bypassed best-engine-ai-helper"
     urls = _urls(elsewhere)
     assert urls and all(u.startswith(ELSEWHERE) for u in urls), urls

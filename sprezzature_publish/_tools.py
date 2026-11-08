@@ -47,7 +47,7 @@ TOOLS: dict[str, tuple[str, str]] = {
     ),
     "html": (
         "md_to_html",
-        "Markdown → HTML pages, with the Mermaid diagrams rendered.",
+        "Markdown → HTML pages, with the math typeset by KaTeX.",
     ),
     "icons": (
         "favicons",

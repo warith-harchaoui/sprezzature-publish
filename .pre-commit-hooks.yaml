@@ -10,20 +10,20 @@
 #
 # The lint needs click and the standard library only, which is the whole
 # reason it belongs in a hook: it runs in milliseconds with nothing heavy
-# behind it. Its optional halves stay off unless asked for: --render-mermaid
-# renders each Mermaid block through mmdc, and --ai asks a local model for
-# suggestions. A hook that did either on every commit would not be a hook
-# anyone keeps. It never reaches the network: links are checked on disk.
+# behind it. Its optional half stays off unless asked for: --ai asks a local
+# model for suggestions, and a hook that did that on every commit would not be
+# a hook anyone keeps. It never reaches the network: links are checked on disk.
 
 - id: sprezzature-publish-lint
-  name: sprezzature-publish — Markdown lint (heading order, code-fence languages, local links, LaTeX, Mermaid)
+  name: sprezzature-publish — Markdown lint (heading order, code-fence languages, local links, LaTeX)
   description: >-
     Lints Markdown for heading order (MD001), trailing whitespace
     (MD009), code-fence languages (MD040), image alt text (MD045),
-    local link freshness (MD050), LaTeX balance and Mermaid block
-    syntax. Add --fix in your hook args for the safe auto-repairs.
+    local link freshness (MD050) and LaTeX balance, and warns on a
+    Mermaid block (MMD001: redraw it with sprezzature-figures). Add
+    --fix in your hook args for the safe auto-repairs.
   entry: sprezzature-publish-lint
   language: python
   language_version: python3
-  files: '\.(md|mdx|mermaid|mmd)$'
+  files: '\.(md|mdx)$'
   types: [file]
