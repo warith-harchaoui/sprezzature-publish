@@ -6,6 +6,27 @@ versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [1.5.2] — 2026-11-08
+
+### Fixed
+
+- **A Mermaid block reported as rendered now has a file behind it.** Since
+  `mmdc` 0.6, `render()` returns a lazy diagram and ignores `output_path=`,
+  so `lint --render-mermaid` and `html` said "rendered" and wrote no PNG.
+  The bytes are now written, and an empty result is a failure (`MMD001`).
+  With `mmdc` 0.7.0 a diagram can still come out cropped and without its
+  labels: look at the PNG.
+- `lint --render-mermaid --out-dir DIR --fix` inserted a bare file name,
+  which the next lint reported as a dead link (`MD050`). The reference is now
+  relative to the Markdown file.
+- `lint_file(path)` and `convert_one(src, out_dir)`, the calls the package
+  docstring shows, raised `TypeError`: their options now have defaults.
+- The MCP server announced its description as its version, because
+  `fastapi-mcp` passes it in that slot. `serverInfo.version` now says the
+  version and the description goes to `instructions`.
+- `indexes --help` left `articles/` out of the auto-detected blog folders.
+  `icons --help` showed an SVG example that writes only `favicon.svg`.
+
 ## [1.5.1] — 2026-11-06
 
 ### Fixed

@@ -74,6 +74,9 @@ from _lang import detect_text_language  # noqa: E402
 from _narrate import FRONTMATTER_RE  # noqa: E402
 from lint_markdown import FENCE_RE, render_mermaid_block  # noqa: E402
 
+#: Where KaTeX loads from unless ``--katex-base`` says otherwise.
+KATEX_CDN_BASE = "https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/"
+
 PAGE_TEMPLATE = """<!DOCTYPE html>
 <html lang="{lang}" data-color-scheme="light">
 <head>
@@ -345,11 +348,11 @@ def convert_one(
     src: Path,
     out_dir: Path,
     *,
-    title: str,
-    site_name: str,
-    lang: str,
-    description: str,
-    katex_base: str,
+    title: str = "",
+    site_name: str = "",
+    lang: str = "auto",
+    description: str = "",
+    katex_base: str = KATEX_CDN_BASE,
     narration_dir: Path | None = None,
 ) -> Conversion:
     """Convert a single Markdown file to a styled standalone HTML page."""
@@ -461,7 +464,7 @@ def gather_inputs(target: Path) -> list[Path]:
 @click.option(
     "--katex-base",
     "katex_base",
-    default="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/",
+    default=KATEX_CDN_BASE,
     help="Base URL for KaTeX assets. Pass a local path for an offline build. "
     "Default: jsdelivr CDN.",
 )

@@ -260,3 +260,13 @@ def test_the_front_door_answers_both_version_spellings(flag: str) -> None:
     result = CliRunner().invoke(main, [flag])
     assert result.exit_code == 0, result.output
     assert re.search(r"\d+\.\d+\.\d+", result.output), result.output
+
+
+def test_the_mcp_server_announces_its_version_as_a_version() -> None:
+    """fastapi-mcp passes the description into the version slot."""
+    from sprezzature_publish import __version__
+    from sprezzature_publish.mcp import mcp
+
+    options = mcp.server.create_initialization_options()
+    assert options.server_version == __version__
+    assert options.instructions == mcp.description
