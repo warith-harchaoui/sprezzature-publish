@@ -4,7 +4,7 @@ _prompts — load prompts from YAML files alongside each script.
 Each YAML file declares ``role``, ``task``, ``rules``, ``output_contract``
 and a ``template`` Python format-string. ``load_prompt(name)`` returns
 the assembled template with the meta-fields pre-substituted; the caller
-supplies the runtime fields (e.g. ``mermaid_src``).
+supplies the runtime fields (e.g. ``latex_src``).
 
 YAML is parsed with ``yaml.safe_load`` if PyYAML is installed; otherwise
 a minimal stdlib parser handles the subset we use (scalars, multiline

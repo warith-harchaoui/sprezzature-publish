@@ -28,7 +28,7 @@ en:
     - title: "Make: the site"
       steps:
         - label: Render the pages
-          note: Markdown to standalone HTML, with Mermaid diagrams drawn rather than left as code
+          note: Markdown to standalone HTML, with the math typeset rather than left as code
         - label: One logo becomes the whole icon set
           note: favicon, Apple touch icons, progressive-web-app icons, and the head snippet that references them
         - label: Write what crawlers and models look for
@@ -74,7 +74,7 @@ fr:
     - title: "Fabriquer : le site"
       steps:
         - label: Rendre les pages
-          note: du Markdown vers du HTML autonome, les diagrammes Mermaid dessinés plutôt que laissés sous forme de code
+          note: du Markdown vers du HTML autonome, les formules composées plutôt que laissées sous forme de code
         - label: Un logo devient tout le jeu d'icônes
           note: favicon, icônes Apple, icônes d'application web progressive, et l'extrait d'en-tête qui les référence
         - label: Écrire ce que cherchent les robots et les modèles

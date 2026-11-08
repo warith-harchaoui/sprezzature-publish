@@ -8,24 +8,21 @@ output rules: vanilla JS + Tailwind (Play CDN for the prototype path) +
 the three-Roboto typography rule (Roboto / Roboto Serif / Roboto Mono)
 + dark-mode peer.
 
-Three behaviours that distinguish this from a plain Markdown → HTML pipe:
+Two behaviours that distinguish this from a plain Markdown → HTML pipe:
 
-1. **Mermaid blocks render to local PNG.** Same backend as
-   ``lint_markdown.py`` (pure-Python ``mmdc`` → Node ``mmdc`` fallback).
-   The HTML embeds the PNG (``<img>``) so the diagram works with JS
-   disabled; the original Mermaid source is kept in a ``<details>`` so
-   the page stays maintainable.
-
-2. **LaTeX renders via KaTeX**, loaded from the CDN by default. KaTeX
+1. **LaTeX renders via KaTeX**, loaded from the CDN by default. KaTeX
    handles single-line display math, multi-line ``align`` /
    ``aligned`` / ``gather`` environments, and inline ``$ … $``. For an
    offline build, pass ``--katex-base path/to/local/katex/`` to point
    at a self-hosted bundle.
 
-3. **Sprezzature-skill HTML shell.** Sticky header, three-state theme switch
+2. **Sprezzature-skill HTML shell.** Sticky header, three-state theme switch
    (Auto / Light / Dark) persisted in ``localStorage``, semantic
    surface tokens, focus rings, ``prefers-reduced-motion`` guards. The
    shell is the same one used by ``4ml-new/public/index.html``.
+
+A Mermaid block is not drawn: it stays on the page as code, and the file's
+result says so, with what to do instead (the same advice as lint's ``MMD001``).
 
 Usage
 -----
@@ -43,7 +40,6 @@ Exit code
 Notes
 -----
 * Python 3.10+. Requires the ``markdown`` PyPI package (small, MIT).
-* Mermaid rendering needs ``mmdc``, a base dependency like ``markdown``.
 
 Author
 ------
@@ -64,15 +60,14 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import click  # noqa: E402
 from _click import run_command, sprezzature_command  # noqa: E402
 
-# Reuse the Mermaid renderer + fenced-block extractor from the linter so
-# both tools agree on what a Mermaid block looks like and how it is
-# rendered.
+# Reuse the fenced-block extractor from the linter so both tools agree on
+# what a Mermaid block looks like and on what to say about one.
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import _narrate  # noqa: E402
 import _readalong  # noqa: E402
 from _lang import detect_text_language  # noqa: E402
 from _narrate import FRONTMATTER_RE  # noqa: E402
-from lint_markdown import FENCE_RE, render_mermaid_block  # noqa: E402
+from lint_markdown import MERMAID_ADVICE, fenced_blocks, is_mermaid_fence  # noqa: E402
 
 #: Where KaTeX loads from unless ``--katex-base`` says otherwise.
 KATEX_CDN_BASE = "https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/"
@@ -195,106 +190,6 @@ class Conversion:
     message: str
 
 
-#: Mermaid diagram kinds → a human noun, so the fallback alt says what the
-#: reader is looking at instead of the meaningless "Mermaid diagram".
-_MERMAID_KINDS: dict[str, str] = {
-    "flowchart": "flowchart",
-    "graph": "flowchart",
-    "sequencediagram": "sequence diagram",
-    "classdiagram": "class diagram",
-    "statediagram": "state diagram",
-    "erdiagram": "entity-relationship diagram",
-    "gantt": "Gantt chart",
-    "pie": "pie chart",
-    "journey": "user-journey map",
-    "gitgraph": "Git graph",
-    "mindmap": "mind map",
-    "timeline": "timeline",
-    "quadrantchart": "quadrant chart",
-}
-
-
-def _mermaid_alt(body: str) -> str:
-    """
-    Derive meaningful alt text for a rendered Mermaid block.
-
-    Prefers the author's own accessibility text — Mermaid's ``accDescr``
-    (a full description) then ``accTitle`` (a short label). When neither is
-    present, falls back to naming the *kind* of diagram (e.g. "flowchart
-    diagram") rather than the meaningless "Mermaid diagram", and notes that the
-    source is available below.
-
-    Parameters
-    ----------
-    body : str
-        The raw Mermaid source inside the fenced block.
-
-    Returns
-    -------
-    str
-        Alt text for the ``<img>``.
-    """
-    # accDescr can be a one-liner (``accDescr: ...``) or a block
-    # (``accDescr { ... }``); accept the one-line forms of both directives.
-    m = re.search(r"^\s*accDescr\s*:\s*(.+?)\s*$", body, re.MULTILINE)
-    if m:
-        return m.group(1)
-    m = re.search(r"^\s*accDescr\s*\{\s*(.+?)\s*\}", body, re.DOTALL)
-    if m:
-        return " ".join(m.group(1).split())
-    m = re.search(r"^\s*accTitle\s*:\s*(.+?)\s*$", body, re.MULTILINE)
-    if m:
-        return m.group(1)
-    # No author-supplied text: name the diagram kind from its first keyword.
-    for line in body.splitlines():
-        token = line.strip().split()[0].lower() if line.strip() else ""
-        # Strip an ``%%{init}%%`` directive line so the real kind is found.
-        if token.startswith("%%"):
-            continue
-        kind = _MERMAID_KINDS.get(token)
-        if kind:
-            return f"{kind} (diagram source below)"
-        if token:
-            break
-    return "diagram (source below)"
-
-
-def _replace_mermaid_blocks(text: str, src_path: Path, out_dir: Path) -> tuple[str, int, int]:
-    """
-    Replace every ```mermaid block with:
-      <figure><img src="…png" alt="Mermaid diagram"><details><summary>Source</summary><pre>…</pre></details></figure>
-
-    Renders each block to a PNG under out_dir/<stem>.mermaid-N.png.
-    Returns (new_text, rendered_count, failed_count).
-    """
-    rendered = failed = 0
-    blocks = list(FENCE_RE.finditer(text))
-    # Walk in reverse so earlier matches keep their offsets.
-    for idx, m in enumerate(reversed(blocks)):
-        lang = m.group(2).strip().lower()
-        if lang != "mermaid":
-            continue
-        body = m.group(3)
-        n = len(blocks) - idx
-        alt = _mermaid_alt(body)
-        png = out_dir / f"{src_path.stem}.mermaid-{n}.png"
-        ok, msg = render_mermaid_block(body, png)
-        if not ok:
-            failed += 1
-            print(f"md_to_html: mermaid render failed in {src_path.name}: {msg}", file=sys.stderr)
-            continue
-        rendered += 1
-        replacement = (
-            f'<figure class="my-6">'
-            f'<img src="{png.name}" alt="{html.escape(alt)}" loading="lazy">'
-            f'<details class="mt-2 text-sm label-2"><summary>Source</summary>'
-            f'<pre><code class="language-mermaid">{html.escape(body)}</code></pre>'
-            f"</details></figure>"
-        )
-        text = text[: m.start()] + replacement + text[m.end() :]
-    return text, rendered, failed
-
-
 def _attach_readalong(
     body_html: str, *, src: Path, out_dir: Path, narration_dir: Path, lang: str
 ) -> tuple[str, str]:
@@ -380,13 +275,11 @@ def convert_one(
     # silently). ``--lang auto`` (the default) triggers detection per file.
     if lang in ("", "auto"):
         lang = detect_text_language(raw)
-    with_mermaid, rendered, failed = _replace_mermaid_blocks(raw, src, out_dir)
-
     md = markdown.Markdown(
         extensions=["extra", "toc", "tables", "fenced_code", "sane_lists"],
         output_format="html5",
     )
-    body_html = md.convert(with_mermaid)
+    body_html = md.convert(raw)
     # Derive a title from the first H1 if the user didn't pass one.
     if title == "":
         m = re.search(r"^#\s+(.+?)\s*$", raw, re.MULTILINE)
@@ -422,8 +315,9 @@ def convert_one(
     )
     dst = out_dir / f"{src.stem}.html"
     dst.write_text(page, encoding="utf-8")
-    msg = f"ok ({rendered} mermaid rendered, {failed} failed)"
-    return Conversion(src, dst, failed == 0, msg)
+    mermaid = sum(1 for _line, info, _body in fenced_blocks(raw) if is_mermaid_fence(info))
+    msg = f"ok ({mermaid} Mermaid left as code: {MERMAID_ADVICE})" if mermaid else "ok"
+    return Conversion(src, dst, True, msg)
 
 
 def gather_inputs(target: Path) -> list[Path]:
@@ -436,7 +330,7 @@ def gather_inputs(target: Path) -> list[Path]:
 @sprezzature_command(
     "sprezzature-publish-html",
     help="Markdown → HTML converter integrated with the sprezzature skill — "
-    "local Mermaid PNG rendering, KaTeX for LaTeX, Tailwind shell.",
+    "KaTeX for LaTeX, Tailwind shell.",
     epilog="\b\n"
     "Examples:\n"
     "  sprezzature-publish-html README.md --out site/\n"

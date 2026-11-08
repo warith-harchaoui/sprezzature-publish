@@ -9,29 +9,22 @@ sprezzature skill. Three jobs:
 1. **Static rules.** Deterministic checks over the Markdown source —
    heading-level skips, trailing whitespace, code blocks without a
    language hint, image without alt text, link to a missing local path.
-2. **Mermaid blocks.** Validate the syntax by attempting a local render;
-   write a PNG sibling alongside the source so readers without JS still
-   see the diagram. Rendering is **fully local** via the ``mmdc`` PyPI
-   package (pure Python, embeds PhantomJS — no Node, no npm, no browser
-   install). Falls back to the ``@mermaid-js/mermaid-cli`` Node tool
-   (``mmdc`` command) if it is on the PATH.
+2. **Mermaid blocks.** Nothing here draws them. Each one is reported as
+   ``MMD001``, which says to draw the diagram with
+   ``sprezzature-figures render flowchart`` and embed the SVG.
 3. **LaTeX blocks.** Validate ``$$ … $$`` display blocks and
    ``\\begin{align} … \\end{align}`` environments — delimiter balance,
    multi-line alignment with ``&`` separators, and the common pitfall of
    leaving a single backslash where ``\\\\`` is required for a line break.
 
 AI-assisted suggestions (optional). When ``--ai`` is set and a local
-Ollama daemon is reachable, the script asks the default model for:
-
-- Mermaid diagram label improvements (clarity, parallel structure).
-- Captions for LaTeX blocks (a sentence-long description for
-  screen-reader users) — only when the block has no preceding
-  ``Caption:`` line.
+Ollama daemon is reachable, the script asks the default model for
+captions for LaTeX blocks (a sentence-long description for screen-reader
+users).
 
 The AI step **never** mutates the source. It prints suggestions; you
 apply them by hand. The deterministic rules can rewrite (``--fix``)
-trailing whitespace and, with ``--render-mermaid``, insert the PNG
-sibling references; nothing else.
+trailing whitespace; nothing else.
 
 Usage
 -----
@@ -39,7 +32,6 @@ Usage
 
     sprezzature-publish-lint docs/intro.md
     sprezzature-publish-lint docs/                   # walks the dir
-    sprezzature-publish-lint --render-mermaid docs/  # write PNG siblings
     sprezzature-publish-lint --fix docs/             # apply safe rewrites
     sprezzature-publish-lint --ai docs/intro.md      # add Ollama suggestions
 
@@ -50,8 +42,7 @@ Exit code
 
 Notes
 -----
-* Python 3.10+, click and the standard library only for the static rules. Mermaid rendering needs
-  ``mmdc``, a base dependency, imported only with ``--render-mermaid``.
+* Python 3.10+, click and the standard library only for the static rules.
 * Cross-platform. On Windows the LaTeX delimiter parser is the same.
 
 Author
@@ -62,10 +53,7 @@ Author
 from __future__ import annotations
 
 import json
-import os
 import re
-import shutil
-import subprocess
 import sys
 from dataclasses import dataclass
 from pathlib import Path
@@ -170,10 +158,29 @@ def lint_fenced_code_language(path: Path, text: str) -> list[Finding]:
                     start_line,
                     "MD040",
                     WARNING,
-                    "Fenced code block missing language hint (use ```bash, ```python, ```mermaid, …).",
+                    "Fenced code block missing language hint (use ```bash, ```python, ```text, …).",
                 )
             )
     return findings
+
+
+#: What to do about a Mermaid block. One sentence in one place, because the
+#: lint reports it and the converter repeats it.
+MERMAID_ADVICE = "draw the diagram with `sprezzature-figures render flowchart` and embed the SVG"
+
+
+def is_mermaid_fence(lang: str) -> bool:
+    """Whether a fence's info string names Mermaid, in any case, with or without attributes."""
+    return re.match(r"\{?\s*\.?mermaid(?![\w-])", lang, re.IGNORECASE) is not None
+
+
+def lint_mermaid_blocks(path: Path, text: str) -> list[Finding]:
+    """MMD001 — a Mermaid block is neither drawn here nor passed over in silence."""
+    return [
+        Finding(path, start_line, "MMD001", WARNING, f"Mermaid block: {MERMAID_ADVICE}.")
+        for start_line, lang, _body in fenced_blocks(text)
+        if is_mermaid_fence(lang)
+    ]
 
 
 def lint_image_alt(path: Path, text: str) -> list[Finding]:
@@ -355,135 +362,6 @@ def lint_latex_blocks(path: Path, text: str) -> list[Finding]:
     return findings
 
 
-# ── Mermaid rendering ─────────────────────────────────────────────────────
-
-
-def have_python_mmdc() -> bool:
-    """Return ``True`` when the Python ``mmdc`` package is importable."""
-    try:
-        import mmdc  # noqa: F401
-
-        return True
-    except ImportError:
-        return False
-
-
-def have_node_mmdc() -> bool:
-    """Return ``True`` when the Node ``mmdc`` CLI is on ``PATH``."""
-    return shutil.which("mmdc") is not None
-
-
-def render_mermaid_block(mermaid_src: str, out_png: Path) -> tuple[bool, str]:
-    """
-    Render a Mermaid diagram to PNG, fully local.
-
-    Tries pure-Python ``mmdc`` first (``pip install mmdc``), then falls
-    back to the Node-based ``mmdc`` binary if it is on the PATH.
-
-    Returns (ok, message).
-    """
-    out_png.parent.mkdir(parents=True, exist_ok=True)
-
-    if have_python_mmdc():
-        try:
-            import mmdc  # type: ignore
-
-            # `render` returns a lazy Diagram and hands unknown keywords to the
-            # diagram options, so `output_path=` was accepted and ignored: the
-            # call succeeded, no file appeared, and every caller reported the
-            # block as rendered. The bytes are asked for and written here, and
-            # an empty result is a failure rather than a success.
-            png_bytes = mmdc.render(mermaid_src).png()
-            if not png_bytes:
-                raise RuntimeError("python mmdc returned an empty PNG")
-            out_png.write_bytes(png_bytes)
-            return True, f"rendered via python mmdc → {out_png}"
-        except Exception as exc:  # pylint: disable=broad-except
-            # Fall through to the Node binary attempt.
-            python_err = str(exc)
-    else:
-        python_err = "python mmdc not installed"
-
-    if have_node_mmdc():
-        # mmdc reads from stdin via `-i -`, writes PNG via `-o`. `-b transparent`
-        # is the cleanest default for embedding in docs.
-        try:
-            subprocess.run(
-                ["mmdc", "-i", "-", "-o", str(out_png), "-b", "transparent"],
-                input=mermaid_src,
-                text=True,
-                capture_output=True,
-                check=True,
-            )
-            return True, f"rendered via node mmdc → {out_png}"
-        except subprocess.CalledProcessError as exc:
-            return False, (
-                f"node mmdc failed: {exc.stderr.strip() or exc}\n(python mmdc note: {python_err})"
-            )
-
-    return False, (
-        "no local Mermaid renderer available. "
-        "Install one of:\n"
-        "  pip install mmdc                                (pure Python, recommended)\n"
-        "  npm install -g @mermaid-js/mermaid-cli          (Node + Chromium)"
-    )
-
-
-def process_mermaid_blocks(
-    path: Path, text: str, render: bool, out_dir: Path | None
-) -> tuple[list[Finding], str]:
-    """
-    Find every Mermaid fenced block, optionally render it to PNG, and (if
-    rendering succeeded) insert a sibling `![alt](png)` line above the
-    block so non-JS viewers see the diagram too.
-
-    Returns (findings, possibly-modified-text).
-    """
-    findings: list[Finding] = []
-    if not render:
-        # Still validate that mermaid blocks declare a language.
-        for start_line, lang, _body in fenced_blocks(text):
-            if lang.lower() == "mermaid":
-                pass  # syntax-only validation deferred until render is requested
-        return findings, text
-
-    out_dir = (out_dir or path.parent).resolve()
-    new_text = text
-    # Walk blocks in reverse so insertions don't shift earlier offsets.
-    blocks = list(FENCE_RE.finditer(text))
-    for idx, m in enumerate(reversed(blocks), 0):
-        lang = m.group(2).strip().lower()
-        if lang != "mermaid":
-            continue
-        body = m.group(3)
-        start_line = text[: m.start()].count("\n") + 1
-        png_name = f"{path.stem}.mermaid-{len(blocks) - idx}.png"
-        png_path = out_dir / png_name
-        ok, msg = render_mermaid_block(body, png_path)
-        if not ok:
-            findings.append(
-                Finding(
-                    path,
-                    start_line,
-                    "MMD001",
-                    ERROR,
-                    f"Mermaid render failed: {msg}",
-                )
-            )
-            continue
-        # Insert `![Mermaid diagram](png_name)` just above the block, but
-        # only if no `<img>` / `![](…)` already references the same PNG.
-        already = re.search(rf"!\[[^\]]*\]\([^)]*{re.escape(png_name)}[^)]*\)", new_text)
-        if not already:
-            # Relative to the Markdown file, not to --out-dir: a bare file name
-            # points beside the document, where the PNG is not, and the next
-            # lint reports the repair it just made as a dead link (MD050).
-            png_ref = Path(os.path.relpath(png_path, path.resolve().parent)).as_posix()
-            insertion = f"![Mermaid diagram (rendered for non-JS readers)]({png_ref})\n\n"
-            new_text = new_text[: m.start()] + insertion + new_text[m.start() :]
-    return findings, new_text
-
-
 # ── Optional Ollama-assisted suggestions ──────────────────────────────────
 
 # These imports are deferred — the script must run without the prompt
@@ -514,23 +392,6 @@ def _ask(prompt: str, model: str) -> str:
     return str(chat(prompt, model=model, engine=ollama_engine(model))).strip()
 
 
-def ai_suggest_mermaid(mermaid_src: str, model: str) -> list[dict] | None:
-    """Ask the local LLM for accessible Mermaid node labels; ``None`` if unavailable."""
-    if not HAVE_AI:
-        return None
-    prompt = render_prompt(
-        "mermaid_labels",
-        prompts_dir=Path(__file__).resolve().parent / "prompts",
-        mermaid_src=mermaid_src,
-    )
-    try:
-        body = _ask(prompt, model)
-        # Strict parse — the prompt asked for a JSON array only.
-        return json.loads(body)
-    except Exception:  # pylint: disable=broad-except
-        return None
-
-
 def ai_caption_latex(latex_src: str, lang: str, model: str) -> str | None:
     """Ask the local LLM for a plain-language caption of a LaTeX block; ``None`` if unavailable."""
     if not HAVE_AI:
@@ -556,14 +417,13 @@ STATIC_RULES = (
     lint_image_alt,
     lint_local_links,
     lint_latex_blocks,
+    lint_mermaid_blocks,
 )
 
 
 def lint_file(
     path: Path,
     *,
-    render_mermaid: bool = False,
-    out_dir: Path | None = None,
     fix: bool = False,
     ai: bool = False,
     ai_lang: str = "en",
@@ -581,17 +441,13 @@ def lint_file(
     for rule in STATIC_RULES:
         findings.extend(rule(path, text))
 
-    mermaid_findings, new_text = process_mermaid_blocks(path, text, render_mermaid, out_dir)
-    findings.extend(mermaid_findings)
-
     # MD009 trailing-whitespace strip — only when ``--fix`` is set.
     # Idempotent; preserves the intentional two-space line break.
     if fix:
-        new_text = fix_trailing_whitespace(new_text)
-
-    if fix and new_text != text:
-        path.write_text(new_text, encoding="utf-8")
-        text = new_text
+        new_text = fix_trailing_whitespace(text)
+        if new_text != text:
+            path.write_text(new_text, encoding="utf-8")
+            text = new_text
 
     ai_notes: list[str] = []
     if ai:
@@ -601,14 +457,6 @@ def lint_file(
             )
         else:
             model = ai_model or pick_default_model()
-            # Mermaid label suggestions.
-            for _, lang, body in fenced_blocks(text):
-                if lang.lower() == "mermaid":
-                    sug = ai_suggest_mermaid(body, model)
-                    if sug:
-                        ai_notes.append(
-                            f"[mermaid] suggested edits: {json.dumps(sug, ensure_ascii=False)}"
-                        )
             # LaTeX captions.
             for m in DISPLAY_MATH_RE.finditer(text):
                 latex = m.group(1).strip()
@@ -643,7 +491,7 @@ def gather_targets(target: Path) -> list[Path]:
     if target.is_file():
         return [target]
     out: list[Path] = []
-    suffixes = {".md", ".markdown", ".mmd", ".mermaid"}
+    suffixes = {".md", ".markdown"}
     for p in target.rglob("*"):
         if not p.is_file():
             continue
@@ -655,33 +503,17 @@ def gather_targets(target: Path) -> list[Path]:
     return sorted(out)
 
 
-def _lint_standalone_mermaid(
-    path: Path, render: bool, out_dir: Path | None
-) -> tuple[list[Finding], list[str]]:
-    """Standalone `.mmd` / `.mermaid` files. Single block, no surrounding text."""
-    findings: list[Finding] = []
-    src = path.read_text(encoding="utf-8")
-    if render:
-        out_dir = (out_dir or path.parent).resolve()
-        png_path = out_dir / f"{path.stem}.png"
-        ok, msg = render_mermaid_block(src, png_path)
-        if not ok:
-            findings.append(Finding(path, 1, "MMD001", ERROR, f"Mermaid render failed: {msg}"))
-    return findings, []
-
-
 @sprezzature_command(
     "sprezzature-publish-lint",
     help="Lint Markdown — heading order, code-fence languages, image alt, "
-    "local links, LaTeX delimiter balance, and Mermaid block syntax. "
-    "Optionally render Mermaid blocks to local PNG and ask Ollama for "
-    "label / caption suggestions.",
+    "local links and LaTeX delimiter balance. Reports each Mermaid block "
+    "(MMD001). Optionally asks Ollama for LaTeX caption suggestions.",
     epilog=(
         "\b\n"
         "Examples:\n"
         "  sprezzature-publish-lint docs/intro.md\n"
-        "  sprezzature-publish-lint --render-mermaid docs/\n"
-        "  sprezzature-publish-lint --fix --render-mermaid --ai --ai-lang en docs/\n"
+        "  sprezzature-publish-lint --fix docs/\n"
+        "  sprezzature-publish-lint --fix --ai --ai-lang en docs/\n"
     ),
 )
 @click.argument("target", type=click.Path(path_type=Path))
@@ -696,28 +528,13 @@ def _lint_standalone_mermaid(
     "--fix",
     is_flag=True,
     help="Apply safe mechanical fixes in place: MD009 strip trailing "
-    "whitespace (preserves the intentional two-space line break); "
-    "with --render-mermaid, also insert PNG sibling references. "
+    "whitespace (preserves the intentional two-space line break). "
     "Idempotent. Never invents content.",
-)
-@click.option(
-    "--render-mermaid",
-    "render_mermaid",
-    is_flag=True,
-    help="Render each Mermaid block to a local PNG sibling.",
-)
-@click.option(
-    "--out-dir",
-    "out_dir",
-    type=click.Path(path_type=Path),
-    default=None,
-    help="Directory for rendered Mermaid PNGs. Default: alongside the source.",
 )
 @click.option(
     "--ai",
     is_flag=True,
-    help="Ask the local Ollama daemon for Mermaid label improvements and "
-    "LaTeX captions. Read-only — never mutates the source.",
+    help="Ask the local Ollama daemon for LaTeX captions. Read-only — never mutates the source.",
 )
 @click.option(
     "--ai-lang",
@@ -752,18 +569,13 @@ def _run(args: SimpleNamespace) -> int:
     all_findings: list[Finding] = []
     all_ai_notes: list[tuple[Path, list[str]]] = []
     for path in targets:
-        if path.suffix.lower() in {".mmd", ".mermaid"}:
-            findings, notes = _lint_standalone_mermaid(path, args.render_mermaid, args.out_dir)
-        else:
-            findings, notes = lint_file(
-                path,
-                render_mermaid=args.render_mermaid,
-                out_dir=args.out_dir,
-                fix=args.fix,
-                ai=args.ai,
-                ai_lang=args.ai_lang,
-                ai_model=args.ai_model,
-            )
+        findings, notes = lint_file(
+            path,
+            fix=args.fix,
+            ai=args.ai,
+            ai_lang=args.ai_lang,
+            ai_model=args.ai_model,
+        )
         all_findings.extend(findings)
         if notes:
             all_ai_notes.append((path, notes))

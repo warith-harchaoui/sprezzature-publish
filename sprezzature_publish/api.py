@@ -164,9 +164,9 @@ def lint(request: LintRequest) -> dict:
     """Audit Markdown and report every finding.
 
     Needs nothing beyond click and the standard library, which is why it is the one
-    route that always answers. ``render_mermaid`` and the AI pass are off:
-    both reach outside this process, and a lint route that silently shells
-    out to a diagram renderer is not the millisecond gate it advertises.
+    route that always answers. The AI pass is off: it reaches outside this
+    process, and a lint route that silently calls a model is not the
+    millisecond gate it advertises.
     """
     from sprezzature_publish_scripts.lint_markdown import lint_file
 
@@ -175,8 +175,6 @@ def lint(request: LintRequest) -> dict:
         document.write_text(request.markdown, encoding="utf-8")
         findings, _notes = lint_file(
             document,
-            render_mermaid=False,
-            out_dir=None,
             fix=False,
             ai=False,
             ai_lang="en",
@@ -301,7 +299,7 @@ def render(request: RenderRequest) -> dict:
         # message becomes the response.
         if not conversion.ok or not conversion.dst.is_file():
             raise HTTPException(
-                status_code=502 if "mermaid" in conversion.message.lower() else 500,
+                status_code=500,
                 detail=conversion.message or "the renderer produced no page",
             )
         return {"html": conversion.dst.read_text(encoding="utf-8")}

@@ -30,7 +30,7 @@ Material, Hugo ou Astro ; celui-ci ne les concurrence pas et le dit.
 | `sprezzature-publish-cta` | **d'abord** — trouver les appels à l'action que le site offre déjà, demander lesquels il sert, écrire `ctas.yaml`, et vérifier chaque page contre eux. Lit HTML, PHP, Markdown, JSON et YAML. |
 | `sprezzature-publish-faq` | **make** — construire la FAQ qui manque au site à partir de ses propres pages : questions classées par le CTA déclaré, réponses ancrées dans les mots du site, questions auxquelles il ne sait pas encore répondre. **audit** — le balisage `FAQPage` contre la FAQ visible, `--fix` le réécrit. |
 | `sprezzature-publish-findable` | **audit** — un seul rapport SEO + GEO + AEO, pages argent d'abord, chaque constat étiqueté avec tous les buts qu'il sert. `--fix` applique les réparations déterministes. |
-| `sprezzature-publish-html` | Markdown → pages HTML autonomes, diagrammes Mermaid rendus. |
+| `sprezzature-publish-html` | Markdown → pages HTML autonomes, formules composées par KaTeX. |
 | `sprezzature-publish-icons` | un logo → favicon, icônes d'application, icônes PWA, et le fragment de `<head>` qui les référence. |
 | `sprezzature-publish-indexes` | `robots.txt`, `sitemap.xml`, `llms.txt`, `llms-full.txt`, Atom, `humans.txt`. |
 | `sprezzature-publish-meta` | Open Graph, Twitter Card et Schema.org JSON-LD, rédigés par un modèle local. |

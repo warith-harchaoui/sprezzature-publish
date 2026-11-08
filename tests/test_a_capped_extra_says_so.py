@@ -103,7 +103,6 @@ MEASURED_AT_THEIR_FLOOR: dict[tuple[str, str], str] = {
     ("markdown", "3.5"): ">=3.8",
     ("Pillow", "10.0.0"): ">=3.8",
     ("requests", "2.31"): ">=3.7",
-    ("mmdc", "0.3"): ">=3.4",
     ("langdetect", "1.0.9"): "",
     # 1.9.0 since 2026-11-01, the day it was published and this package
     # stopped asking the sibling for an extra. Re-read off the simple

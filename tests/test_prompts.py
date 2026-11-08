@@ -44,7 +44,6 @@ def _add_publish_scripts_to_path() -> None:
 @pytest.mark.parametrize(
     "name, must_contain",
     [
-        ("mermaid_labels", "Reply with a JSON array"),
         ("latex_caption", "Plain UTF-8 text"),
         ("plain_language_rewrite", "Reply with the rewritten text only"),
         ("meta_tags_json", "Return a single JSON object"),

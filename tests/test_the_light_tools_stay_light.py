@@ -9,9 +9,9 @@ audit reads somebody else's site on a machine that has nothing else. Since
 install time catches an ``import markdown`` slipped into one of them any more:
 the import would simply work, and the promise would be gone in silence.
 
-Read statically, at module level only. The lint's optional halves
-(``--render-mermaid``, ``--ai``) import ``mmdc`` and a model client inside a
-function or a ``try``, which is exactly the shape the promise allows.
+Read statically, at module level only. The lint's optional half
+(``--ai``) imports a model client inside a function or a ``try``, which is
+exactly the shape the promise allows.
 
 Author
 ------
