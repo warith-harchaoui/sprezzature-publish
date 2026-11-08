@@ -62,6 +62,7 @@ Author
 from __future__ import annotations
 
 import json
+import os
 import re
 import shutil
 import subprocess
@@ -387,13 +388,19 @@ def render_mermaid_block(mermaid_src: str, out_png: Path) -> tuple[bool, str]:
         try:
             import mmdc  # type: ignore
 
-            mmdc.render(mermaid_src, output_path=str(out_png), format="png")
+            # `render` returns a lazy Diagram and hands unknown keywords to the
+            # diagram options, so `output_path=` was accepted and ignored: the
+            # call succeeded, no file appeared, and every caller reported the
+            # block as rendered. The bytes are asked for and written here, and
+            # an empty result is a failure rather than a success.
+            png_bytes = mmdc.render(mermaid_src).png()
+            if not png_bytes:
+                raise RuntimeError("python mmdc returned an empty PNG")
+            out_png.write_bytes(png_bytes)
             return True, f"rendered via python mmdc → {out_png}"
         except Exception as exc:  # pylint: disable=broad-except
             # Fall through to the Node binary attempt.
             python_err = str(exc)
-        else:
-            python_err = ""
     else:
         python_err = "python mmdc not installed"
 
@@ -468,7 +475,11 @@ def process_mermaid_blocks(
         # only if no `<img>` / `![](…)` already references the same PNG.
         already = re.search(rf"!\[[^\]]*\]\([^)]*{re.escape(png_name)}[^)]*\)", new_text)
         if not already:
-            insertion = f"![Mermaid diagram (rendered for non-JS readers)]({png_name})\n\n"
+            # Relative to the Markdown file, not to --out-dir: a bare file name
+            # points beside the document, where the PNG is not, and the next
+            # lint reports the repair it just made as a dead link (MD050).
+            png_ref = Path(os.path.relpath(png_path, path.resolve().parent)).as_posix()
+            insertion = f"![Mermaid diagram (rendered for non-JS readers)]({png_ref})\n\n"
             new_text = new_text[: m.start()] + insertion + new_text[m.start() :]
     return findings, new_text
 
@@ -551,12 +562,12 @@ STATIC_RULES = (
 def lint_file(
     path: Path,
     *,
-    render_mermaid: bool,
-    out_dir: Path | None,
-    fix: bool,
-    ai: bool,
-    ai_lang: str,
-    ai_model: str,
+    render_mermaid: bool = False,
+    out_dir: Path | None = None,
+    fix: bool = False,
+    ai: bool = False,
+    ai_lang: str = "en",
+    ai_model: str = "",
 ) -> tuple[list[Finding], list[str]]:
     """Lint one Markdown file. Returns (findings, ai_notes)."""
     try:

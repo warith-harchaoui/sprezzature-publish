@@ -41,12 +41,16 @@ left alone it references the public CDN.
 ## One logo to the whole icon set
 
 ```bash
-sprezzature-publish-icons logo.svg --out public/ --name 'Acme'
+sprezzature-publish-icons logo.svg --raster logo.png --out public/ --name 'Acme'
 sprezzature-publish-icons logo.png --bg '#ffffff' --theme-dark '#000000'
 ```
 
 The run also writes `site.webmanifest` and a paste-ready `head.html`, so
-the references do not have to be typed by hand.
+the references do not have to be typed by hand. An SVG source needs
+`--raster`: Pillow cannot rasterise SVG, and without a PNG beside it the run
+writes `favicon.svg` and nothing else. Write the set to the site root: the
+links in `head.html` are root-relative (`/favicon.ico`), and `audit` looks for
+`head.html` at the root.
 
 ## What crawlers and language models look for
 

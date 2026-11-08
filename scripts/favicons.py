@@ -24,8 +24,8 @@ File                           Purpose
                                (the OS adds them).
 ``icon-192.png``               PWA install icon (Android etc.).
 ``icon-512.png``               PWA install icon at high resolution.
-``icon-maskable-512.png``      PWA maskable variant — content fits inside
-                               the central 80 % so the OS can mask it.
+``icon-maskable-512.png``      PWA maskable variant — artwork inside the
+                               manifest's safe circle (see MASKABLE_SAFE).
 ``site.webmanifest``           Minimal PWA manifest.
 ``head.html``                  Drop-in ``<link>`` and ``<meta>`` tags.
 =============================  ==========================================
@@ -372,7 +372,7 @@ def write_head_snippet(
     "from a single source logo.",
     epilog="\b\n"
     "Examples:\n"
-    "  sprezzature-publish-icons logo.svg --out public --name 'Project'\n"
+    "  sprezzature-publish-icons logo.svg --raster logo.png --out public --name 'Project'\n"
     "  sprezzature-publish-icons logo.png --bg '#ffffff' --theme-dark '#000000'\n",
 )
 @click.argument("source", type=click.Path(path_type=Path))

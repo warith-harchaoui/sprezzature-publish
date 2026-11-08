@@ -25,7 +25,7 @@ Conditional
 -----------
 
 * **``feed.atom``** — Atom 1.0 (RFC 4287). Emitted when a blog directory
-  (``posts/`` or ``blog/``) is detected at the project root, or when
+  (``posts/``, ``blog/`` or ``articles/``) is detected at the project root, or when
   ``--feed-from DIR`` is supplied. RSS 2.0 is available with ``--rss``
   for clients that haven't moved past 2002. Sites without a blog but
   with CHANGELOG.md-driven release notes (e.g. sprezzature.ai) build a
@@ -1005,7 +1005,7 @@ def find_blog_dir(root: Path, explicit: Path | None) -> Path | None:
     "feed_from",
     type=click.Path(path_type=Path),
     default=None,
-    help="Directory containing blog posts. When omitted, posts/ or blog/ is auto-detected.",
+    help="Directory containing blog posts. When omitted, posts/, blog/ or articles/ is auto-detected.",
 )
 @click.option(
     "--rss",

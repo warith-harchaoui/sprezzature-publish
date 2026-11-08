@@ -1,5 +1,7 @@
 # sprezzature-publish
 
+[🇫🇷](https://github.com/warith-harchaoui/sprezzature-publish/blob/main/LISEZMOI.md) · [🇬🇧](https://github.com/warith-harchaoui/sprezzature-publish/blob/main/README.md)
+
 A folder of Markdown becomes a site somebody can find.
 
 Point it at a `README.md` and a `docs/` folder and it emits pages, the meta
@@ -95,7 +97,7 @@ sprezzature-publish-lint docs/ --fix      # repair what has one safe repair
 ```sh
 sprezzature-publish-html README.md --out site/
 sprezzature-publish-html docs/ --out site/docs/
-sprezzature-publish-icons logo.png --out site/icons/
+sprezzature-publish-icons logo.png --out site/
 sprezzature-publish-indexes --root site/ --base-url https://example.com
 
 # Improve a site that already exists — yours, or somebody else's
