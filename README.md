@@ -26,27 +26,28 @@ Astro instead; this does not compete with them and says so.
 |---|---|
 | `sprezzature-publish-lint` | **audit** — read the Markdown before anything renders it. Only click and the standard library, milliseconds, pre-commit shaped. `--fix` repairs what has one safe repair. |
 | `sprezzature-publish-audit` | **audit** — read the site *after* it exists: head meta, Open Graph, icon links, `robots.txt`, `sitemap.xml`, `llms.txt`. Takes a directory, a page or a live URL — no Markdown source required. `--fix` writes back what can be derived rather than invented. |
-| `sprezzature-publish-cta` | **first** — find the calls to action a site already offers, ask which ones it is for, write `ctas.yaml`, and check every page against them. Reads HTML, PHP, Markdown, JSON and YAML. |
-| `sprezzature-publish-faq` | **make** — build the FAQ a site is missing from its own pages: questions ranked by the declared CTA, answers grounded in the site's words, the questions it cannot answer yet. **audit** — the `FAQPage` markup against the visible FAQ, `--fix` rewrites it. |
-| `sprezzature-publish-findable` | **audit** — one SEO + GEO + AEO report, money pages first, each finding tagged with every goal it serves. `--fix` applies the deterministic repairs. |
+| `sprezzature-publish-cta` | **first** — find the calls to action a site already offers, ask which ones it is for, write `ctas.yaml`, and check every page against them. Reads HTML, PHP (PHP: Hypertext Preprocessor, a language the server runs to build each page on request: what WordPress is written in), Markdown, JSON (JavaScript Object Notation, a text format in which programs store data as named fields, such as "title": "Home") and YAML (YAML Ain't Markup Language, a settings file people edit by hand, one setting per line such as title: Home). |
+| `sprezzature-publish-faq` | **make** — build the FAQ a site is missing from its own pages: questions ranked by the declared CTA (call to action: the one button the site wants clicked, such as "Book a demo"), answers grounded in the site's words, the questions it cannot answer yet. **audit** — the `FAQPage` markup against the visible FAQ, `--fix` rewrites it. |
+| `sprezzature-publish-findable` | **audit** — one report for SEO (search engine optimization, getting a page onto the first page of Google results), GEO (generative engine optimization: being the source ChatGPT quotes when somebody asks it) and AEO (answer engine optimization: being the answer a search engine prints above the links), money pages first, each finding tagged with every goal it serves. `--fix` applies the deterministic repairs. |
 | `sprezzature-publish-html` | Markdown → standalone HTML pages, math typeset by KaTeX. |
-| `sprezzature-publish-icons` | one logo → favicon, app icons, PWA icons, and the `<head>` snippet that references them. |
+| `sprezzature-publish-icons` | one logo → favicon, app icons, PWA (progressive web app, a site you install on a phone's home screen like an app) icons, and the `<head>` snippet that references them. |
 | `sprezzature-publish-indexes` | `robots.txt`, `sitemap.xml`, `llms.txt`, `llms-full.txt`, Atom, `humans.txt`. |
-| `sprezzature-publish-meta` | Open Graph, Twitter Card and Schema.org JSON-LD, drafted by a local model. |
+| `sprezzature-publish-meta` | Open Graph, Twitter Card and Schema.org JSON-LD (JSON for Linked Data, a hidden block telling search engines "this page is an article, by this author, on this date"), drafted by a local model. |
 | `sprezzature-publish-plain` | rewrite prose at a target reading grade, keeping the terms you name. |
-| `sprezzature-publish-changelog` | the `CHANGELOG.md` of every sibling repository under `--repos-root` becomes one Atom and RSS feed, a dated release per entry. |
+| `sprezzature-publish-changelog` | the `CHANGELOG.md` of every sibling repository under `--repos-root` becomes one Atom and RSS (Really Simple Syndication, a feed that lets a reader app show a site's new posts without visiting it) feed, a dated release per entry. |
 | `sprezzature-publish-narrate` | narrate a post with a local voice, and write the timed track beside the audio. |
 | `sprezzature-publish-readalong` | bind that narration to the page, so the sentence being spoken is highlighted. |
 
 ### Where the rules come from
 
 Every audit rule cites a specification or the search engine's own
-documentation — WHATWG HTML, [RFC 6596](https://datatracker.ietf.org/doc/html/rfc6596)
+documentation — the HTML standard of the WHATWG (Web Hypertext Application Technology Working Group, where Apple, Google and Mozilla write the HTML standard together),
+the internet's Requests for Comments [RFC 6596](https://datatracker.ietf.org/doc/html/rfc6596)
 (canonical), [RFC 9309](https://datatracker.ietf.org/doc/html/rfc9309) (robots.txt),
 [sitemaps.org 0.9](https://www.sitemaps.org/protocol.html), [ogp.me](https://ogp.me/),
 [X Cards](https://developer.x.com/en/docs/twitter-for-websites/cards/overview/markup),
 [JSON-LD 1.1](https://www.w3.org/TR/json-ld11/),
-[W3C Web App Manifest](https://www.w3.org/TR/appmanifest/),
+the [Web App Manifest](https://www.w3.org/TR/appmanifest/) of the W3C (World Wide Web Consortium, the body that publishes the web's standards, from accessibility rules to the app manifest),
 [Apple's web-app configuration guide](https://developer.apple.com/library/archive/documentation/AppleApplications/Reference/SafariWebContent/ConfiguringWebApplications/ConfiguringWebApplications.html),
 [RFC 4287](https://datatracker.ietf.org/doc/html/rfc4287) / [RSS 2.0](https://www.rssboard.org/rss-specification),
 [llmstxt.org](https://llmstxt.org/). Where no such document exists, the rule
@@ -56,7 +57,7 @@ the table rule by rule and is the thing to cite when a finding is disputed.
 One front door over all thirteen, in click, under two names: `make-site <tool>`
 and `sprezzature-publish <tool>` resolve to the same callable, so they cannot
 drift. The argparse twin was removed on 2026-10-25, and on 2026-11-04 the
-per-tool commands and the MCP server followed: every command here is click.
+per-tool commands and the MCP (Model Context Protocol, the protocol through which AI agents call tools in English) server followed: every command here is click.
 
 ## Install
 
@@ -65,7 +66,7 @@ pip install sprezzature-publish
 ```
 
 One line, and it is everything: the lint, the renderer, the icon set, the
-local-model tools, the narration, the HTTP surface and the MCP server.
+local-model tools, the narration, the HTTP (HyperText Transfer Protocol, the protocol a browser uses to ask a server for a page, and a program to ask for data) surface and the MCP server.
 
 Until 2026-11-01 this block was six lines and you had to pick — the base was a
 single dependency, so `pip install sprezzature-publish` gave you a lint and
@@ -223,7 +224,7 @@ an American spelling the words out.
 
 ## License
 
-BSD-3-Clause. See `LICENSE`.
+The three-clause Berkeley Software Distribution license, BSD-3-Clause, a permissive open-source license: anyone may reuse the code, even commercially, if they keep the copyright notice. See `LICENSE`.
 
 ## Author
 

@@ -27,22 +27,22 @@ Material, Hugo ou Astro ; celui-ci ne les concurrence pas et le dit.
 |---|---|
 | `sprezzature-publish-lint` | **audit** — lire le Markdown avant que quoi que ce soit ne le rende. click et la bibliothèque standard, rien d'autre, quelques millisecondes, taillé pour un crochet de pré-commit. `--fix` répare ce qui a une réparation sûre. |
 | `sprezzature-publish-audit` | **audit** — lire le site *après* qu'il existe : balises du head, Open Graph, liens d'icônes, `robots.txt`, `sitemap.xml`, `llms.txt`. Prend un dossier, une page ou une URL vivante — aucune source Markdown requise. `--fix` réécrit ce qui se dérive, jamais ce qui s'invente. |
-| `sprezzature-publish-cta` | **d'abord** — trouver les appels à l'action que le site offre déjà, demander lesquels il sert, écrire `ctas.yaml`, et vérifier chaque page contre eux. Lit HTML, PHP, Markdown, JSON et YAML. |
-| `sprezzature-publish-faq` | **make** — construire la FAQ qui manque au site à partir de ses propres pages : questions classées par le CTA déclaré, réponses ancrées dans les mots du site, questions auxquelles il ne sait pas encore répondre. **audit** — le balisage `FAQPage` contre la FAQ visible, `--fix` le réécrit. |
-| `sprezzature-publish-findable` | **audit** — un seul rapport SEO + GEO + AEO, pages argent d'abord, chaque constat étiqueté avec tous les buts qu'il sert. `--fix` applique les réparations déterministes. |
+| `sprezzature-publish-cta` | **d'abord** — trouver les appels à l'action que le site offre déjà, demander lesquels il sert, écrire `ctas.yaml`, et vérifier chaque page contre eux. Lit HTML, PHP (PHP: Hypertext Preprocessor, un langage que le serveur exécute pour fabriquer chaque page à la demande : celui de WordPress), Markdown, JSON (JavaScript Object Notation, un format texte dans lequel les programmes rangent des données en champs nommés, comme « titre : Accueil ») et YAML (YAML Ain't Markup Language, un fichier de réglages qu'on modifie à la main, un réglage par ligne, comme « titre : Accueil »). |
+| `sprezzature-publish-faq` | **make** — construire la FAQ qui manque au site à partir de ses propres pages : questions classées par le CTA (call to action, le bouton que le site veut voir cliqué, comme « Réserver une démo ») déclaré, réponses ancrées dans les mots du site, questions auxquelles il ne sait pas encore répondre. **audit** — le balisage `FAQPage` contre la FAQ visible, `--fix` le réécrit. |
+| `sprezzature-publish-findable` | **audit** — un seul rapport SEO (search engine optimization, faire apparaître une page en première page des résultats de Google), GEO (generative engine optimization, être la source que cite ChatGPT quand on l'interroge) et AEO (answer engine optimization, être la réponse qu'un moteur affiche au-dessus des liens), pages argent d'abord, chaque constat étiqueté avec tous les buts qu'il sert. `--fix` applique les réparations déterministes. |
 | `sprezzature-publish-html` | Markdown → pages HTML autonomes, formules composées par KaTeX. |
-| `sprezzature-publish-icons` | un logo → favicon, icônes d'application, icônes PWA, et le fragment de `<head>` qui les référence. |
+| `sprezzature-publish-icons` | un logo → favicon, icônes d'application, icônes PWA (progressive web app, un site qu'on installe sur l'écran d'accueil d'un téléphone comme une application), et le fragment de `<head>` qui les référence. |
 | `sprezzature-publish-indexes` | `robots.txt`, `sitemap.xml`, `llms.txt`, `llms-full.txt`, Atom, `humans.txt`. |
-| `sprezzature-publish-meta` | Open Graph, Twitter Card et Schema.org JSON-LD, rédigés par un modèle local. |
+| `sprezzature-publish-meta` | Open Graph, Twitter Card et Schema.org JSON-LD (JSON for Linked Data, un bloc invisible qui dit aux moteurs « cette page est un article, de tel auteur, à telle date »), rédigés par un modèle local. |
 | `sprezzature-publish-plain` | réécrire la prose à un niveau de lecture visé, en gardant les termes que vous nommez. |
-| `sprezzature-publish-changelog` | le `CHANGELOG.md` de chaque dépôt voisin sous `--repos-root` devient un seul flux Atom et RSS, une version datée par entrée. |
+| `sprezzature-publish-changelog` | le `CHANGELOG.md` de chaque dépôt voisin sous `--repos-root` devient un seul flux Atom et RSS (Really Simple Syndication, un flux qui affiche les nouveaux billets dans une application de lecture, sans visiter le site), une version datée par entrée. |
 | `sprezzature-publish-narrate` | narrer un billet avec une voix locale, et écrire la piste temporisée à côté de l'audio. |
 | `sprezzature-publish-readalong` | lier cette narration à la page, pour que la phrase prononcée soit surlignée. |
 
 Une seule porte d'entrée sur les treize, en click, sous deux noms :
 `make-site <outil>` et `sprezzature-publish <outil>` résolvent vers le même
 appelable, donc ils ne peuvent pas diverger. Le jumeau argparse a été retiré
-le 2026-10-25, et le 2026-11-04 les commandes par outil et le serveur MCP ont
+le 2026-10-25, et le 2026-11-04 les commandes par outil et le serveur MCP (Model Context Protocol, le protocole par lequel les agents IA appellent des outils en français) ont
 suivi : toutes les commandes d'ici sont en click.
 
 ## Installation
@@ -52,7 +52,7 @@ pip install sprezzature-publish
 ```
 
 Une ligne, et c'est tout : le lint, le rendu, le jeu d'icônes, les outils à
-modèle local, la narration, la surface HTTP et le serveur MCP.
+modèle local, la narration, la surface HTTP (HyperText Transfer Protocol, le protocole par lequel un navigateur demande une page à un serveur, et un programme des données) et le serveur MCP.
 
 Jusqu'au 2026-11-01 ce bloc faisait six lignes et il fallait choisir — la base
 était une seule dépendance, donc `pip install sprezzature-publish` donnait un
@@ -105,9 +105,9 @@ make-site audit public/ --base-url https://exemple.fr --fix --lang fr
 make-site audit https://exemple.fr/a-propos                        # une page en ligne
 ```
 
-Chaque règle cite sa spécification — WHATWG HTML, RFC 6596 pour `canonical`,
+Chaque règle cite sa spécification — le HTML du WHATWG (Web Hypertext Application Technology Working Group, où Apple, Google et Mozilla rédigent ensemble le standard HTML), les *Requests for Comments* RFC 6596 pour `canonical`,
 RFC 9309 pour `robots.txt`, sitemaps.org 0.9, ogp.me, les Cards de X,
-JSON-LD 1.1, le Web App Manifest du W3C, le guide d'Apple, RFC 4287 et
+JSON-LD 1.1, le Web App Manifest du W3C (World Wide Web Consortium, l'organisme qui publie les standards du web, des règles d'accessibilité au manifeste d'application), le guide d'Apple, RFC 4287 et
 RSS 2.0, llmstxt.org. Là où aucun document de ce genre n'existe, la règle le
 dit au lieu de faire semblant. La table complète, règle par règle, est dans
 `references/audit-site.md` : c'est elle qu'on cite quand un constat est
@@ -238,7 +238,7 @@ graphiques appartient à ceux qui savent les produire.
 
 ## Licence
 
-BSD-3-Clause. Voir [LICENSE](LICENSE).
+La licence Berkeley Software Distribution à trois clauses, BSD-3-Clause, une licence libre permissive : chacun peut réutiliser le code, même commercialement, à condition de garder la mention de copyright. Voir [LICENSE](LICENSE).
 
 ## Auteur
 
