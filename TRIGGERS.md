@@ -3,7 +3,11 @@
 When to turn Markdown into a site, and what to call.
 
 This file is written for an agent: a Claude Code or OpenCode skill, an MCP
-host, anything choosing a tool on someone's behalf. Humans are welcome, but
+(Model Context Protocol, the protocol through which AI agents call tools in English)
+host, anything choosing a tool on someone's behalf. The skill itself ships
+inside the package, at `sprezzature_publish/skill/`, and
+`sprezzature-publish-skill --install` copies it into `~/.claude/skills`
+(`--agent opencode` for `~/.opencode/skills`). Humans are welcome, but
 the routing rules below are the point.
 
 ---
@@ -31,7 +35,12 @@ tool does not want any.
 
 The fourth is the one every other request is secretly about: **somebody
 wants a reader to do something.** Book a call, buy, install, sign up,
-download, read on. They say "my site doesn't sell", "nobody contacts me",
+download, read on. SEO (search engine optimization) is getting a page onto the
+first page of Google results; GEO (generative engine optimization) is being
+the source ChatGPT quotes when somebody asks it; AEO (answer engine
+optimization) is being the answer a search engine prints above the links.
+Each ends on a CTA (call to action: the one button the site wants clicked,
+such as "Book a demo"). They say "my site doesn't sell", "nobody contacts me",
 "what should people do on this page", "SEO", "GEO", "AEO", "show up in
 ChatGPT answers", "write me a FAQ", « mon site ne convertit pas », « il me
 faut une FAQ ». Route on the closed vocabulary, not on the phrasing:
@@ -86,10 +95,10 @@ for reading a request back as a tool.
 | `findable` | "SEO + GEO + AEO audit", "why don't AI answers cite us", "is my pricing page indexable", "nosnippet" |
 | `audit` | "audit this existing site", "this live URL", "fix the head tags", no Markdown anywhere |
 | `lint` | "check my Markdown", "is this doc clean", a pre-commit gate |
-| `html` | "make pages out of this", "render the diagrams" |
-| `icons` | "I need favicons", "app icons", "PWA icons", "I only have a logo" |
-| `indexes` | "SEO", "sitemap", "robots.txt", "llms.txt", "RSS", "why doesn't Google see it" |
-| `meta` | "the link preview looks wrong", "OG card", "Twitter card", "Schema.org" |
+| `html` | "make pages out of this", "typeset the math" (a diagram is redrawn with `sprezzature-figures`; the lint flags each Mermaid block as `MMD001`) |
+| `icons` | "I need favicons", "app icons", "PWA (progressive web app, a site you install on a phone's home screen like an app) icons", "I only have a logo" |
+| `indexes` | "SEO", "sitemap", "robots.txt", "llms.txt", "RSS (Really Simple Syndication, a feed a reader app follows)", "why doesn't Google see it" |
+| `meta` | "the link preview looks wrong", "OG (Open Graph, the tags that decide a shared link's preview card) card", "Twitter card", "Schema.org" |
 | `plain` | "simplify this", "write it for a wider audience", "rewrite at grade 8" |
 | `changelog` | "a feed from my CHANGELOG", "one feed for all my repositories' releases" |
 | `narrate` | "read this post aloud", "podcast my blog", "text to speech" |
@@ -99,7 +108,7 @@ for reading a request back as a tool.
 
 ## What to call, on every surface
 
-| Job | CLI | MCP tool |
+| Job | Command line | MCP tool |
 |---|---|---|
 | Declare and check the CTAs | `sprezzature-publish-cta` | `find_calls_to_action` |
 | Build or audit the FAQ | `sprezzature-publish-faq` | `build_faq` |
@@ -114,6 +123,7 @@ for reading a request back as a tool.
 | Narrate a post | `sprezzature-publish-narrate` | none, see below |
 | Bind the narration | `sprezzature-publish-readalong` | none, see below |
 | Changelogs as one feed | `sprezzature-publish-changelog` | none, see below |
+| Install or refresh this skill | `sprezzature-publish-skill --install` | none: it writes under your home directory |
 
 Seven of the thirteen cross a network boundary cleanly, because they are
 text in and text out, and those seven are the MCP tools, with `health`
@@ -121,7 +131,7 @@ beside them: the site's pages go in as `[{path, content}]`, the CTAs as a
 parameter. The other six stay commands. Five write files keyed by filename:
 an icon set, a sitemap beside the pages it indexes, a feed, an audio track
 and its cues, and offering those over MCP would mean inventing a download
-protocol. The sixth, `meta`, prints JSON for one page from a local model.
+protocol. The sixth, `meta`, prints JSON (JavaScript Object Notation, a text format in which programs store data as named fields) for one page from a local model.
 Call them with Bash.
 
 Over MCP the CTAs are a parameter, and their absence comes back as a
@@ -138,7 +148,7 @@ anyway.
 ## What this cannot see, and say so when you report
 
 It reads documents, and it writes files. It cannot open a browser, so it
-says nothing about how a page behaves once loaded: no runtime DOM, no
+says nothing about how a page behaves once loaded: no runtime DOM (Document Object Model, the live tree of elements a browser builds from the page), no
 contrast measured on rendered pixels, no keyboard trace. Those belong to
 the neighbours in the table above.
 

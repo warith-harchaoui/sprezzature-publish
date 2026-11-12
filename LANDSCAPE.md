@@ -18,7 +18,7 @@ sprezzature suite
 ├── sprezzature-accessibility  (lint the HTML this emits, draft the missing alt)
 ├── sprezzature-audio          (the voices, and the captions audit)
 ├── sprezzature-colors         (contrast and colour-vision deficiency)
-├── sprezzature-figures        (167 chart types, hand-authored SVG)
+├── sprezzature-figures        (168 chart types, hand-authored SVG)
 ├── sprezzature-maps           (real coastlines on a real projection)
 ├── sprezzature-ui             (the screen, and the translation catalogue)
 ├── sprezzature-ux-laws        (30 laws, 8 decidable from the markup)
@@ -75,7 +75,7 @@ base dependency, voices included, and only the model files come apart.
   so in its own README and does not try to compete.
 - **Build speed over everything, or a single binary with no runtime.**
   [Hugo](https://gohugo.io/) and [Zola](https://www.getzola.org/). Hugo also
-  ships multilingual routing, `sitemap.xml` and RSS without a plugin, which is
+  ships multilingual routing, `sitemap.xml` and RSS (Really Simple Syndication, a feed a reader app follows) without a plugin, which is
   three of this package's columns answered by the tool you were going to use
   anyway.
 - **A design you control line by line, with islands of interactivity.**
@@ -119,8 +119,8 @@ behind it can have no twin, so the rule has to be a note there and not an
 error, which is the same shape as `SITE014` already.
 
 **[Vale](https://vale.sh/): reading grade as a measurement, not a prompt
-hint.** Vale ships readability as rules (Flesch-Kincaid, Gunning fog, SMOG,
-LIX, Coleman-Liau, ARI), computed deterministically with no model anywhere
+hint.** Vale ships readability as rules (Flesch-Kincaid, Gunning fog, SMOG (Simple Measure of Gobbledygook),
+LIX (läsbarhetsindex, the Swedish readability index), Coleman-Liau, ARI (Automated Readability Index)), computed deterministically with no model anywhere
 near them. Here: `plain_language.py` takes `--target-grade 8` and passes it
 into a prompt, then checks only that the output is not longer than the input.
 A `--report` flag printing the measured grade before and after would make the
@@ -153,8 +153,8 @@ more bug report than idea. Cost: an afternoon, no dependency, and the format
 is documented by Google rather than by sitemaps.org, which the rule table has
 to say.
 
-**[Yoast SEO](https://yoast.com/): one `@graph`, not several blocks.** Yoast
-emits a single JSON-LD block whose nodes (`WebSite`, `WebPage`,
+**[Yoast](https://yoast.com/) SEO (search engine optimization, getting a page high in search results): one `@graph`, not several blocks.** Yoast
+emits a single JSON-LD (JSON for Linked Data, a hidden block telling search engines what the page is) block whose nodes (`WebSite`, `WebPage`,
 `Organization`, `Person`, `BreadcrumbList`) reference each other by `@id`
 instead of sitting in separate unconnected scripts. Here:
 `meta_from_ollama.py` asks a local model for one object. Giving it a fixed
@@ -356,6 +356,6 @@ finding, and this file is more useful if the judgements stay visibly mine.
 - [Static site generators 2026 head-to-head](https://www.youngju.dev/blog/culture/2026-05-14-static-site-generators-2026-hugo-eleventy-astro-mkdocs-docusaurus-mintlify-starlight-comparison-deep-dive.en).
 - [Material for MkDocs, the built-in social plugin](https://squidfunk.github.io/mkdocs-material/plugins/social/).
 - [`starlight-llms-txt`](https://delucis.github.io/starlight-llms-txt/).
-- [W3C Web Application Manifest, icon masks](https://www.w3.org/TR/appmanifest/#icon-masks).
+- [Web Application Manifest of the W3C (World Wide Web Consortium), icon masks](https://www.w3.org/TR/appmanifest/#icon-masks).
 - [pwa-icons: a faster progressive-web-app icon generator](https://github.com/SivaramPg/pwa-icons).
 - [Podcastfy, an open-source alternative to NotebookLM's podcast feature](https://github.com/souzatharsis/podcastfy).

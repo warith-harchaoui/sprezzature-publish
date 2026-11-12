@@ -19,7 +19,7 @@ suite sprezzature
 ├── sprezzature-accessibility  (auditer le HTML produit ici, rédiger l'alt manquant)
 ├── sprezzature-audio          (les voix, et l'audit des sous-titres)
 ├── sprezzature-colors         (contraste et déficience de la vision des couleurs)
-├── sprezzature-figures        (167 types de graphiques, SVG écrit ligne à ligne)
+├── sprezzature-figures        (168 types de graphiques, SVG écrit ligne à ligne)
 ├── sprezzature-maps           (de vrais traits de côte sur une vraie projection)
 ├── sprezzature-ui             (l'écran, et le catalogue de traduction)
 ├── sprezzature-ux-laws        (30 lois, 8 décidables depuis le balisage)
@@ -82,7 +82,7 @@ comprises, et seuls les fichiers de modèles viennent à part.
 - **La vitesse de construction avant tout, ou un binaire unique sans moteur
   d'exécution.** [Hugo](https://gohugo.io/) et
   [Zola](https://www.getzola.org/). Hugo embarque en plus le routage
-  multilingue, `sitemap.xml` et RSS sans extension, soit trois des colonnes de
+  multilingue, `sitemap.xml` et RSS (Really Simple Syndication, un flux que suit une application de lecture) sans extension, soit trois des colonnes de
   ce paquet répondues par l'outil que vous alliez utiliser de toute façon.
 - **Un design que vous contrôlez ligne à ligne, avec des îlots
   d'interactivité.** [Astro](https://astro.build/) ou
@@ -129,7 +129,7 @@ doit y être une note et pas une erreur, exactement comme `SITE014` déjà.
 
 **[Vale](https://vale.sh/) : le niveau de lecture comme mesure, pas comme
 indication dans une consigne.** Vale livre la lisibilité sous forme de règles
-(Flesch-Kincaid, Gunning fog, SMOG, LIX, Coleman-Liau, ARI), calculées de
+(Flesch-Kincaid, Gunning fog, SMOG (Simple Measure of Gobbledygook), LIX (läsbarhetsindex, l'indice de lisibilité suédois), Coleman-Liau, ARI (Automated Readability Index)), calculées de
 façon déterministe sans aucun modèle à proximité. Ici : `plain_language.py`
 prend `--target-grade 8`, le passe dans une consigne, puis vérifie seulement
 que la sortie n'est pas plus longue que l'entrée. Un drapeau `--report`
@@ -165,8 +165,8 @@ plus du rapport de bogue que de l'idée. Coût : un après-midi, aucune
 dépendance, et le format est documenté par Google plutôt que par
 sitemaps.org, ce que la table des règles doit dire.
 
-**[Yoast SEO](https://yoast.com/) : un seul `@graph`, pas plusieurs blocs.**
-Yoast émet un unique bloc JSON-LD dont les nœuds (`WebSite`, `WebPage`,
+**[Yoast](https://yoast.com/) SEO (search engine optimization, faire remonter une page dans les résultats de recherche) : un seul `@graph`, pas plusieurs blocs.**
+Yoast émet un unique bloc JSON-LD (JSON for Linked Data, un bloc invisible qui dit aux moteurs de quoi parle la page) dont les nœuds (`WebSite`, `WebPage`,
 `Organization`, `Person`, `BreadcrumbList`) se référencent entre eux par
 `@id`, au lieu d'être dispersés dans des balises indépendantes. Ici :
 `meta_from_ollama.py` demande un seul objet à un modèle local. Lui donner un
@@ -385,6 +385,6 @@ chose qui soit reprise ci-dessus.
 - [Static site generators 2026 head-to-head](https://www.youngju.dev/blog/culture/2026-05-14-static-site-generators-2026-hugo-eleventy-astro-mkdocs-docusaurus-mintlify-starlight-comparison-deep-dive.en).
 - [Material for MkDocs, le greffon social intégré](https://squidfunk.github.io/mkdocs-material/plugins/social/).
 - [`starlight-llms-txt`](https://delucis.github.io/starlight-llms-txt/).
-- [W3C Web Application Manifest, masques d'icônes](https://www.w3.org/TR/appmanifest/#icon-masks).
+- [Web Application Manifest du W3C (World Wide Web Consortium), masques d'icônes](https://www.w3.org/TR/appmanifest/#icon-masks).
 - [pwa-icons, un générateur d'icônes d'application web progressive plus rapide](https://github.com/SivaramPg/pwa-icons).
 - [Podcastfy, une alternative open source à la fonction podcast de NotebookLM](https://github.com/souzatharsis/podcastfy).

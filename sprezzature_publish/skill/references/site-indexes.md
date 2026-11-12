@@ -11,8 +11,8 @@ Generate the standard set of site-index files for a project's web output, respec
 | `llms.txt` | [llmstxt.org](https://llmstxt.org/) | Always |
 | `llms-full.txt` | [llmstxt.org](https://llmstxt.org/) full-text convention | Always (skip with `--no-llms-full`) |
 | `feed.atom` | [Atom 1.0 (RFC 4287)](https://datatracker.ietf.org/doc/html/rfc4287) | When a blog directory is detected (`posts/`, `blog/`, `articles/`) |
-| `rss.xml` | [RSS 2.0](https://www.rssboard.org/rss-specification) | Same as Atom, but emitted instead when `--rss` is passed |
-| `humans.txt` | [humanstxt.org](https://humanstxt.org/Standard.html) | When `--humans` is passed OR an `AUTHORS` / `CREDITS` file exists at the root |
+| `rss.xml` | RSS (Really Simple Syndication, a feed a reader app follows) [2.0](https://www.rssboard.org/rss-specification) | Same as Atom, but emitted instead when `--rss` is passed |
+| `humans.txt` | [humanstxt.org](https://humanstxt.org/Standard.html) | When `--humans` is passed, or an `AUTHORS` / `CREDITS` file exists at the root |
 
 <!-- For the rules each of these files enforces in the larger SEO context (Google's three Search Essentials pillars + the AI Optimization Guide's foundations), see `seo-essentials.md` in this folder. -->
 
@@ -41,7 +41,7 @@ The script walks the project root looking for `.html` and `.md` files at the roo
 
 `--offer "One sentence."` and `--cta "Label=URL"` (repeatable, primary
 first) make `llms.txt` open on what the site offers, then a `## Next step`
-section with each CTA's own URL, or its install command as code, before any
+section with each CTA (call to action, the one button the site wants clicked) and its own URL, or its install command as code, before any
 page. The pages whose source carries a CTA URL come first in `llms.txt` and
 `llms-full.txt`. An agent acting for a reader can then hand over the link
 itself.
@@ -57,7 +57,7 @@ sprezzature-publish-indexes --root . --base-url https://example.com \
 
 Three rules keep it from bloating (the failure mode where a full-text file drags in raw HTML, nav, and duplicated pages until it blows past a model's context):
 
-- **Markdown sources only.** Rendered HTML is generated *from* the `.md` pages, so concatenating it would duplicate every page and pull in tag / nav / footer boilerplate. Only `.md` bodies go in; YAML front matter is stripped (we emit a `Source:` line per page instead).
+- **Markdown sources only.** Rendered HTML is generated *from* the `.md` pages, so concatenating it would duplicate every page and pull in tag / nav / footer boilerplate. Only `.md` bodies go in; YAML (YAML Ain't Markup Language, a settings format edited by hand) front matter is stripped (we emit a `Source:` line per page instead).
 - **Priority order.** Pages are ordered README / `index.md` first, then other root `.md`, then `docs/`, so any truncation keeps what matters.
 - **Visible size, no silent truncation.** The run prints the page count and KB. Past ~200 KB with no cap it prints a soft advisory. With `--llms-full-max-kb N` it fills the budget in priority order and **names every page it dropped**: a bounded file never silently hides content.
 
@@ -72,11 +72,11 @@ sprezzature-publish-indexes --root . --base-url https://example.com --llms-full-
 sprezzature-publish-indexes --root . --base-url https://example.com --no-llms-full
 ```
 
-A generated `llms-full.txt` is only as fresh as its last run: regenerate it in the same CI step as the rest of the site, since a stale full-text corpus feeds an agent confidently wrong content.
+A generated `llms-full.txt` is only as fresh as its last run: regenerate it in the same CI (continuous integration, the checks run on every push) step as the rest of the site, since a stale full-text corpus feeds an agent confidently wrong content.
 
 ## What the skill does automatically
 
-When Claude emits a website (the **Markdown → website workflow** in SKILL.md, or any other surface that produces an HTML tree), it runs `site_indexes.py` as the final step:
+When Claude emits a website (the **Markdown → website workflow** in SKILL.md, or any other surface that produces an HTML tree), it runs `sprezzature-publish-indexes` as the final step:
 
 1. Picks `--base-url` from the user's stated origin, or a sensible placeholder marked as TODO.
 2. Auto-detects a blog folder (`posts/`, `blog/`, `articles/`) and emits the Atom feed when found.
@@ -95,7 +95,7 @@ The robots.txt's `Sitemap:` line is set automatically too.
 
 ## Why Atom is the default (not RSS 2.0)
 
-- Atom 1.0 is an IETF standard with strict semantics; RSS 2.0 is a vendor format with ambiguous fields.
+- Atom 1.0 is an IETF (Internet Engineering Task Force, the body that writes internet standards) standard with strict semantics; RSS 2.0 is a vendor format with ambiguous fields.
 - Modern aggregators (NetNewsWire, Inoreader, FreshRSS, Feedbin, Bluesky's feed reader, Mastodon) all read Atom.
 - Apple Podcasts still requires RSS 2.0 with `<itunes:*>` extensions; for podcasts specifically, the user should run with `--rss` and post-process the file to add the iTunes block.
 
@@ -119,4 +119,4 @@ For pages with embedded images or video, alt text and captions belong to the nei
 - [ ] Atom feed validates via <https://validator.w3.org/feed/>.
 - [ ] `llms.txt` follows the llmstxt.org shape: H1, blockquote, `## Optional` for non-essential links.
 - [ ] If a podcast, RSS 2.0 emitted (`--rss`) and iTunes block added.
-- [ ] `humans.txt` shipped if there's an AUTHORS file or `--humans` was passed.
+- [ ] `humans.txt` shipped if there's an `AUTHORS` file or `--humans` was passed.
