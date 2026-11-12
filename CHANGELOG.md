@@ -6,6 +6,8 @@ versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [1.7.0] — 2026-11-12
+
 ### Added
 
 - **The skill ships inside the package.** `SKILL.md`, its references and its
