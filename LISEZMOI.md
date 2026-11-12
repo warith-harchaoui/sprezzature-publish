@@ -32,7 +32,7 @@ Material, Hugo ou Astro ; celui-ci ne les concurrence pas et le dit.
 | `sprezzature-publish-findable` | **audit** — un seul rapport SEO (search engine optimization, faire apparaître une page en première page des résultats de Google), GEO (generative engine optimization, être la source que cite ChatGPT quand on l'interroge) et AEO (answer engine optimization, être la réponse qu'un moteur affiche au-dessus des liens), pages argent d'abord, chaque constat étiqueté avec tous les buts qu'il sert. `--fix` applique les réparations déterministes. |
 | `sprezzature-publish-html` | Markdown → pages HTML autonomes, formules composées par KaTeX. |
 | `sprezzature-publish-icons` | un logo → favicon, icônes d'application, icônes PWA (progressive web app, un site qu'on installe sur l'écran d'accueil d'un téléphone comme une application), et le fragment de `<head>` qui les référence. |
-| `sprezzature-publish-indexes` | `robots.txt`, `sitemap.xml`, `llms.txt`, `llms-full.txt`, Atom, `humans.txt`. |
+| `sprezzature-publish-indexes` | `robots.txt`, `sitemap.xml`, `llms.txt`, `llms-full.txt`, un flux Atom (RSS avec `--rss`), `humans.txt`. |
 | `sprezzature-publish-meta` | Open Graph, Twitter Card et Schema.org JSON-LD (JSON for Linked Data, un bloc invisible qui dit aux moteurs « cette page est un article, de tel auteur, à telle date »), rédigés par un modèle local. |
 | `sprezzature-publish-plain` | réécrire la prose à un niveau de lecture visé, en gardant les termes que vous nommez. |
 | `sprezzature-publish-changelog` | le `CHANGELOG.md` de chaque dépôt voisin sous `--repos-root` devient un seul flux Atom et RSS (Really Simple Syndication, un flux qui affiche les nouveaux billets dans une application de lecture, sans visiter le site), une version datée par entrée. |
@@ -44,6 +44,17 @@ Une seule porte d'entrée sur les treize, en click, sous deux noms :
 appelable, donc ils ne peuvent pas diverger. Le jumeau argparse a été retiré
 le 2026-10-25, et le 2026-11-04 les commandes par outil et le serveur MCP (Model Context Protocol, le protocole par lequel les agents IA appellent des outils en français) ont
 suivi : toutes les commandes d'ici sont en click.
+`sprezzature-publish tools` liste les treize et dit lesquels s'importent
+proprement sur cette machine. La porte d'entrée passe à l'outil tout ce qui
+suit son nom, sauf `-h` / `--help`, auquel elle répond elle-même avec le
+résumé d'une ligne : pour les options d'un outil, demandez à sa propre
+commande (`sprezzature-publish-lint --help`).
+
+La même boîte à outils vous parvient par cinq surfaces, toutes dans le seul
+`pip install` : la librairie (`import sprezzature_publish`), la ligne de
+commande (click), un service web (FastAPI, avec un `Dockerfile` et un
+`docker-compose.yml`), un serveur MCP (fastapi-mcp, monté sur ce service
+web), et le skill que lit un agent, qui voyage dans le paquet.
 
 ## Installation
 
@@ -52,7 +63,7 @@ pip install sprezzature-publish
 ```
 
 Une ligne, et c'est tout : le lint, le rendu, le jeu d'icônes, les outils à
-modèle local, la narration, la surface HTTP (HyperText Transfer Protocol, le protocole par lequel un navigateur demande une page à un serveur, et un programme des données) et le serveur MCP.
+modèle local, la narration, la surface HTTP (HyperText Transfer Protocol, le protocole par lequel un navigateur demande une page à un serveur, et un programme des données), le serveur MCP et le skill.
 
 Jusqu'au 2026-11-01 ce bloc faisait six lignes et il fallait choisir — la base
 était une seule dépendance, donc `pip install sprezzature-publish` donnait un
@@ -153,7 +164,7 @@ Markdown rendu ne charge jamais de pile de synthèse vocale pour l'obtenir.
 ### Depuis Python
 
 ```python
-from sprezzature_publish import lint_file, convert_one
+from sprezzature_publish import lint_file, convert_one, skill_path
 ```
 
 Un site se construit avec un script que quelqu'un a écrit, dans une boucle,
@@ -200,6 +211,26 @@ Le serveur de modèle est un profil à part : seuls les outils qui interrogent
 un modèle local en ont besoin, et qui ne veut que des pages ne doit pas être
 obligé d'en faire tourner un.
 
+### Pour un agent : le skill
+
+```sh
+sprezzature-publish-skill                              # la copie que lit l'agent est-elle à jour ?
+sprezzature-publish-skill --install                    # la copier dans ~/.claude/skills
+sprezzature-publish-skill --install --agent opencode   # ou dans ~/.opencode/skills
+sprezzature-publish skill --path                       # où pip l'a posé
+```
+
+Le skill voyage dans le paquet, sous `sprezzature_publish/skill/` : le
+`SKILL.md` sur lequel un agent s'oriente, et les références qu'il ouvre une
+fois son choix fait. `sprezzature_publish.skill_path()` renvoie ce dossier,
+et `sprezzature-publish skill` (ou `make-site skill`) est la même commande
+que `sprezzature-publish-skill`. Sans `--install` elle se contente de dire si
+la copie que Claude Code lit dans `~/.claude/skills` (ou OpenCode dans
+`~/.opencode/skills`, avec `--agent opencode`) est à jour : elle nomme la
+différence quand il y en a une et les compte quand il y en a plusieurs. Avec `--install`, une copie différente est mise de côté
+dans `skills-superseded/`, à côté du dossier des skills et jamais dedans, où
+elle serait encore lue comme un skill.
+
 ## Ce qu'il ne possède pas
 
 - **La voix** — `sprezzature-audio`, qui possède le son dans les deux sens :
@@ -231,7 +262,7 @@ graphiques appartient à ceux qui savent les produire.
 
 ## Voir aussi
 
-- [`sprezzature`](https://github.com/warith-harchaoui/sprezzature) — la suite
+- [`sprezzature`](https://github.com/warith-harchaoui/sprezzature) — la suite, qui rassemble le skill que livre chaque brique
 - [`sprezzature-audio`](https://github.com/warith-harchaoui/sprezzature-audio) — les voix, et l'audit des sous-titres
 - [`sprezzature-accessibility`](https://github.com/warith-harchaoui/sprezzature-accessibility) — relire le HTML émis, et rédiger le texte alternatif qu'il dit manquant
 - [`sprezzature-ui`](https://github.com/warith-harchaoui/sprezzature-ui) — les composants

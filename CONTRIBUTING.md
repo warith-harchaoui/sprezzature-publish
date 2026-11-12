@@ -8,9 +8,13 @@ cd sprezzature-publish
 pip install -e ".[dev]"
 ```
 
-That is the line CI runs. The development dependencies live in the `dev`
+That is the line CI (continuous integration, the checks GitHub runs on every push) runs. The development dependencies live in the `dev`
 extra in `pyproject.toml` rather than in a `requirements-dev.txt`, so there
 is one list and the workflow installs it by name.
+
+An editable install writes the console scripts once. After a pull that adds
+one (`sprezzature-publish-skill` arrived that way), run the same
+`pip install -e ".[dev]"` again, or the new command is not on your `PATH`.
 
 ## Tests
 
@@ -41,9 +45,9 @@ ruff check .
    fails on it.
 2. Register it in `[project.scripts]` in `pyproject.toml` as
    `sprezzature-publish-<tool>`, and add one entry to `TOOLS` in
-   `sprezzature_publish/_tools.py`. Both front doors read `TOOLS`, so that
-   entry is what puts the tool behind `make-site <tool>` and
-   `sprezzature-publish <tool>`.
+   `sprezzature_publish/_tools.py`. The front door reads `TOOLS` under both
+   its names, so that entry is what puts the tool behind
+   `make-site <tool>` and `sprezzature-publish <tool>`.
 3. If it needs anything beyond click and the standard library, add it to
    the base dependencies (there are no extras), and keep it out of the lint
    and the indexes. See `CODING.md`.
@@ -53,7 +57,8 @@ ruff check .
    languages, and add a worked invocation to `EXAMPLES.md`. The
    documented-commands test hands every example line to the tool's parser,
    and fails when the README's examples show a tool the LISEZMOI's do not,
-   or the other way round.
+   or the other way round. If an agent should reach for it, add it to the
+   commands table of `sprezzature_publish/skill/SKILL.md` too.
 
 ## Code standards
 
@@ -83,4 +88,6 @@ External contributions are welcome. Open an issue or pull request on GitHub.
 
 ## License
 
-[BSD-3-Clause](LICENSE).
+The Berkeley Software Distribution licence, three clauses (BSD 3-Clause):
+reuse is free, even commercially, as long as the copyright notice stays. See
+[LICENSE](LICENSE).

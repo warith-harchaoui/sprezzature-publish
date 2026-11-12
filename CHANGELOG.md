@@ -6,6 +6,36 @@ versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+
+- **The skill ships inside the package.** `SKILL.md`, its references and its
+  trigger catalogue now live in `sprezzature_publish/skill/` and travel in
+  the wheel, so one `pip install sprezzature-publish` carries all five
+  surfaces: the library, the command line (click), the web service (FastAPI,
+  with the `Dockerfile` and `docker-compose.yml`), the MCP (Model Context
+  Protocol, the protocol through which AI agents call tools in English)
+  server mounted on it by fastapi-mcp, and the skill. Until now the skill
+  lived only in the `sprezzature` hub.
+- `sprezzature-publish-skill`, also reachable as `sprezzature-publish skill`
+  and `make-site skill`, reports whether the copy an agent reads is in step
+  with the package; `--install` copies it into `~/.claude/skills`
+  (`--agent opencode` for `~/.opencode/skills`) and moves a superseded copy
+  aside to `skills-superseded/`; `--path` prints where pip put it.
+- `sprezzature_publish.skill_path()` returns the skill folder.
+
+### Documentation
+
+- README and LISEZMOI describe the five surfaces, the skill and its
+  command, `sprezzature-publish tools`, and say that `--help` after a tool
+  name on the front door shows only the one-line summary: the full options
+  are on the tool's own command (`sprezzature-publish-lint --help`).
+- `EXAMPLES.md` gains the four tools it never showed: `audit`, `cta`, `faq` and
+  `findable`, plus the skill.
+- `TRIGGERS.md` no longer routes "render the diagrams" to `html`, which has not
+  drawn a diagram since 1.6.0.
+- The 1.6.0 entry below named a route `POST /v1/html`; the route is
+  `POST /v1/render`.
+
 ## [1.6.0] — 2026-11-08
 
 ### Removed
@@ -22,10 +52,10 @@ versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 - **`MMD001` changes meaning.** It was an error, "failed to render". It is
   now a warning on every fenced Mermaid block, which says to draw the
-  diagram with `sprezzature-figures render flowchart` and embed the SVG. The
+  diagram with `sprezzature-figures render flowchart` and embed the SVG (Scalable Vector Graphics, an image made of shapes, sharp at any zoom). The
   exit code does not move.
 - `sprezzature-publish-html` leaves a Mermaid block on the page as code and
-  says so in the result for that file. The route `POST /v1/html` no longer
+  says so in the result for that file. The route `POST /v1/render` no longer
   answers 502 about a diagram.
 
 ### Fixed
@@ -44,7 +74,7 @@ versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 - **`findable` recognises a site served under a directory.** `_page_url`
   wrote `/index.html` where the sitemap and the canonical say `/saggio/`,
-  so FIND003 and FIND004 fired on every page of deraison.ai/saggio. The
+  so `FIND003` and `FIND004` fired on every page of deraison.ai/saggio. The
   prefix comes from `--base-url`, or from the sitemap when every address
   lives under one directory whose home page is listed.
 
@@ -117,15 +147,15 @@ versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - `references/plain-language.md` said the model is chosen for the machine
   and pulled by `best-engine-ai-helper pull`; it is `qwen3-vl:8b`, called
   through best-engine-ai-helper, and pulled with `ollama pull`.
-- `references/audit-site.md` counted six rules needing the CTAs with no spec
+- `references/audit-site.md` counted six rules needing the CTAs (calls to action, the buttons a site wants clicked) with no spec
   behind them; with `FAQ005` there are seven.
 - The README figure said the lint has no dependencies and that everything
   heavier is an extra named after its tool; the lint needs click and the
   standard library, and there are no feature extras. It also promised an MP3
-  where the default is WAV. Text changed in both languages, figure redrawn.
+  where the default is WAV (Waveform Audio File Format, uncompressed audio). Text changed in both languages, figure redrawn.
 - README and LISEZMOI said `requests` is what `lint --ai` uses; it goes
-  through best-engine-ai-helper, imported only under `--ai`. LANDSCAPE and
-  PAYSAGE said a reader who wants only pages never installs a text-to-speech
+  through best-engine-ai-helper, imported only under `--ai`. `LANDSCAPE.md` and
+  `PAYSAGE.md` said a reader who wants only pages never installs a text-to-speech
   stack; `sprezzature-audio` is a base dependency, so it is installed and
   never loaded.
 - The lint's docstring promised plain-language suggestions under `--ai` and a
@@ -148,7 +178,7 @@ versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - **Four documented command lines did not run.** `-html README.md docs/`
   (one positional argument, not two), `-indexes site/` (it takes `--root`),
   and `-readalong` without `--out`, or `--check` without `--narration`, in
-  README, LISEZMOI and EXAMPLES. `tests/test_the_documented_commands_run.py`
+  README, LISEZMOI and `EXAMPLES.md`. `tests/test_the_documented_commands_run.py`
   checked that every flag existed, so all four passed; it now hands each line,
   continuations joined, to the tool's own click parser, also reads
   `references/*.md`, and fails on a command no console script installs.
@@ -164,10 +194,10 @@ versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   fence languages.
 - **The voice is `sprezzature-audio`.** README and LISEZMOI sent readers to
   `speaker-helper`; it is what sprezzature-audio runs on, not the door.
-- **LISEZMOI caught up with README**: Python, HTTP and container sections,
+- **LISEZMOI caught up with README**: Python, HTTP (HyperText Transfer Protocol, how a program asks a server for data) and container sections,
   eight MCP tools named, French non-breaking spaces. `sprezzature-publish-changelog`
   is described as what it is, one feed from every sibling repository's
-  changelog, not posts. LANDSCAPE / PAYSAGE count thirteen tools and no
+  changelog, not posts. `LANDSCAPE.md` / `PAYSAGE.md` count thirteen tools and no
   longer say the audit is unreleased.
 - Help text and messages: `-plain`, `-meta` and the 503s of `/v1/render`
   and `/v1/plain` no longer point at extras or a script path that a
@@ -178,7 +208,7 @@ versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 - **speaker-helper 0.15 turned the suite red without touching it.** Its
   catalogue gained `audio8` (Edge0's Audio8-TTS-Realistic, a French-only
-  operating point, MLX on Apple Silicon behind speaker-helper's `[audio8]`
+  operating point, MLX (Apple's machine-learning framework) on Apple Silicon behind speaker-helper's `[audio8]`
   extra), and sprezzature-audio ships no wrapper for it, so
   `test_every_engine_the_router_can_answer_is_one_this_package_can_invoke`
   failed. `audio8` is now named in `NOT_WRAPPED_ON_PURPOSE` with that reason;
@@ -226,8 +256,8 @@ versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   and `/health` and had no `/mcp`. It runs `sprezzature-publish-mcp --host
   0.0.0.0 --port 8000` now, which serves both on one port; `docker-compose.yml`
   says the same command out loud.
-- **The lint's promise, told truthfully.** README, LISEZMOI, EXAMPLES,
-  TRIGGERS, CODING, CONTRIBUTING, LANDSCAPE and PAYSAGE said the lint and the
+- **The lint's promise, told truthfully.** README, LISEZMOI, `EXAMPLES.md`,
+  `TRIGGERS.md`, `CODING.md`, `CONTRIBUTING.md`, `LANDSCAPE.md` and `PAYSAGE.md` said the lint and the
   indexes had no dependencies at all. They need click and the standard
   library, nothing else (the lint picks up `requests` for `--ai` when it is
   there), which is what keeps the lint fit for a pre-commit hook. The same
@@ -235,7 +265,7 @@ versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   2026-11-01.
 
 
-### Added — SEO, GEO and AEO, ordered by the call to action
+### Added — search, generative and answer engine optimization, ordered by the call to action
 
 Three tools on one reader, so a site is read once and judged by what it is
 for. The research behind every choice, with its sources, is in
@@ -253,11 +283,11 @@ for. The research behind every choice, with its sources, is in
   on the site itself: `tobyord.com/book` is a book.
 - **`sprezzature-publish-faq`** (MCP `build_faq`, `/v1/faq`). Most sites have
   no FAQ, so this **builds** one: questions from a hint file, the site's own
-  FAQs, a buyer's checklist and its question headings, ranked by the CTA;
+  FAQs, a buyer's checklist and its question headings, ranked by the CTA (call to action, the one button the site wants clicked);
   answers grounded in the site's passages (BM25, standard library), drafted
   by the local model or extracted, and **thrown away if they state a number
   no cited passage states**. What the site cannot answer goes to a gap
-  report. The `FAQPage` JSON-LD is built from the visible text, never the
+  report. The `FAQPage` JSON-LD (JSON for Linked Data, JSON being JavaScript Object Notation: a hidden block telling search engines what the page is) is built from the visible text, never the
   other way round. Audit `FAQ001`–`FAQ004`; `--fix` rewrites the markup of
   `.html` pages only.
 - **`sprezzature-publish-findable`** (MCP `report_findability`,
@@ -270,8 +300,8 @@ for. The research behind every choice, with its sources, is in
   leads with the offer and a "Next step" section carrying each CTA's own URL,
   and the pages that carry a CTA come first in `llms.txt` and
   `llms-full.txt`.
-- One reader for every format a site keeps content in: HTML, PHP templates
-  (code blocks dropped, line numbers kept), Markdown, JSON and YAML data.
+- One reader for every format a site keeps content in: HTML, PHP (PHP: Hypertext Preprocessor, the language a server runs to build each page on request) templates
+  (code blocks dropped, line numbers kept), Markdown, JSON and YAML (YAML Ain't Markup Language, a settings file edited by hand) data.
   The booking button of the calibration site lived in `layouts/nav.php`.
 
 ### Fixed — claims the sources no longer support
@@ -312,7 +342,7 @@ edited, so this is a measured feasibility and not an optimistic one.
 
 ### Fixed — the places that encoded the extras
 
-Install lines, error messages, docstrings, the `Dockerfile`, the CI workflow and
+Install lines, error messages, docstrings, the `Dockerfile`, the CI (continuous integration, the checks GitHub runs on every push) workflow and
 the README/LISEZMOI install sections all named extras that no longer exist. pip
 treats an unknown extra as a **warning and exits 0**, so none of these would
 have failed loudly: they would have quietly installed nothing.
@@ -423,14 +453,14 @@ which no per-repository pass would have caught.
 
   Every rule cites a specification or the search engine's own documentation,
   and the three that have none say so: `references/audit-site.md` carries the
-  table rule by rule — WHATWG HTML, [RFC 6596](https://datatracker.ietf.org/doc/html/rfc6596)
+  table rule by rule — WHATWG (Web Hypertext Application Technology Working Group, where browser makers write the HTML standard) HTML, RFC (Request for Comments, the numbered documents that define internet standards) [6596](https://datatracker.ietf.org/doc/html/rfc6596)
   (canonical), [RFC 9309](https://datatracker.ietf.org/doc/html/rfc9309)
-  (robots.txt, an IETF Proposed Standard since 2022),
+  (robots.txt, an IETF (Internet Engineering Task Force, the body that writes internet standards) Proposed Standard since 2022),
   [sitemaps.org 0.9](https://www.sitemaps.org/protocol.html),
   [ogp.me](https://ogp.me/), X Cards,
   [JSON-LD 1.1](https://www.w3.org/TR/json-ld11/),
-  [W3C Web App Manifest](https://www.w3.org/TR/appmanifest/), Apple's
-  web-app configuration guide, RFC 4287 / RSS 2.0,
+  [Web App Manifest](https://www.w3.org/TR/appmanifest/) of the W3C (World Wide Web Consortium, the body that publishes the web's standards), Apple's
+  web-app configuration guide, RFC 4287 / RSS (Really Simple Syndication, a feed a reader app follows) 2.0,
   [llmstxt.org](https://llmstxt.org/). Two tests keep the code and the
   citations from drifting apart in either direction.
 
@@ -444,7 +474,7 @@ which no per-repository pass would have caught.
 - **The maskable icon put artwork outside the safe zone.** The W3C Web App
   Manifest defines that zone as "a circle with center point in the center of
   the icon and with a radius of 2/5 (40%) of the icon size", and says a user
-  agent MAY make every pixel outside it transparent
+  agent `MAY` make every pixel outside it transparent
   ([§ icon masks](https://www.w3.org/TR/appmanifest/#icon-masks)).
   `favicons.py` placed the artwork in a centred *square* covering 80 % of the
   canvas — corners 56.6 % of the icon size from the centre, outside the
@@ -467,11 +497,11 @@ which no per-repository pass would have caught.
   Kyutai is the French answer: a Paris lab's `tts-1.6b-en_fr`, which renders
   French natively where the other three reach it through an English-first
   pipeline. It is not the default, and the licence bar `narrate_post` already
-  states is why — its code is MIT and its weights CC-BY-4.0, permissive but
+  states is why — its code is MIT (Massachusetts Institute of Technology licence, a short permissive one) and its weights CC-BY-4.0, permissive but
   not "Apache-2.0 in code *and* weights". Ask for it by name on a French page.
 
   The lexicon is the one that changes a reading. A post about this suite is
-  full of words no engine can work out — WebVTT, RTTM, OKLCH, GMTED2010 — and
+  full of words no engine can work out — WebVTT, RTTM (Rich Transcription Time Marked, a file of who spoke when), OKLCH (a colour space: lightness, chroma, hue), GMTED2010 (Global Multi-resolution Terrain Elevation Data 2010, a world elevation dataset) — and
   each engine guesses differently, so the same page narrated twice does not
   say the same words. `--lexicon` states them once.
 
@@ -793,7 +823,7 @@ which no per-repository pass would have caught.
   directory. A fallback that cannot fire looks exactly like one that was
   never needed.
 - **`sprezzature-publish-narrate` died on `--help`** without the `[prose]`
-  extra, because the LLM client was imported at module load while
+  extra, because the LLM (large language model, the kind of AI behind ChatGPT) client was imported at module load while
   `--ai-hints` is off by default. The one install shape the feature is
   named after — `[narrate]` — was the one that could not run it.
 
@@ -813,7 +843,7 @@ could only be reached by someone who had cloned that repository.
 
 - **Five surfaces over nine tools.** A library (`sprezzature_publish`), two
   front doors over the same table (`make-site` with argparse,
-  `sprezzature-publish` with click) plus one command per tool, an HTTP API,
+  `sprezzature-publish` with click) plus one command per tool, an HTTP API (application programming interface, the entry points a program calls),
   an MCP server, and the `SKILL.md` that stays in the monorepo.
 - **`Dockerfile` and `docker-compose.yml`**, always together. The compose
   file declares the port, the volume, the environment and the command; the

@@ -31,7 +31,7 @@ Astro instead; this does not compete with them and says so.
 | `sprezzature-publish-findable` | **audit** — one report for SEO (search engine optimization, getting a page onto the first page of Google results), GEO (generative engine optimization: being the source ChatGPT quotes when somebody asks it) and AEO (answer engine optimization: being the answer a search engine prints above the links), money pages first, each finding tagged with every goal it serves. `--fix` applies the deterministic repairs. |
 | `sprezzature-publish-html` | Markdown → standalone HTML pages, math typeset by KaTeX. |
 | `sprezzature-publish-icons` | one logo → favicon, app icons, PWA (progressive web app, a site you install on a phone's home screen like an app) icons, and the `<head>` snippet that references them. |
-| `sprezzature-publish-indexes` | `robots.txt`, `sitemap.xml`, `llms.txt`, `llms-full.txt`, Atom, `humans.txt`. |
+| `sprezzature-publish-indexes` | `robots.txt`, `sitemap.xml`, `llms.txt`, `llms-full.txt`, an Atom feed (RSS with `--rss`), `humans.txt`. |
 | `sprezzature-publish-meta` | Open Graph, Twitter Card and Schema.org JSON-LD (JSON for Linked Data, a hidden block telling search engines "this page is an article, by this author, on this date"), drafted by a local model. |
 | `sprezzature-publish-plain` | rewrite prose at a target reading grade, keeping the terms you name. |
 | `sprezzature-publish-changelog` | the `CHANGELOG.md` of every sibling repository under `--repos-root` becomes one Atom and RSS (Really Simple Syndication, a feed that lets a reader app show a site's new posts without visiting it) feed, a dated release per entry. |
@@ -58,6 +58,17 @@ One front door over all thirteen, in click, under two names: `make-site <tool>`
 and `sprezzature-publish <tool>` resolve to the same callable, so they cannot
 drift. The argparse twin was removed on 2026-10-25, and on 2026-11-04 the
 per-tool commands and the MCP (Model Context Protocol, the protocol through which AI agents call tools in English) server followed: every command here is click.
+`sprezzature-publish tools` lists the thirteen and says which import cleanly
+on this machine. The front door hands everything after the tool name to the
+tool, except `-h` / `--help`, which it answers itself with the one-line
+summary: for a tool's own options, ask its own command
+(`sprezzature-publish-lint --help`).
+
+The same toolkit reaches you through five surfaces, all in the one
+`pip install`: the library (`import sprezzature_publish`), the command line
+(click), a web service (FastAPI, with a `Dockerfile` and a
+`docker-compose.yml`), an MCP server (fastapi-mcp, mounted on that web
+service), and the skill an agent reads, which ships inside the package.
 
 ## Install
 
@@ -66,7 +77,7 @@ pip install sprezzature-publish
 ```
 
 One line, and it is everything: the lint, the renderer, the icon set, the
-local-model tools, the narration, the HTTP (HyperText Transfer Protocol, the protocol a browser uses to ask a server for a page, and a program to ask for data) surface and the MCP server.
+local-model tools, the narration, the HTTP (HyperText Transfer Protocol, the protocol a browser uses to ask a server for a page, and a program to ask for data) surface, the MCP server and the skill.
 
 Until 2026-11-01 this block was six lines and you had to pick — the base was a
 single dependency, so `pip install sprezzature-publish` gave you a lint and
@@ -148,7 +159,7 @@ loads a text-to-speech stack to get it.
 ### From Python
 
 ```python
-from sprezzature_publish import lint_file, convert_one
+from sprezzature_publish import lint_file, convert_one, skill_path
 ```
 
 A site is built by a script somebody wrote, in a loop, on a schedule. That
@@ -192,6 +203,26 @@ routes and the MCP endpoint: point an MCP client at
 The model server is a separate profile: only the tools that ask a local model need it, and
 someone who only wants pages should not be made to run one.
 
+### For an agent: the skill
+
+```sh
+sprezzature-publish-skill                              # is the copy an agent reads in step?
+sprezzature-publish-skill --install                    # copy it into ~/.claude/skills
+sprezzature-publish-skill --install --agent opencode   # or into ~/.opencode/skills
+sprezzature-publish skill --path                       # where pip put it
+```
+
+The skill ships inside the package, at `sprezzature_publish/skill/`: the
+`SKILL.md` an agent routes on, and the references it opens once it has
+chosen. `sprezzature_publish.skill_path()` returns that folder, and
+`sprezzature-publish skill` (or `make-site skill`) is the same command as
+`sprezzature-publish-skill`. Without `--install` it only reports whether
+the copy Claude Code reads in `~/.claude/skills` (or OpenCode in
+`~/.opencode/skills`, with `--agent opencode`) is in step: it names the
+difference when there is one and counts them when there are several. With `--install`, a
+copy that differs is moved aside to `skills-superseded/` beside the skills
+folder, never left inside it, where it would still be read as a skill.
+
 ## What it does not own
 
 **The voices.** Narration synthesis lives in
@@ -201,6 +232,13 @@ sound, so one package owns that modality in both directions. This one owns
 the document and the page, and invokes those as subprocesses so their heavy
 imports never enter its graph. It is a base dependency, so the voices arrive
 with `pip install sprezzature-publish`; only the model files are fetched apart.
+
+Nor does it own the accessibility of the rendered page
+([sprezzature-accessibility](https://github.com/warith-harchaoui/sprezzature-accessibility)),
+contrast and colours
+([sprezzature-colors](https://github.com/warith-harchaoui/sprezzature-colors)),
+or the figures
+([sprezzature-figures](https://github.com/warith-harchaoui/sprezzature-figures)).
 
 ```sh
 sprezzature-audio-install-voice --engine chatterbox    # model files, once
@@ -216,11 +254,16 @@ not a convenience — the detected language is what its phonemiser works from,
 so a French page read as English is not French in an American accent, it is
 an American spelling the words out.
 
+The boundary is worth stating: this package decides **what** to publish and
+**how the page is made**. The audio, images and charts a page carries belong
+to the packages that know how to produce them.
+
 ## See also
 
 - **[sprezzature-accessibility](https://github.com/warith-harchaoui/sprezzature-accessibility)** — lint the HTML this emits, and draft the alt text it tells you is missing.
 - **[sprezzature-audio](https://github.com/warith-harchaoui/sprezzature-audio)** — the voices, and the captions audit.
-- **[sprezzature](https://github.com/warith-harchaoui/sprezzature)** — the suite, and the skills that drive it from Claude.
+- **[sprezzature](https://github.com/warith-harchaoui/sprezzature)** — the suite, which gathers the skill every brick ships.
+- **[sprezzature-ui](https://github.com/warith-harchaoui/sprezzature-ui)** — the components.
 
 ## License
 
