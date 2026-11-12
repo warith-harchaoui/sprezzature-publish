@@ -68,7 +68,7 @@ def test_the_wheel_is_told_to_carry_the_skill() -> None:
     # Read as text: tomllib arrives with Python 3.11 and the floor is 3.10.
     project = (REPO_ROOT / "pyproject.toml").read_text(encoding="utf-8")
     assert re.search(rf'^"{PACKAGE}" = \[[^\]]*"skill/\*\*/\*"', project, re.M), (
-        f"pyproject.toml must list \"skill/**/*\" under package-data for {PACKAGE}; "
+        f'pyproject.toml must list "skill/**/*" under package-data for {PACKAGE}; '
         "without it the skill exists in a clone and in no wheel"
     )
     assert f'{BRICK}-skill = "{PACKAGE}._skill:main"' in project
@@ -83,7 +83,9 @@ def test_the_library_names_the_skill_folder() -> None:
 def test_install_copies_it_and_then_reports_it_in_step(tmp_path: Path, capsys) -> None:
     assert skill.run(do_install=True, agent="claude", show_path=False, home=tmp_path) == 0
     installed = tmp_path / ".claude" / "skills" / BRICK
-    assert (installed / "SKILL.md").read_bytes() == (PACKAGE_DIR / "skill" / "SKILL.md").read_bytes()
+    assert (installed / "SKILL.md").read_bytes() == (
+        PACKAGE_DIR / "skill" / "SKILL.md"
+    ).read_bytes()
     capsys.readouterr()
     assert skill.run(do_install=False, agent="claude", show_path=False, home=tmp_path) == 0
     assert "in step" in capsys.readouterr().out
@@ -117,5 +119,7 @@ def test_the_module_loads_without_a_command_line_library() -> None:
         "module = importlib.util.module_from_spec(spec); spec.loader.exec_module(module);"
         "print('click' in sys.modules)"
     )
-    out = subprocess.run([sys.executable, "-I", "-c", code], capture_output=True, text=True, check=True)
+    out = subprocess.run(
+        [sys.executable, "-I", "-c", code], capture_output=True, text=True, check=True
+    )
     assert out.stdout.strip() == "False"
