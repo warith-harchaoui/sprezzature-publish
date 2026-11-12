@@ -184,8 +184,16 @@ def run(do_install: bool, agent: str, show_path: bool, home: Path | None = None)
     return 0
 
 
-def _build_command() -> Any:
-    """The click command, built on first use so the module loads without click."""
+def _build_command(standalone: bool = False) -> Any:
+    """
+    The click command, built on first use so the module loads without click.
+
+    `standalone` is the ``sprezzature-<brick>-skill`` console script, which
+    answers ``-V`` and ``--version`` like every command of the suite. As the
+    ``skill`` sub-command of a brick's group it does not: the group answers
+    for the version, and a sub-command taking the same spelling is a second
+    door that can drift.
+    """
     import click
 
     @click.command(
@@ -215,12 +223,14 @@ def _build_command() -> Any:
     @click.option(
         "--path", "show_path", is_flag=True, help="Print where pip installed the skill, and stop."
     )
-    # -V as well as --version, like every other command of the suite.
-    @click.version_option(None, "-V", "--version", package_name=SKILL_NAME)
     def skill_command(do_install: bool, agent: str, show_path: bool) -> None:
         """Report, or refresh, the installed skill."""
         raise SystemExit(run(do_install, agent, show_path))
 
+    if standalone:
+        skill_command = click.version_option(None, "-V", "--version", package_name=SKILL_NAME)(
+            skill_command
+        )
     return skill_command
 
 
@@ -237,7 +247,7 @@ def main(argv: list[str] | None = None) -> int:
     """Console-script entry point, ``sprezzature-<brick>-skill``."""
     import click
 
-    command = __getattr__("skill_command")
+    command = _build_command(standalone=True)
     try:
         command.main(args=argv, prog_name=f"{SKILL_NAME}-skill", standalone_mode=False)
     except SystemExit as exc:
