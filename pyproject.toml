@@ -140,6 +140,7 @@ dev = [
 ]
 
 [project.scripts]
+sprezzature-publish-skill = "sprezzature_publish._skill:main"
 # One command per tool, named for the package so `pip install` puts something
 # usable on PATH rather than a path that only exists inside a clone.
 #
@@ -180,6 +181,10 @@ packages = ["sprezzature_publish", "sprezzature_publish_scripts"]
 "sprezzature_publish_scripts" = "scripts"
 
 [tool.setuptools.package-data]
+# The skill an agent reads ships inside the package, so `pip install`
+# carries all five surfaces; `sprezzature-publish-skill --install` puts it
+# where Claude Code or OpenCode looks.
+"sprezzature_publish" = ["skill/**/*"]
 "sprezzature_publish_scripts" = ["prompts/*.yaml", "charters/*"]
 
 [tool.ruff]

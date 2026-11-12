@@ -27,6 +27,8 @@ import sys
 
 import click
 
+from sprezzature_publish._skill import skill_command
+
 from sprezzature_publish._tools import TOOLS
 
 #: Shown under the command list. Completion is click's, and worth saying out
@@ -119,6 +121,10 @@ def _attach(name: str, module_name: str, summary: str) -> None:
 
 for _tool, (_module_name, _summary) in TOOLS.items():
     _attach(_tool, _module_name, _summary)
+
+
+# The skill this package ships, one sub-command away: `sprezzature-publish skill --install`.
+main.add_command(skill_command)
 
 
 if __name__ == "__main__":

@@ -149,4 +149,6 @@ def __getattr__(name: str) -> Any:
     return getattr(module, name)
 
 
-__all__ = ["__version__", *sorted(_EXPORTS)]
+from sprezzature_publish._skill import skill_path  # noqa: E402
+
+__all__ = ["skill_path", "__version__", *sorted(_EXPORTS)]
