@@ -28,6 +28,12 @@ under the hyphenated name.
     sprezzature-maps-skill --install --agent opencode
     sprezzature-maps-skill --path           # where pip put it
 
+click is imported only when the command is built, never at module load: the
+package's ``__init__`` exports :func:`skill_path` from here, and ``import
+sprezzature_<brick>`` must not load a command-line library -- some bricks
+promise their library loads the standard library only, and a test holds them
+to it.
+
 Author
 ------
 `Warith HARCHAOUI, Ph.D. <https://www.linkedin.com/in/warith-harchaoui/>`_
@@ -37,9 +43,9 @@ from __future__ import annotations
 
 import filecmp
 import shutil
+import sys
 from pathlib import Path
-
-import click
+from typing import Any
 
 #: The package this copy sits in; the skill folder is inside it.
 PACKAGE_DIR: Path = Path(__file__).resolve().parent
@@ -156,55 +162,73 @@ def run(do_install: bool, agent: str, show_path: bool, home: Path | None = None)
     """
     source = skill_path()
     if show_path:
-        click.echo(source)
+        print(source)
         return 0
     if not (source / "SKILL.md").is_file():
-        click.echo(f"{SKILL_NAME}: this build ships no skill (looked in {source}).", err=True)
+        print(f"{SKILL_NAME}: this build ships no skill (looked in {source}).", file=sys.stderr)
         return 1
 
     target = (home or Path.home()) / AGENT_DIRS[agent] / SKILL_NAME
     diffs = differences(source, target)
     if not diffs:
-        click.echo(f"{SKILL_NAME}: in step with {target}")
+        print(f"{SKILL_NAME}: in step with {target}")
         return 0
     head = diffs[0] if len(diffs) == 1 else f"{len(diffs)} files differ"
-    click.echo(f"{SKILL_NAME}: {head} ({target})")
+    print(f"{SKILL_NAME}: {head} ({target})")
     if not do_install:
-        click.echo("Pass --install to copy the shipped skill there.")
+        print("Pass --install to copy the shipped skill there.")
         return 0
     moved = install(source, target)
     where = f"; the previous copy is at {moved}" if moved else ""
-    click.echo(f"{SKILL_NAME}: installed{where}")
+    print(f"{SKILL_NAME}: installed{where}")
     return 0
 
 
-@click.command(
-    name="skill",
-    context_settings={"help_option_names": ["-h", "--help"]},
-    help=(
-        f"Report whether the {SKILL_NAME} skill an agent reads is in step with "
-        "this package, and with --install copy it into the agent's skills "
-        "folder (~/.claude/skills by default)."
-    ),
-    epilog="Reports by default. --install writes under your home directory, "
-    "which changes what every future agent session reads.",
-)
-@click.option("--install", "do_install", is_flag=True,
-              help="Copy the shipped skill into the agent's skills folder.")
-@click.option("--agent", default="claude", show_default=True,
-              type=click.Choice(sorted(AGENT_DIRS)),
-              help="Which agent's skills folder to use.")
-@click.option("--path", "show_path", is_flag=True,
-              help="Print where pip installed the skill, and stop.")
-def skill_command(do_install: bool, agent: str, show_path: bool) -> None:
-    """Report, or refresh, the installed skill."""
-    raise SystemExit(run(do_install, agent, show_path))
+def _build_command() -> Any:
+    """The click command, built on first use so the module loads without click."""
+    import click
+
+    @click.command(
+        name="skill",
+        context_settings={"help_option_names": ["-h", "--help"]},
+        help=(
+            f"Report whether the {SKILL_NAME} skill an agent reads is in step with "
+            "this package, and with --install copy it into the agent's skills "
+            "folder (~/.claude/skills by default)."
+        ),
+        epilog="Reports by default. --install writes under your home directory, "
+        "which changes what every future agent session reads.",
+    )
+    @click.option("--install", "do_install", is_flag=True,
+                  help="Copy the shipped skill into the agent's skills folder.")
+    @click.option("--agent", default="claude", show_default=True,
+                  type=click.Choice(sorted(AGENT_DIRS)),
+                  help="Which agent's skills folder to use.")
+    @click.option("--path", "show_path", is_flag=True,
+                  help="Print where pip installed the skill, and stop.")
+    def skill_command(do_install: bool, agent: str, show_path: bool) -> None:
+        """Report, or refresh, the installed skill."""
+        raise SystemExit(run(do_install, agent, show_path))
+
+    return skill_command
+
+
+def __getattr__(name: str) -> Any:
+    """``skill_command`` on demand: the brick's click group adds it as ``skill``."""
+    if name == "skill_command":
+        command = _build_command()
+        globals()["skill_command"] = command
+        return command
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 
 
 def main(argv: list[str] | None = None) -> int:
     """Console-script entry point, ``sprezzature-<brick>-skill``."""
+    import click
+
+    command = __getattr__("skill_command")
     try:
-        skill_command.main(args=argv, prog_name=f"{SKILL_NAME}-skill", standalone_mode=False)
+        command.main(args=argv, prog_name=f"{SKILL_NAME}-skill", standalone_mode=False)
     except SystemExit as exc:
         return int(exc.code or 0)
     except click.exceptions.UsageError as exc:

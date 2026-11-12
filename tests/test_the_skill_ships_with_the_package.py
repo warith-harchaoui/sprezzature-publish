@@ -102,3 +102,20 @@ def test_a_reinstall_moves_the_old_copy_out_of_the_skills_folder(tmp_path: Path)
     moved = skill.install(skill.skill_path(), skills / BRICK)
     # A backup left inside the skills folder would itself be read as a skill.
     assert moved is not None and skills not in moved.parents
+
+
+def test_the_module_loads_without_a_command_line_library() -> None:
+    # The package's __init__ exports skill_path from _skill.py, so a click
+    # import here would make `import sprezzature_<brick>` load click -- which
+    # some bricks promise it does not. Loaded alone, in a fresh interpreter.
+    import subprocess
+    import sys
+
+    code = (
+        "import importlib.util, sys;"
+        f"spec = importlib.util.spec_from_file_location('_skill', {str(PACKAGE_DIR / '_skill.py')!r});"
+        "module = importlib.util.module_from_spec(spec); spec.loader.exec_module(module);"
+        "print('click' in sys.modules)"
+    )
+    out = subprocess.run([sys.executable, "-I", "-c", code], capture_output=True, text=True, check=True)
+    assert out.stdout.strip() == "False"
