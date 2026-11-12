@@ -130,7 +130,8 @@ def test_the_command_list_is_the_catalogue() -> None:
     from sprezzature_publish._tools import TOOLS
     from sprezzature_publish.cli import main
 
-    assert set(main.commands) - {"tools"} == set(TOOLS)
+    # `skill` installs the skill this package ships; like `tools`, not a tool.
+    assert set(main.commands) - {"tools", "skill"} == set(TOOLS)
 
 
 def test_the_two_spellings_are_one_callable() -> None:

@@ -199,13 +199,24 @@ def _build_command() -> Any:
         epilog="Reports by default. --install writes under your home directory, "
         "which changes what every future agent session reads.",
     )
-    @click.option("--install", "do_install", is_flag=True,
-                  help="Copy the shipped skill into the agent's skills folder.")
-    @click.option("--agent", default="claude", show_default=True,
-                  type=click.Choice(sorted(AGENT_DIRS)),
-                  help="Which agent's skills folder to use.")
-    @click.option("--path", "show_path", is_flag=True,
-                  help="Print where pip installed the skill, and stop.")
+    @click.option(
+        "--install",
+        "do_install",
+        is_flag=True,
+        help="Copy the shipped skill into the agent's skills folder.",
+    )
+    @click.option(
+        "--agent",
+        default="claude",
+        show_default=True,
+        type=click.Choice(sorted(AGENT_DIRS)),
+        help="Which agent's skills folder to use.",
+    )
+    @click.option(
+        "--path", "show_path", is_flag=True, help="Print where pip installed the skill, and stop."
+    )
+    # -V as well as --version, like every other command of the suite.
+    @click.version_option(None, "-V", "--version", package_name=SKILL_NAME)
     def skill_command(do_install: bool, agent: str, show_path: bool) -> None:
         """Report, or refresh, the installed skill."""
         raise SystemExit(run(do_install, agent, show_path))
