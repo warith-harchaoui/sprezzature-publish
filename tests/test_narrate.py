@@ -1320,3 +1320,30 @@ class TestTheEngineIsAskedForRatherThanAssumed:
             f"wrapper, or name it in NOT_WRAPPED_ON_PURPOSE with the reason -- "
             f"otherwise the router hands back a name this module cannot run"
         )
+
+
+def test_tone_sets_the_baseline_emotion_of_every_block(tmp_path, capsys):
+    """--tone gives the whole page one emotion, which each block starts from."""
+    import json
+
+    import narrate_post
+
+    page = tmp_path / "page.html"
+    page.write_text("<article><h1>Titre</h1><p>Une phrase.</p><p>Une autre.</p></article>", encoding="utf-8")
+    code = narrate_post.main([str(page), "--scope", "article", "--engine", "kokoro",
+                              "--tone", "cheerful", "--ai-hints-only"])
+    assert code == 0
+    segments = json.loads(capsys.readouterr().out)
+    assert segments and {s["emotion"] for s in segments} == {"cheerful"}
+
+
+def test_without_tone_the_page_stays_neutral(tmp_path, capsys):
+    """No flag, no change: the default reading is the neutral one."""
+    import json
+
+    import narrate_post
+
+    page = tmp_path / "page.html"
+    page.write_text("<article><p>Une phrase.</p></article>", encoding="utf-8")
+    assert narrate_post.main([str(page), "--scope", "article", "--engine", "kokoro", "--ai-hints-only"]) == 0
+    assert {s["emotion"] for s in json.loads(capsys.readouterr().out)} == {"neutral"}

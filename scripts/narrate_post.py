@@ -132,6 +132,7 @@ import _readalong  # noqa: E402
 from _click import run_command, sprezzature_command  # noqa: E402
 from _lang import detect_text_language  # noqa: E402
 from _narrate import (  # noqa: E402
+    DEFAULT_EMOTION,
     LLM_SYSTEM_PROMPT,
     NarrationManifestEntry,
     Segment,
@@ -712,6 +713,15 @@ def _raw_epilog(text: str | None) -> str:
     "choice to speaker-helper, which holds the default for speech.",
 )
 @click.option(
+    "--tone",
+    default="",
+    help="Baseline emotion for the whole page, e.g. cheerful, warm, calm. "
+    "Each block starts from it; --ai-hints then judges each block in "
+    "context from this baseline. Markdown frontmatter narration.tone "
+    "does the same per post; this flag wins. Heard on engines with an "
+    "emotion dial (chatterbox, openvoice).",
+)
+@click.option(
     "--ai-hints",
     "ai_hints",
     is_flag=True,
@@ -812,6 +822,8 @@ def _run(args: SimpleNamespace) -> int:
         print(f"engine: {args.engine} (speaker-helper, offline)", file=sys.stderr)
 
     source: str = args.post.read_text(encoding="utf-8")
+    # One baseline emotion for the page, which each block starts from.
+    tone: str = (getattr(args, "tone", "") or "").strip().lower() or DEFAULT_EMOTION
     if args.post.suffix.lower() in HTML_SUFFIXES:
         # A page that was never Markdown is a page nobody can regenerate,
         # which is precisely the page that most needs an accessibility pass
@@ -820,13 +832,13 @@ def _run(args: SimpleNamespace) -> int:
         # '##' because it is the same thing.
         page = _readalong.page_blocks(source, scope=args.scope)
         blocks = [(block.tag, block.visible, block.in_quote) for block in page]
-        segments: list[Segment] = segments_from_blocks(blocks)
+        segments: list[Segment] = segments_from_blocks(blocks, tone=tone)
         # The same blocks, minus what is written for the eye alone. Built as
         # a parallel list rather than threaded through `Segment`, because
         # the two differ only in their text and every other decision — the
         # pauses, the emotion, the kind — is identical by construction.
         spoken_blocks = [(block.tag, block.spoken, block.in_quote) for block in page]
-        spoken_segments: list[Segment] | None = segments_from_blocks(spoken_blocks)
+        spoken_segments: list[Segment] | None = segments_from_blocks(spoken_blocks, tone=tone)
     else:
         # The same silencing the HTML route gets for free from
         # `page_blocks`. Without it the two halves of this package disagree
@@ -834,6 +846,12 @@ def _run(args: SimpleNamespace) -> int:
         # bibliography and the read-along binder, which does apply the
         # rule, then refuses the page it was handed.
         segments = _readalong.drop_note_sections(extract_segments(source))
+        if args.tone:
+            # The flag wins over the frontmatter, but not over what the text
+            # itself says: an emoji or an inline [emotion: x] marker stays.
+            for seg in segments:
+                if seg["emotion"] == DEFAULT_EMOTION:
+                    seg["emotion"] = tone
         spoken_segments = None
     if not segments:
         print(f"FAIL post is empty (no narrate-able segments): {args.post}", file=sys.stderr)
