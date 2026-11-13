@@ -113,6 +113,7 @@ default narration hints per segment. The pipeline honors:
 | Emphasis `**b**` `*i*` `_i_` `~~s~~` | Markers stripped, words kept. A voice saying "star star" is not reading the sentence |
 | Emoji `⚠️ 💡 🎉 🔥 …` | Emotion baseline set per emoji (see lookup table in `_narrate.EMOJI_EMOTION`) |
 | Frontmatter `narration.tone` | Project-wide baseline emotion |
+| `--tone cheerful` (CLI) | Page-wide baseline emotion, HTML or Markdown; wins over the frontmatter, not over emoji or inline markers. With `--ai-hints` the model then judges each block from this baseline |
 | Frontmatter `narration.pace` | Project-wide baseline pace |
 | Inline `[emotion: cheerful]` | Override emotion for the segment that follows |
 | Inline `[emotion: default]` | Reset to structural baseline |
