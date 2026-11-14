@@ -71,7 +71,7 @@ approaches:
     axis_1: 3.0109
     axis_2: 3.6812
   role: best
-  color: '#FF3B30'
+  color: '#FF383C'
   attributes:
     Balises méta par page, sans extension: 5.0
     Jeu d'icônes depuis un seul logo: 5.0
@@ -370,7 +370,7 @@ approaches:
     axis_1: -1.9451
     axis_2: -1.707
   role: worst
-  color: '#A52A2A'
+  color: '#AC7F5E'
   attributes:
     Balises méta par page, sans extension: 2.0
     Jeu d'icônes depuis un seul logo: 1.0
@@ -393,7 +393,7 @@ approaches:
     axis_1: 3.0109
     axis_2: -1.9593
   role: right
-  color: '#007AFF'
+  color: '#0088FF'
   attributes:
     Balises méta par page, sans extension: 5.0
     Jeu d'icônes depuis un seul logo: 3.0
@@ -600,7 +600,7 @@ approaches:
     axis_1: -0.0947
     axis_2: 3.6812
   role: top
-  color: '#AF52DE'
+  color: '#CB30E0'
   attributes:
     Balises méta par page, sans extension: 1.0
     Jeu d'icônes depuis un seul logo: 1.0
