@@ -94,7 +94,7 @@ PAGE_TEMPLATE = """<!DOCTYPE html>
                   'Menlo', 'Consolas', 'monospace'],
         }},
         colors: {{
-          'brand-blue': '#0A84FF',
+          'brand-blue': '#0091FF',
         }},
       }} }},
     }};

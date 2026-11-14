@@ -6,6 +6,14 @@ versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Changed
+
+- The dark-mode link blue of the generated pages is `#0091FF`, Apple's
+  dark-mode blue of June 9, 2025 (was `#0A84FF`), in step with the
+  corporate palette of [deraison.ai/colors](https://deraison.ai/colors/),
+  the source of truth for every colour in the suite. The "how it works"
+  diagram is redrawn in the same colours.
+
 ## [1.7.0] — 2026-11-12
 
 ### Added
