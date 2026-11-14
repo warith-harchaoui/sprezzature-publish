@@ -43,7 +43,7 @@ approaches:
     axis_1: 2.7328
     axis_2: 2.4367
   role: best
-  color: '#FF3B30'
+  color: '#FF383C'
   attributes:
     Setup simplicity: 5.0
     Scale of site: 2.0
@@ -69,7 +69,7 @@ approaches:
     axis_1: -2.553
     axis_2: -2.4117
   role: worst
-  color: '#A52A2A'
+  color: '#AC7F5E'
   attributes:
     Setup simplicity: 2.0
     Scale of site: 5.0
@@ -108,7 +108,7 @@ approaches:
     axis_1: -0.6393
     axis_2: -2.4294
   role: right
-  color: '#007AFF'
+  color: '#0088FF'
   attributes:
     Setup simplicity: 3.0
     Scale of site: 4.0
@@ -121,7 +121,7 @@ approaches:
     axis_1: -2.3018
     axis_2: -1.6363
   role: top
-  color: '#AF52DE'
+  color: '#CB30E0'
   attributes:
     Setup simplicity: 2.0
     Scale of site: 5.0
