@@ -6,6 +6,10 @@ versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+
+### Changed
+
+- **Helper dependencies capped at their next major.** `best-engine-ai-helper<2`, and where they were open `vocal-helper<6`, `video-helper<3`, `audio-helper<3`: AI Helpers moved several majors in two weeks (vocal-helper 3 → 5), and an open bound let a future major land unannounced. Checked against the current releases on 2026-11-16: the suite passes.
 ### Changed
 
 - The dark-mode link blue of the generated pages is `#0091FF`, Apple's
