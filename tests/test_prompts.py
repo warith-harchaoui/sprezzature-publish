@@ -70,12 +70,12 @@ def test_plain_language_build_prompt_substitutes_runtime_fields() -> None:
         text="Marketing seamlessly boosts revenue.",
         grade=8,
         lang="en",
-        preserve=["Sprezzature"],
+        preserve=["sprezzature"],
     )
     assert "grade-8" in out
     assert "Marketing seamlessly boosts revenue." in out
     assert "Keep these tokens verbatim" in out
-    assert "Sprezzature" in out
+    assert "sprezzature" in out
     # The banned-word list lives in the YAML and must reach the prompt.
     assert "world-class" in out
 

@@ -92,7 +92,7 @@ else:
         app,
         name="sprezzature-publish",
         description=(
-            "Sprezzature Publish MCP tools: lint Markdown, audit a page's head and "
+            "sprezzature Publish MCP tools: lint Markdown, audit a page's head and "
             "indexes, find a site's calls to action, build the FAQ it lacks from "
             "its own pages, and one SEO, GEO and AEO report ordered by the CTA."
         ),

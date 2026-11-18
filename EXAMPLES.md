@@ -111,7 +111,7 @@ runs on the machine; nothing leaves it.
 
 ```bash
 cat draft.md | sprezzature-publish-plain --target-grade 8 --lang en
-sprezzature-publish-plain --input copy.md --preserve 'Sprezzature,Tailwind'
+sprezzature-publish-plain --input copy.md --preserve 'sprezzature,Tailwind'
 ```
 
 `--preserve` is the flag that matters: brand names and identifiers survive
