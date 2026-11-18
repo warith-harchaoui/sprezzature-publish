@@ -32,7 +32,7 @@ echo "Boost your productivity with our state-of-the-art platform" \
 sprezzature-publish-plain --input src/copy.md > dist/copy.simple.md
 
 # Keep brand names intact
-sprezzature-publish-plain --preserve "Sprezzature,Tailwind,Roboto" --input copy.md
+sprezzature-publish-plain --preserve "sprezzature,Tailwind,Roboto" --input copy.md
 
 # Bypass cache for this run
 sprezzature-publish-plain --no-cache --input copy.md
@@ -82,7 +82,7 @@ simple = rewrite(
     "Leverage our cutting-edge platform to boost your productivity",
     target_grade=8,
     lang="en",
-    preserve=["Sprezzature"],
+    preserve=["sprezzature"],
 )
 ```
 

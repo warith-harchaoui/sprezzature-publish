@@ -579,7 +579,7 @@ def _run(args: SimpleNamespace) -> int:
 
     posts, entry_ids, entry_links = build_posts(all_entries)
 
-    feed_title = "Sprezzature — Release notes"
+    feed_title = "sprezzature — Release notes"
     feed_summary = (
         "Combined, date-sorted release notes from the sprezzature-* "
         "packages and the sprezzature hub."

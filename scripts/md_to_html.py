@@ -16,7 +16,7 @@ Two behaviours that distinguish this from a plain Markdown → HTML pipe:
    offline build, pass ``--katex-base path/to/local/katex/`` to point
    at a self-hosted bundle.
 
-2. **Sprezzature-skill HTML shell.** Sticky header, three-state theme switch
+2. **sprezzature-skill HTML shell.** Sticky header, three-state theme switch
    (Auto / Light / Dark) persisted in ``localStorage``, semantic
    surface tokens, focus rings, ``prefers-reduced-motion`` guards. The
    shell is the same one used by ``4ml-new/public/index.html``.

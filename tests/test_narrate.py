@@ -350,7 +350,7 @@ class TestSiteIndexesAudio:
         }
         xml = site_indexes.render_rss(
             "https://example.com",
-            feed_title="Sprezzature",
+            feed_title="sprezzature",
             feed_description="...",
             posts=posts,
             audio_entries=audio,
@@ -364,7 +364,7 @@ class TestSiteIndexesAudio:
         posts = [(Path("posts/a.html"), "Title A", "2026-06-21T00:00:00Z", "Summary A")]
         xml = site_indexes.render_rss(
             "https://example.com",
-            feed_title="Sprezzature",
+            feed_title="sprezzature",
             feed_description="...",
             posts=posts,
         )
@@ -382,7 +382,7 @@ class TestSiteIndexesAudio:
         xml = site_indexes.render_atom(
             "https://example.com",
             feed_id="tag:example.com,2026:feed",
-            feed_title="Sprezzature",
+            feed_title="sprezzature",
             posts=posts,
             audio_entries=audio,
         )

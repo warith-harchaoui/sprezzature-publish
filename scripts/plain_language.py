@@ -43,7 +43,7 @@ Usage
     python plain_language.py --input src/copy.md > dist/copy.simple.md
 
     # Keep brand names intact
-    python plain_language.py --preserve "Sprezzature,Tailwind,Montserrat" --input copy.md
+    python plain_language.py --preserve "sprezzature,Tailwind,Montserrat" --input copy.md
 
     # Bypass the cache for this run
     python plain_language.py --no-cache --input copy.md
@@ -345,7 +345,7 @@ def rewrite(
     epilog=(
         "Examples:\n"
         "  cat draft.md | sprezzature-publish-plain --target-grade 8 --lang en\n"
-        "  sprezzature-publish-plain --input copy.md --preserve 'Sprezzature,Tailwind' > out.md\n"
+        "  sprezzature-publish-plain --input copy.md --preserve 'sprezzature,Tailwind' > out.md\n"
     ),
 )
 @click.option(
