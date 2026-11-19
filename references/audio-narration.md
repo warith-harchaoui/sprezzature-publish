@@ -8,7 +8,7 @@ baseline for long-form text. The cases where this earns its keep:
 - Multitasking audience (commute, cooking, exercise).
 - Cognitive-accessibility "alternative format" (WAI-COGA direction,
   not yet normative in WCAG 2.x but emerging in WCAG 3.0 drafts).
-- Podcast positioning of an existing blog (Substack, NYT, Bloomberg,
+- Podcast positioning of an existing blog (Substack, Bloomberg,
   The Economist do this; the pipeline lets you do it without their
   SaaS price tag).
 
@@ -401,8 +401,8 @@ segment before it reaches the engine.
 
 ## Placement in the rendered page
 
-The convention every major publisher converged on (NYT Audio,
-Substack, The Economist, Bloomberg, BeyondWords clients):
+The convention every major publisher converged on (Substack,
+The Economist, Bloomberg, BeyondWords clients):
 
 ```html
 <header class="post-header">
