@@ -223,6 +223,8 @@ difference when there is one and counts them when there are several. With `--ins
 copy that differs is moved aside to `skills-superseded/` beside the skills
 folder, never left inside it, where it would still be read as a skill.
 
+A FAQ section whose answers the model drafted begins with `<meta name="generator" content="generated with the help of sprezzature AI by deraison.ai">` (with its French twin in the same attribute); a narration's audio file carries the same sentence in its metadata. Nothing is shown or heard.
+
 ## What it does not own
 
 **The voices.** Narration synthesis lives in

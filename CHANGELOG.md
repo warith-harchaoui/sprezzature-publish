@@ -6,6 +6,17 @@ versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [1.7.2] — 2026-11-21
+
+### Added
+
+- **A FAQ section the model drafted says so, in a `<meta name="generator">`.** `sprezzature-publish-faq` (HTML and Markdown output) puts `<meta name="generator" content="généré avec l'aide de l'IA de sprezzature par deraison.ai / generated with the help of sprezzature AI by deraison.ai">` in front of the section when at least one answer came from the model, and the JSON output gains a `generator` key. An extract or an existing answer carries nothing. A `<meta>` is never rendered: nothing visible changes.
+- **Narrations are tagged by the voice's package.** The audio file written for a read-along carries the same sentence in its own metadata (comment tag, `ai_generated_fr`, `ai_generated_en`) and `narration.vtt` a `NOTE` block before the first cue: that is `sprezzature-audio` 1.11.2, now the floor. Nothing is audible, nothing is shown.
+
+### Left alone
+
+- `plain-language` and `meta` print to standard output, with no file and no header to carry a mention.
+
 ## [1.7.1] — 2026-11-19
 
 

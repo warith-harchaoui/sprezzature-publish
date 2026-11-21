@@ -49,7 +49,7 @@ Author
 
 from __future__ import annotations
 
-__version__ = "1.7.1"
+__version__ = "1.7.2"
 __author__ = "Warith HARCHAOUI"
 __email__ = "warithmetics@deraison.ai"
 __license__ = "BSD-3-Clause"
