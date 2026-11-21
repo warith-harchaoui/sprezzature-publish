@@ -493,6 +493,8 @@ def run_engine(
     lexicon: Path | None = None,
     audio_format: str = "wav",
     bitrate: str = "",
+    eardrum: bool | None = None,
+    select: int | None = None,
     python: str = sys.executable,
 ) -> dict[str, Any]:
     """
@@ -602,6 +604,14 @@ def run_engine(
         # belongs to speaker-helper, which is two layers down and owns it.
         if bitrate:
             cmd += ["--bitrate", bitrate]
+    # The ear (speaker-helper's Ralph Eardrum Loop) and the take selector are
+    # on by default in the wrapper since sprezzature-audio 1.11.2. Sent only
+    # when asked, for the same reason as `--lexicon`: an older wrapper rejects
+    # an unknown flag, and the default already is what most callers want.
+    if eardrum is not None:
+        cmd += ["--eardrum" if eardrum else "--no-eardrum"]
+    if select is not None:
+        cmd += ["--select", str(select)]
 
     proc = subprocess.run(cmd, capture_output=True, text=True)
     # Clean the segments scratch file regardless of outcome.
@@ -738,6 +748,20 @@ def _raw_epilog(text: str | None) -> str:
     "--force",
     is_flag=True,
     help="Re-narrate even when the manifest sha256 matches the source.",
+)
+@click.option(
+    "--eardrum/--no-eardrum",
+    default=None,
+    help="Check how every word at risk is said, by ear, before reading "
+    "(speaker-helper's Ralph Eardrum Loop, through sprezzature-audio). "
+    "Left unsaid, the wrapper's default applies: on.",
+)
+@click.option(
+    "--select",
+    type=click.IntRange(min=0),
+    default=None,
+    help="Draw each block up to N times and keep the take whose intonation "
+    "agrees with the text. Left unsaid, the wrapper's default applies.",
 )
 def _cli(**options: Any) -> int:
     """Click command body: the flags arrive as keywords, the work is :func:`_run`."""
@@ -1002,6 +1026,8 @@ def _run(args: SimpleNamespace) -> int:
         lexicon=args.lexicon,
         audio_format=args.audio_format,
         bitrate=args.bitrate,
+        eardrum=getattr(args, "eardrum", None),
+        select=getattr(args, "select", None),
     )
     elapsed: float = time.monotonic() - started
 
@@ -1028,6 +1054,21 @@ def _run(args: SimpleNamespace) -> int:
         f"({result.get('duration_seconds', 0):.1f}s audio, "
         f"{lang} / {result.get('voice', '?')})"
     )
+    heard = result.get("eardrum")
+    if heard and heard.get("ran"):
+        print(
+            f"   ear: {heard.get('words', 0)} word(s) checked {heard.get('verdicts', {})}, "
+            f"still wrong: {', '.join(heard.get('still_wrong') or []) or 'none'} "
+            f"→ {heard.get('report')}"
+        )
+    elif heard:
+        print(f"   ear: skipped ({heard.get('reason')})")
+    chosen = result.get("selection")
+    if chosen:
+        print(
+            f"   takes: {chosen['agree']}/{chosen['judged']} judged blocks agree with "
+            f"their text, {chosen['draws']} draws for {chosen['blocks']} blocks"
+        )
     # A page whose language has no voice is read in another one, and that is
     # the kind of thing a log line should not bury: the audio sounds fine,
     # it is simply the wrong tongue.
