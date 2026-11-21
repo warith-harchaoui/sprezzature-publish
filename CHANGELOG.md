@@ -6,6 +6,10 @@ versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+
+- Every command line ends its `--help` on one line, after a blank one: `⭐️ on GitHub: https://github.com/warith-harchaoui/sprezzature-publish`. A test checks it for each console script. README.md and LISEZMOI.md carry one invitation to star the repository, right after the paragraph that says what the tool does.
+
 ## [1.7.2] — 2026-11-21
 
 ### Added

@@ -4,6 +4,8 @@
 
 Un dossier de Markdown devient un site que quelqu'un peut trouver.
 
+Laissez une [⭐️](https://github.com/warith-harchaoui/sprezzature-publish) sur GitHub si mon aide le mérite.
+
 Pointez-le sur un `README.md` et un dossier `docs/` : il en sort des pages,
 les balises qui les rendent partageables, un jeu de favicons et d'icônes
 d'application à partir d'un seul logo, les index que les robots et les

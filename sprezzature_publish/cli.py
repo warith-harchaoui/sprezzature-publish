@@ -42,6 +42,8 @@ Shell completion:
 
 Run `sprezzature-publish tools` to see which tools import cleanly on this
 machine.
+
+⭐️ on GitHub: https://github.com/warith-harchaoui/sprezzature-publish
 """
 
 

@@ -4,6 +4,8 @@
 
 A folder of Markdown becomes a site somebody can find.
 
+Drop a [⭐️](https://github.com/warith-harchaoui/sprezzature-publish) on GitHub if my help deserves it.
+
 Point it at a `README.md` and a `docs/` folder and it emits pages, the meta
 tags that make them shareable, a favicon and app-icon set from one logo, the
 indexes crawlers and language models look for — `robots.txt`, `sitemap.xml`,

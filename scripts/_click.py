@@ -143,6 +143,22 @@ class SprezzatureCommand(click.Command):
         formatter.write_usage(ctx.command_path, " ".join(["[--help]"] + pieces))
 
 
+def _star_line() -> str:
+    """The one-line invitation to star the repository, or ``""`` when unknown."""
+    distribution = _distribution()
+    if not distribution:
+        return ""
+    return f"⭐️ on GitHub: https://github.com/warith-harchaoui/{distribution}"
+
+
+def _with_star(epilog: str | None) -> str | None:
+    """``epilog`` followed by a blank line and the star line, as its own paragraph."""
+    line = _star_line()
+    if not line:
+        return epilog
+    return f"{epilog.rstrip()}\n\n{line}" if epilog else line
+
+
 def sprezzature_command(
     name: str,
     *,
@@ -174,7 +190,7 @@ def sprezzature_command(
             name=name,
             cls=SprezzatureCommand,
             help=help,
-            epilog=epilog,
+            epilog=_with_star(epilog),
             context_settings=CONTEXT_SETTINGS,
         )(func)
         # Version flag mirrors the argparse-era ``-V`` / ``--version`` pair
