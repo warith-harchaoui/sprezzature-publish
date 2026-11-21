@@ -409,3 +409,34 @@ def test_a_maintainer_note_beside_the_assets_is_not_a_page(tmp_path):
     (tmp_path / "NOTES.md").write_text("# Notes\n\nAt the root: a page.\n", "utf-8")
     names = sorted(p.path for p in c.read_site(tmp_path))
     assert names == ["NOTES.md", "docs/README.md"]
+
+
+# ── The mention of the model, in the metadata only ─────────────────────────
+
+MENTION_FR = "généré avec l'aide de l'IA de sprezzature par deraison.ai"
+MENTION_EN = "generated with the help of sprezzature AI by deraison.ai"
+
+
+def _built(model: bool) -> faq.FaqBuild:
+    def chat(prompt: str) -> str:
+        return json.dumps({"answer": "Acme is free, under the BSD-3 licence.", "sources": [1]})
+
+    return faq.build_faq(site(("index.html", HOME)), PLAN, chat=chat if model else None)
+
+
+def test_a_model_drafted_section_says_so_in_a_meta_generator():
+    build = _built(True)
+    assert any(i.drafted_by == "model" for i in build.items)
+    for text in (faq.render_faq_html(build), faq.render_faq_markdown(build)):
+        assert '<meta name="generator" content="' in text
+        assert MENTION_FR in text and MENTION_EN in text
+    # nothing visible: the mention is in the tag's attribute and nowhere else
+    visible = faq.render_faq_html(build).replace(faq.AI_META, "")
+    assert "sprezzature" not in visible and "deraison" not in visible
+
+
+def test_a_section_the_model_did_not_write_carries_nothing():
+    build = _built(False)
+    assert not any(i.drafted_by == "model" for i in build.items)
+    for text in (faq.render_faq_html(build), faq.render_faq_markdown(build)):
+        assert "generator" not in text and MENTION_FR not in text

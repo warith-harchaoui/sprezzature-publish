@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "sprezzature-publish"
-version = "1.7.1"
+version = "1.7.2"
 description = "A folder of Markdown becomes a site somebody can find: pages, meta tags, a favicon set from one logo, the indexes crawlers and language models look for, and an optional narrated read-along."
 readme = "README.md"
 # `<3.14` since 2026-11-01, when the extras were folded into the base. The
@@ -76,7 +76,7 @@ dependencies = [
     # this plain requirement would install a package that cannot speak, and
     # pip would say nothing — an unknown extra is a warning and exit 0,
     # measured, so neither spelling fails loudly on the wrong version.
-    "sprezzature-audio>=1.9.0",
+    "sprezzature-audio>=1.11.2",
     "langdetect>=1.0.9",
     # 1.11.0 is the first whose `chat()` takes `engine=`, which is how every
     # call here reaches the server `OLLAMA_URL` names rather than its own
@@ -130,7 +130,7 @@ dev = [
     # extra cannot be installed on **3.14** or later. That matches what this
     # package promises, and it is said here because the base install is
     # unaffected — which is exactly why nothing else would catch it.
-    "sprezzature-audio>=1.9.0",
+    "sprezzature-audio>=1.11.2",
     "pytest>=8.0", "ruff", "mypy", "httpx>=0.27", "types-PyYAML",
     # starlette 1.9 moved its TestClient onto httpx2; tests/test_api_site_routes.py
     # uses it, and a runner resolving a current starlette would go red without it.

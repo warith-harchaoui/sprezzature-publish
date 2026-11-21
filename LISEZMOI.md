@@ -231,6 +231,8 @@ différence quand il y en a une et les compte quand il y en a plusieurs. Avec `-
 dans `skills-superseded/`, à côté du dossier des skills et jamais dedans, où
 elle serait encore lue comme un skill.
 
+Une section FAQ dont le modèle a rédigé des réponses commence par `<meta name="generator" content="généré avec l'aide de l'IA de sprezzature par deraison.ai">` (avec son jumeau anglais dans le même attribut) ; le fichier audio d'une narration porte la même phrase dans ses métadonnées. Rien ne s'affiche, rien ne s'entend.
+
 ## Ce qu'il ne possède pas
 
 - **La voix** — `sprezzature-audio`, qui possède le son dans les deux sens :

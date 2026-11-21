@@ -965,9 +965,25 @@ def _jsonld_script(node: dict[str, Any]) -> str:
     return f'<script type="application/ld+json">\n{body}\n</script>'
 
 
+#: The sentences a model-drafted section carries, in both languages, exactly.
+AI_MENTION_FR = "généré avec l'aide de l'IA de sprezzature par deraison.ai"
+AI_MENTION_EN = "generated with the help of sprezzature AI by deraison.ai"
+AI_MENTION = f"{AI_MENTION_FR} / {AI_MENTION_EN}"
+
+#: The tag that says it. Nothing in it is shown: a ``<meta>`` is never rendered.
+AI_META = f'<meta name="generator" content="{AI_MENTION}">'
+
+
+def _model_drafted(build: FaqBuild) -> bool:
+    """Whether the model wrote any answer (an extract or an existing one is not)."""
+    return any(item.drafted_by == "model" for item in build.items)
+
+
 def render_faq_markdown(build: FaqBuild) -> str:
     """The section in Markdown, with its JSON-LD as a raw HTML block."""
     lines = [f"## {HEADING.get(build.lang, HEADING['en'])}", ""]
+    if _model_drafted(build):
+        lines = [AI_META, ""] + lines
     for item in build.items:
         lines += [f"### {item.question}", "", _full_answer(item), ""]
     if build.items:
@@ -987,7 +1003,8 @@ def _md_inline_to_html(markdown: str) -> str:
 
 def render_faq_html(build: FaqBuild) -> str:
     """The section as an HTML fragment to paste where :class:`Placement` says."""
-    lines = [
+    lines = [AI_META] if _model_drafted(build) else []
+    lines += [
         '<section id="faq" aria-labelledby="faq-title">',
         f'  <h2 id="faq-title">{html.escape(HEADING.get(build.lang, HEADING["en"]))}</h2>',
     ]
@@ -1357,6 +1374,8 @@ def cli(
     if fmt == "json":
         payload = asdict(build)
         payload["jsonld"] = faq_jsonld(build.items)
+        if _model_drafted(build):
+            payload["generator"] = AI_MENTION
         text = json.dumps(payload, indent=2, ensure_ascii=False)
     elif fmt == "html":
         text = render_faq_html(build)
