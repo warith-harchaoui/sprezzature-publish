@@ -6,6 +6,12 @@ versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [1.7.3] — 2026-11-22
+
+### Removed
+
+- A name taken out of the acknowledgements in two test fixtures (`tests/fixtures/cta/sprezzature/`), and out of the repository history. Earlier source archives carried it; they are withdrawn.
+
 ### Added
 
 - Every command line ends its `--help` on one line, after a blank one: `⭐️ on GitHub: https://github.com/warith-harchaoui/sprezzature-publish`. A test checks it for each console script. README.md and LISEZMOI.md carry one invitation to star the repository, right after the paragraph that says what the tool does.
