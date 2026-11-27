@@ -149,6 +149,7 @@ import sys
 import urllib.error
 import urllib.parse
 import urllib.request
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from html.parser import HTMLParser
 from pathlib import Path
@@ -551,7 +552,9 @@ def _sitemap_locs(text: str) -> set[str]:
     return {m.group(1).strip() for m in LOC_RE.finditer(text)}
 
 
-def audit_indexes(root: Path, base_url: str) -> list[Finding]:
+def audit_indexes(
+    root: Path, base_url: str, *, skip: Callable[[str], bool] | None = None
+) -> list[Finding]:
     """Check the files that sit beside the pages: robots, sitemap, llms, feed.
 
     Parameters
@@ -561,6 +564,9 @@ def audit_indexes(root: Path, base_url: str) -> list[Finding]:
     base_url : str
         Site origin. Empty when ``--base-url`` was not supplied, which
         downgrades the sitemap sync check to "cannot be verified".
+    skip : callable, optional
+        Given a site-relative path, True for a page that is not published
+        (``unpublished`` in ``ctas.yaml``): it is not expected in the sitemap.
 
     Returns
     -------
@@ -597,7 +603,8 @@ def audit_indexes(root: Path, base_url: str) -> list[Finding]:
         expected = {
             _format_url(base_url, p)
             for p in discover_pages(root)
-            if p.suffix != ".html" or not (is_fragment(root / p) or is_noindex(root / p))
+            if (p.suffix != ".html" or not (is_fragment(root / p) or is_noindex(root / p)))
+            and not (skip and skip(p.as_posix()))
         }
         missing = sorted(expected - listed)
         stale = sorted(u for u in listed - expected if _file_for_url(root, base_url, u) is None)

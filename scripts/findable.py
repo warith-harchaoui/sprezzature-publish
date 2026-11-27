@@ -20,7 +20,12 @@ Ordered by the CTAs, not by goal
 The declared CTAs define the *money pages*: the pages that carry one, and
 the page a CTA lands on. Their findings come first, and some rules are
 errors there and nothing elsewhere: a blog post may be ``noindex``; the
-pricing page may not.
+pricing page may not. A page that carries a CTA and is ``noindex`` on
+purpose (the thank-you page after a payment) is not a money page; a CTA's
+landing page always is.
+
+Pages declared ``unpublished`` in ``ctas.yaml`` (in the folder, not
+online) are skipped by every rule, the sitemap check included.
 
 What it runs
 ------------
@@ -32,7 +37,7 @@ What it runs
 ``FIND001`` (warning; error on a money page) — ``nosnippet`` or
 ``max-snippet:0``. Google: a page must be "eligible to be shown in Google
 Search with a snippet" to appear in its AI features.
-``FIND002`` (error) — a money page is ``noindex``.
+``FIND002`` (error) — a CTA's landing page is ``noindex``.
 ``FIND003`` (error) — a money page is missing from ``sitemap.xml``.
 ``FIND004`` (error) — a money page's canonical points at another page.
 ``FIND005`` (warning) — a money page has no FAQ.
@@ -260,7 +265,8 @@ def cta_rules(
                     0,
                     "FIND002",
                     ERROR,
-                    "A money page is noindex: no engine will show it.",
+                    "A call to action lands on this page and it is noindex: "
+                    "no engine will show it.",
                     "remove noindex from this page",
                 )
             )
@@ -383,20 +389,23 @@ def cta_rules(
 # ── The joint run ──────────────────────────────────────────────────────────
 
 
-def _html_findings(root: Path, *, base_url: str) -> list[Finding]:
+def _html_findings(root: Path, *, base_url: str, plan: CtaPlan | None = None) -> list[Finding]:
     html_pages = au.gather_pages(root)
     out: list[Finding] = []
     if not html_pages:
         return out
     base = au.site_root(root, html_pages)
+    skip = plan.is_unpublished if plan else None
     for path in html_pages:
-        facts = au.scan_page(path.read_text(encoding="utf-8", errors="replace"))
         try:
             where = path.relative_to(base).as_posix()
         except ValueError:
             where = path.name
+        if skip and skip(where):
+            continue
+        facts = au.scan_page(path.read_text(encoding="utf-8", errors="replace"))
         out.extend(au.audit_page(where, facts, have_base_url=bool(base_url)))
-    for f in au.audit_indexes(base, base_url):
+    for f in au.audit_indexes(base, base_url, skip=skip):
         out.append(f)
     return out
 
@@ -431,12 +440,14 @@ def findable(
     Report
         Money pages first, then errors before warnings before advice.
     """
+    if plan is not None:
+        pages = plan.published(pages)
     money = money_pages(pages, plan) if plan and plan.ctas else []
     raw: list[Finding] = []
     if head_findings is not None:
-        raw += head_findings
+        raw += [f for f in head_findings if not (plan and f.path and plan.is_unpublished(f.path))]
     elif root is not None:
-        raw += _html_findings(root, base_url=base_url)
+        raw += _html_findings(root, base_url=base_url, plan=plan)
     raw += audit_ctas(pages, plan or CtaPlan())
     raw += faq.audit_faq(pages, organization=plan.organization if plan else "")
     raw += cta_rules(pages, plan, money, root, base_url)

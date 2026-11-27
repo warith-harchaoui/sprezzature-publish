@@ -6,6 +6,16 @@ versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [1.8.0] — 2026-11-27
+
+### Added
+
+- **`unpublished:` in `ctas.yaml`.** A list of site-relative paths or globs (`[films.html, fr/films.html]`) for pages that sit in the folder but are not online. `findable`, `cta` and the FAQ audit skip them, and the sitemap check (`SITE103`) no longer expects them. `render_ctas_yaml` writes the list back. On sprezzature.ai, a page held back from the deploy was an error twice (`FIND003`, `SITE103`) and a warning twice more.
+
+### Changed
+
+- **A page that is `noindex` on purpose is not a money page.** A page that carries a CTA but asks not to be indexed (the thank-you page after a payment) no longer counts as a money page, so it draws no `FIND002`, `FIND003` or `FIND005`. `FIND002` now speaks of a CTA's landing page, which stays a money page whatever its robots meta says, and is still an error when it is `noindex`.
+
 ## [1.7.3] — 2026-11-22
 
 ### Removed

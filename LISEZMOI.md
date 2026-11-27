@@ -142,8 +142,12 @@ make-site indexes --root site/ --base-url https://exemple.fr \
 ```
 
 Les CTA déclarés (`ctas.yaml`) désignent les *pages argent* : celles qui en
-portent un dans leur corps, et celle où il mène. Un `noindex` y est une
-erreur ; sur un billet, c'est un choix. Chaque réponse de la FAQ vient d'un
+portent un dans leur corps, et celle où il mène. Un `noindex` sur la page
+où mène un CTA est une erreur ; sur un billet, ou sur la page de
+remerciement après un paiement, c'est un choix, et une telle page n'est pas
+une page argent. Les pages présentes dans le dossier mais pas en ligne se
+déclarent sous `unpublished:` dans `ctas.yaml` (chemins ou motifs, comme
+`[films.html, fr/films.html]`), et aucune règle ne les lit. Chaque réponse de la FAQ vient d'un
 passage du site, et chaque nombre qu'elle contient de ce passage, sinon elle
 n'est pas écrite : une question sans réponse dans le site va au rapport des
 manques. Le balisage `FAQPage` est construit depuis le texte visible, une

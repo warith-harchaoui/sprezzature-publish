@@ -53,11 +53,70 @@ def test_nosnippet_is_an_error_on_a_money_page_and_a_warning_elsewhere(tmp_path)
     assert rule_on(report, "FIND001", "post.html")[0].finding.severity == "warning"
 
 
-def test_noindex_matters_only_on_a_money_page(tmp_path):
-    meta = '<meta name="robots" content="noindex">'
-    report = build(tmp_path, meta, meta)
-    assert rule_on(report, "FIND002", "index.html")
+PRICING_PLAN = CtaPlan(
+    offer="Local captions.",
+    organization="Acme",
+    ctas=[
+        CtaSpec("Book a demo", "https://calendly.com/acme/demo", "", "decide", True),
+        CtaSpec("See the prices", "/pricing.html", "", "decide"),
+    ],
+)
+
+NOINDEX = '<meta name="robots" content="noindex">'
+
+
+def test_noindex_on_a_cta_landing_page_is_an_error(tmp_path):
+    (tmp_path / "pricing.html").write_text(
+        POST.format(head=NOINDEX).replace("Notes", "Prices"), encoding="utf-8"
+    )
+    report = build(tmp_path, plan=PRICING_PLAN)
+    assert "pricing.html" in report.money_pages
+    assert rule_on(report, "FIND002", "pricing.html")
     assert not rule_on(report, "FIND002", "post.html")
+
+
+def test_a_thank_you_page_noindex_on_purpose_is_not_a_money_page(tmp_path):
+    # sprezzature.ai/merci.html: reached after a payment, carries the booking
+    # link, noindex on purpose. It was an error, an absent-from-sitemap error
+    # and a missing-FAQ warning, three findings for a page meant to be hidden.
+    (tmp_path / "sitemap.xml").write_text(
+        "<urlset><url><loc>https://acme.test/</loc></url></urlset>", encoding="utf-8"
+    )
+    report = build(tmp_path, money_head=NOINDEX)
+    assert "index.html" not in report.money_pages
+    for rule in ("FIND002", "FIND003", "FIND005"):
+        assert not rule_on(report, rule, "index.html")
+
+
+def test_an_unpublished_page_is_skipped_by_every_rule(tmp_path):
+    (tmp_path / "sitemap.xml").write_text(
+        "<urlset><url><loc>https://acme.test/post.html</loc></url></urlset>", encoding="utf-8"
+    )
+    (tmp_path / "films.html").write_text(MONEY.format(head=""), encoding="utf-8")
+    held = CtaPlan(PLAN.offer, PLAN.organization, PLAN.ctas, unpublished=["films.html"])
+    report = build(tmp_path, plan=held)
+    assert "films.html" not in report.money_pages
+    assert not [t for t in report.findings if t.finding.path == "films.html"]
+    assert not any("films.html" in t.finding.message for t in report.findings)
+    # the same page, published: it is a money page missing from the sitemap
+    shown = build(tmp_path)
+    assert rule_on(shown, "FIND003", "films.html")
+
+
+def test_unpublished_reads_from_ctas_yaml_and_round_trips(tmp_path):
+    from cta import load_ctas, render_ctas_yaml
+
+    path = tmp_path / "ctas.yaml"
+    path.write_text(
+        "primary: {label: Book, url: 'https://calendly.com/acme/demo'}\n"
+        "unpublished: [films.html, '*/films.html']\n",
+        encoding="utf-8",
+    )
+    plan = load_ctas(path)
+    assert plan.is_unpublished("films.html") and plan.is_unpublished("fr/films.html")
+    assert not plan.is_unpublished("index.html")
+    path.write_text(render_ctas_yaml(plan), encoding="utf-8")
+    assert load_ctas(path).unpublished == ["films.html", "*/films.html"]
 
 
 def test_a_money_page_outside_the_sitemap_is_an_error(tmp_path):
@@ -151,7 +210,8 @@ def test_a_page_with_facts_is_not_advised_to_add_them(tmp_path):
 def test_the_cli_reports_json_and_fails_on_errors(tmp_path, capsys):
     build(tmp_path, '<meta name="robots" content="noindex">')
     (tmp_path / "ctas.yaml").write_text(
-        "organization: Acme\nprimary: {label: Book a demo, url: 'https://calendly.com/acme/demo'}\n",
+        "organization: Acme\nprimary: {label: Book a demo, url: 'https://calendly.com/acme/demo'}\n"
+        "secondary: [{label: About Acme, url: /index.html}]\n",
         encoding="utf-8",
     )
     assert fd.main([str(tmp_path), "--format", "json"]) == 1

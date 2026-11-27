@@ -42,6 +42,13 @@ evidence, so a surprising rank can be read rather than trusted.
 
 ``data-cta`` in the author's own markup wins outright.
 
+Pages not published yet
+-----------------------
+``unpublished:`` in ``ctas.yaml`` lists the pages that sit in the folder but
+are not online (a draft, a page held back from the deploy): site-relative
+paths or globs such as ``films.html`` or ``*/films.html``. The audit reads
+the site as published, so these pages are skipped by every rule.
+
 Exit code
 ---------
 * 0 — no errors.
@@ -55,6 +62,7 @@ Author
 
 from __future__ import annotations
 
+import fnmatch
 import json
 import math
 import posixpath
@@ -229,6 +237,19 @@ class CtaPlan:
     offer: str = ""
     organization: str = ""
     ctas: list[CtaSpec] = field(default_factory=list)
+    #: Pages in the folder that are not online: paths or globs, site-relative.
+    unpublished: list[str] = field(default_factory=list)
+
+    def is_unpublished(self, path: str) -> bool:
+        """True when ``path`` (site-relative) is declared as not published."""
+        rel = path.replace("\\", "/").lstrip("/")
+        return any(fnmatch.fnmatchcase(rel, pattern.lstrip("/")) for pattern in self.unpublished)
+
+    def published(self, pages: list[PageContent]) -> list[PageContent]:
+        """The pages a reader can reach: every page but the unpublished ones."""
+        if not self.unpublished:
+            return pages
+        return [p for p in pages if not self.is_unpublished(p.path)]
 
     @property
     def primary(self) -> CtaSpec | None:
@@ -533,6 +554,7 @@ def load_ctas(path: Path) -> CtaPlan:
             primary: {label: ..., url: ..., audience: ..., stage: decide}
             secondary:
               - {label: ..., url: ..., audience: ..., stage: evaluate}
+            unpublished: [films.html, fr/films.html]   # optional
 
     Returns
     -------
@@ -575,10 +597,14 @@ def plan_from_dict(data: dict[str, Any]) -> CtaPlan:
         s = spec(raw, False)
         if s:
             ctas.append(s)
+    raw_unpublished = data.get("unpublished") or []
+    if isinstance(raw_unpublished, str):
+        raw_unpublished = [raw_unpublished]
     return CtaPlan(
         offer=str(data.get("offer", "") or "").strip(),
         organization=str(data.get("organization", "") or "").strip(),
         ctas=ctas,
+        unpublished=[str(u).strip() for u in raw_unpublished if str(u).strip()],
     )
 
 
@@ -627,6 +653,9 @@ def render_ctas_yaml(plan: CtaPlan, candidates: list[Candidate] | None = None) -
         out += ["", "secondary:"]
         for spec in rest:
             out += block(spec, "  ", "- ")
+    if plan.unpublished:
+        out += ["", "# In the folder, not online: every rule skips them."]
+        out += ["unpublished:", *(f"  - {_q(u)}" for u in plan.unpublished)]
     return "\n".join(out) + "\n"
 
 
@@ -716,19 +745,33 @@ def carriers(pages: list[PageContent], plan: CtaPlan) -> dict[str, set[str]]:
     return out
 
 
+def _noindex(page: PageContent) -> bool:
+    """True when the page's robots meta asks engines not to index it."""
+    tokens = {t.strip().lower() for t in re.split(r"[,\s]+", page.robots or "") if t.strip()}
+    return bool(tokens & {"noindex", "none"})
+
+
 def money_pages(pages: list[PageContent], plan: CtaPlan) -> list[str]:
     """Pages that carry a declared CTA, plus the CTA's own landing page.
 
     Shell partials are excluded: they are pieces of every page, not a page
-    a reader lands on.
+    a reader lands on. So are the pages declared ``unpublished``, and a page
+    that carries a CTA but asks not to be indexed (a thank-you page after a
+    payment): it is hidden on purpose, and only a CTA's own landing page
+    must be findable.
     """
+    pages = plan.published(pages)
     shell = partials(pages)
     held = carriers(pages, plan)
     # A page carrying only what the shell gives it is every page; it is a
     # money page only when it holds a CTA itself, in its body. A star in the
     # header of every page makes every page offer it, and none of them is
     # the page the star is sold on.
-    own = {p.path for p in pages if any(offers(p, s, body_only=True) for s in plan.ctas)}
+    own = {
+        p.path
+        for p in pages
+        if not _noindex(p) and any(offers(p, s, body_only=True) for s in plan.ctas)
+    }
     landing: set[str] = set()
     for spec in plan.ctas:
         dest = normalize(spec.url)
@@ -750,9 +793,11 @@ def audit_ctas(pages: list[PageContent], plan: CtaPlan) -> list[Finding]:
     ``CTA001`` (error): a declared CTA appears nowhere. ``CTA002`` (warning):
     a page a reader lands on offers none of the declared CTAs — on the
     calibration site, every blog post a reader reaches from an answer engine
-    offered only an e-mail address, never the booking link.
+    offered only an e-mail address, never the booking link. Pages declared
+    ``unpublished`` are skipped.
     """
     findings: list[Finding] = []
+    pages = plan.published(pages)
     if not plan.ctas:
         return [
             Finding(

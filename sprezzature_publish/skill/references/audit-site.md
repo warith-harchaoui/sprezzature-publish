@@ -63,7 +63,17 @@ picture, see `seo-essentials.md`. For what to put in each tag, see
 Reported by `sprezzature-publish-cta`, `-faq` and `-findable`. They only
 make sense once the site has said what it is for (`ctas.yaml`), and the
 money pages they speak of are the pages that carry a declared CTA in their
-body, plus the page it lands on.
+body, plus the page it lands on. A page that carries a CTA and is `noindex`
+on purpose (the thank-you page after a payment) is not a money page; a
+CTA's landing page always is.
+
+Pages in the folder that are not online are declared in `ctas.yaml`, as
+site-relative paths or globs, and every rule skips them, the sitemap check
+(`SITE103`) included:
+
+```yaml
+unpublished: [films.html, fr/films.html]
+```
 
 | Rule | Checks | Authority |
 |---|---|---|
@@ -76,7 +86,7 @@ body, plus the page it lands on.
 | `FAQ004` | one question marked up on one page | **No spec.** Repetition across pages is the doorway pattern of [Google's spam policies](https://developers.google.com/search/docs/essentials/spam-policies), in miniature. Warning. |
 | `FAQ005` | an answer is quotable alone: three sentences and 80 words at most, the organisation named in the first sentence | **No spec, a house rule.** It is the drafting prompt's own contract (`prompts/faq_answer.yaml`), applied to answers written by hand. Answer engines lift a sentence or a short passage; see `faq-aeo.md`. Warning. |
 | `FIND001` | no `nosnippet` / `max-snippet:0` | [Google: AI features and your website](https://developers.google.com/search/docs/appearance/ai-features): a page must be "eligible to be shown in Google Search with a snippet". Error on a money page, warning elsewhere. |
-| `FIND002` | a money page is not `noindex` | [Google: robots meta tag](https://developers.google.com/search/docs/crawling-indexing/robots-meta-tag). |
+| `FIND002` | a CTA's landing page is not `noindex` (a page that only carries a CTA and is `noindex` on purpose is not a money page) | [Google: robots meta tag](https://developers.google.com/search/docs/crawling-indexing/robots-meta-tag). |
 | `FIND003` | a money page is in `sitemap.xml` | [sitemaps.org 0.9](https://www.sitemaps.org/protocol.html). |
 | `FIND004` | a money page is its own canonical | [RFC 6596](https://datatracker.ietf.org/doc/html/rfc6596). |
 | `FIND005` | a money page has a FAQ | **No spec.** Answer engines quote self-contained answers; the questions between a reader and the CTA are best answered where the CTA is. Warning. |

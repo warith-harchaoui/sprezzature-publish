@@ -138,8 +138,12 @@ sprezzature-publish-indexes --root site/ --base-url https://example.com \
 ```
 
 The declared CTAs (`ctas.yaml`) decide the *money pages*: the pages that
-carry one in their body, and the page it lands on. A `noindex` there is an
-error; on a blog post it is a choice. Every FAQ answer comes from a passage
+carry one in their body, and the page it lands on. A `noindex` on a CTA's
+landing page is an error; on a blog post, or on the thank-you page after a
+payment, it is a choice, and such a page is not a money page. Pages that
+sit in the folder but are not online go under `unpublished:` in
+`ctas.yaml` (paths or globs, such as `[films.html, fr/films.html]`), and
+every rule skips them. Every FAQ answer comes from a passage
 of the site, and every number in it from that passage, or it is not
 written: a question the site cannot answer goes to a gap report instead.
 `FAQPage` markup is built from the visible text, once per page, and never

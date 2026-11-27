@@ -32,6 +32,8 @@ PAGES = [{"path": "index.html", "content": HOME}]
 CTAS = {
     "organization": "Acme",
     "primary": {"label": "Book a demo", "url": "https://calendly.com/acme/demo"},
+    # A CTA lands on the home page: a noindex there is an error (FIND002).
+    "secondary": [{"label": "About Acme", "url": "/index.html"}],
 }
 
 
