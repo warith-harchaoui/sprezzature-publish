@@ -300,6 +300,87 @@ _TABLE_ROW_RE: re.Pattern[str] = re.compile(r"^\s{0,3}\|.*\|\s*$")
 QUOTE_OPENING: str = "Quote:"
 QUOTE_CLOSING: str = "End quote."
 
+#: The same two announcements in each language a page can be read in. The
+#: English pair above is what the segments are built with, because the page's
+#: language is only known once every block has been read; the pair is then
+#: swapped for the page's own by :func:`localize_quote_words`. A French voice
+#: saying "End quote." is a foreign sentence in the middle of the reading.
+QUOTE_WORDS: dict[str, tuple[str, str]] = {
+    "en": (QUOTE_OPENING, QUOTE_CLOSING),
+    "fr": ("Citation :", "Fin de citation."),
+}
+
+
+def quote_words(lang: str) -> tuple[str, str]:
+    """The opening and closing announcements of a quotation, in `lang`.
+
+    Parameters
+    ----------
+    lang : str
+        BCP-47 tag; only the base language is looked at ("fr-CA" reads "fr").
+
+    Returns
+    -------
+    tuple of str
+        ``(opening, closing)``. A language with no pair of its own gets the
+        English one, which is what every page was read with before the table
+        existed.
+
+    Examples
+    --------
+    >>> quote_words("fr")
+    ('Citation :', 'Fin de citation.')
+    >>> quote_words("de")
+    ('Quote:', 'End quote.')
+    """
+    base = (lang or "").split("-")[0].lower()
+    return QUOTE_WORDS.get(base, QUOTE_WORDS["en"])
+
+
+def localize_quote_words(segments: list[Segment], lang: str) -> list[Segment]:
+    """Swap the English quotation announcements for those of `lang`, in place.
+
+    Only blockquote segments are touched, and only where they open on
+    :data:`QUOTE_OPENING` or consist of :data:`QUOTE_CLOSING`, so a sentence
+    that happens to contain the words elsewhere stays as written. Runs on
+    sentences or on whole blocks alike: a block that still carries both ends
+    has both swapped.
+
+    Parameters
+    ----------
+    segments : list of Segment
+        Built by :func:`extract_segments` or :func:`segments_from_blocks`.
+    lang : str
+        The page's language.
+
+    Returns
+    -------
+    list of Segment
+        The same list, for chaining.
+
+    Examples
+    --------
+    >>> segs = [{"kind": "blockquote", "text": "Quote: Hi. End quote."}]
+    >>> localize_quote_words(segs, "fr")[0]["text"]
+    'Citation : Hi. Fin de citation.'
+    """
+    opening, closing = quote_words(lang)
+    if (opening, closing) == (QUOTE_OPENING, QUOTE_CLOSING):
+        return segments
+    for seg in segments:
+        if seg.get("kind") != "blockquote":
+            continue
+        text = seg["text"]
+        if text == QUOTE_CLOSING:
+            seg["text"] = closing
+            continue
+        if text.startswith(QUOTE_OPENING):
+            text = opening + text[len(QUOTE_OPENING) :]
+        if text.endswith(" " + QUOTE_CLOSING):
+            text = text[: -len(QUOTE_CLOSING)] + closing
+        seg["text"] = text
+    return segments
+
 #: Inline marker the author can drop in to override the LLM/structure
 #: hints for the segment that follows. ``[emotion: cheerful]`` until
 #: ``[emotion: default]`` or the next section heading.

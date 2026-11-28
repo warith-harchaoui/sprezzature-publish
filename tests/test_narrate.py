@@ -1347,3 +1347,28 @@ def test_without_tone_the_page_stays_neutral(tmp_path, capsys):
     page.write_text("<article><p>Une phrase.</p></article>", encoding="utf-8")
     assert narrate_post.main([str(page), "--scope", "article", "--engine", "kokoro", "--ai-hints-only"]) == 0
     assert {s["emotion"] for s in json.loads(capsys.readouterr().out)} == {"neutral"}
+
+
+def test_a_french_page_announces_its_quotations_in_french():
+    # A French voice reading "Quote: ... End quote." puts two English
+    # sentences into the middle of a French page.
+    segs = _narrate.explode_to_sentences(
+        _narrate.extract_segments("> Une phrase citée. Une autre.\n")
+    )
+    _narrate.localize_quote_words(segs, "fr")
+    texts = [s["text"] for s in segs]
+    assert texts[0].startswith("Citation : ")
+    assert texts[-1] == "Fin de citation."
+    assert not any("Quote" in t for t in texts)
+
+
+def test_an_english_page_keeps_the_english_announcements():
+    segs = _narrate.extract_segments("> A quoted line.\n")
+    before = [s["text"] for s in segs]
+    _narrate.localize_quote_words(segs, "en")
+    assert [s["text"] for s in segs] == before
+
+
+def test_a_language_without_its_own_pair_falls_back_to_english():
+    assert _narrate.quote_words("de") == (_narrate.QUOTE_OPENING, _narrate.QUOTE_CLOSING)
+    assert _narrate.quote_words("fr-CA") == ("Citation :", "Fin de citation.")

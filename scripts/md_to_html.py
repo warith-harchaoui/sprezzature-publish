@@ -214,8 +214,8 @@ def _attach_readalong(
         body_html,
         _readalong.parse_vtt(cues.read_text(encoding="utf-8")),
         split=_narrate.split_sentences,
-        opening=_narrate.QUOTE_OPENING,
-        closing=_narrate.QUOTE_CLOSING,
+        opening=_narrate.quote_words(lang)[0],
+        closing=_narrate.quote_words(lang)[1],
     )
     _readalong.copy_assets(out_dir)
 

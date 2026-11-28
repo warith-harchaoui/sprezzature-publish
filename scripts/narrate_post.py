@@ -140,6 +140,7 @@ from _narrate import (  # noqa: E402
     explode_to_sentences,
     extract_segments,
     load_pronunciation,
+    localize_quote_words,
     merge_llm_hint,
     read_manifest,
     segments_from_blocks,
@@ -942,6 +943,12 @@ def _run(args: SimpleNamespace) -> int:
             file=sys.stderr,
         )
         spoken = None
+    # The quotation announcements were written in English, the only choice
+    # before the language was known. Swapped here, before the digest, so a
+    # page read once with the English pair is read again in its own language.
+    localize_quote_words(segments, lang)
+    if spoken:
+        localize_quote_words(spoken, lang)
     for index, segment in enumerate(segments):
         source_text = (
             _readalong.without_markers(spoken[index]["text"]) if spoken else segment["text"]
